@@ -24,40 +24,21 @@ Dispatched from core/go orchestration. Pick up tasks in order.
 
 ### Step 2.1: Password hash migration (addresses Finding F1)
 
-- [ ] **Migrate Login() from LTHN to Argon2id** — Currently `auth.Login()` verifies passwords via `lthn.Verify()` which uses non-constant-time comparison. Change to use `crypt.HashPassword()`/`crypt.VerifyPassword()` (Argon2id) for new registrations. Add migration path: on login, if stored hash is LTHN format, re-hash with Argon2id and update `.lthn` file. Update `.lthn` file extension to `.hash` or keep for backward compatibility.
+- [x] **Migrate Login() from LTHN to Argon2id** — Register uses `crypt.HashPassword()` (Argon2id), writes `.hash` file. Login detects format: tries `.hash` (Argon2id) first, falls back to `.lthn` (LTHN). Successful legacy login transparently re-hashes with Argon2id. Shared `verifyPassword()` helper handles dual-path logic. 5 tests: RegisterArgon2id_Good, LoginArgon2id_Good, LoginArgon2id_Bad, LegacyLTHNMigration_Good, LegacyLTHNLogin_Bad.
 
 ### Step 2.2: Key rotation
 
-- [ ] **Add `RotateKeyPair(userID, oldPassword, newPassword string) (*User, error)`** — Full flow:
-  1. Load current `.key` and `.pub` via `io.Medium`
-  2. Decrypt metadata `.json` with old private key + oldPassword via `pgp.Decrypt()`
-  3. Generate new keypair via `pgp.CreateKeyPair(userID, userID+"@auth.local", newPassword)`
-  4. Re-encrypt metadata with new public key via `pgp.Encrypt()`
-  5. Write new `.key`, `.pub`, `.json` files (overwrite existing)
-  6. Invalidate all sessions for this user via `store.DeleteByUser(userID)`
-  7. Return updated User struct
-
-- [ ] **Test RotateKeyPair** — Register user → rotate → verify old key can't decrypt → verify new key works → verify sessions invalidated.
+- [x] **RotateKeyPair** — Full flow: load private key → decrypt metadata with old password → generate new PGP keypair → re-encrypt metadata → update .pub/.key/.json/.hash → invalidate sessions. 4 tests: RotateKeyPair_Good, RotateKeyPair_Bad (wrong password), RotateKeyPair_Ugly (non-existent user), RotateKeyPair_OldKeyCannotDecrypt_Good.
 
 ### Step 2.3: Key revocation
 
-- [ ] **Replace `.rev` placeholder** — Currently stores literal string `"REVOCATION_PLACEHOLDER"`. Options:
-  - Option A: Generate proper OpenPGP revocation cert (may need go-crypto API research)
-  - Option B: Store revocation timestamp + reason as JSON (simpler, sufficient for our use case)
-  - Implement `RevokeKey(userID, password string) error` and `IsRevoked(userID string) bool`
+- [x] **RevokeKey + IsRevoked** — Option B chosen: JSON `Revocation{UserID, Reason, RevokedAt}` record in `.rev` file. `IsRevoked()` parses JSON, ignores legacy `"REVOCATION_PLACEHOLDER"`. Login and CreateChallenge reject revoked users. 6 tests including legacy user revocation.
 
 ### Step 2.4: Hardware key interface (contract only)
 
-- [ ] **Define HardwareKey interface** — Contract for PKCS#11 / YubiKey integration:
-  ```go
-  type HardwareKey interface {
-      Sign(data []byte) ([]byte, error)
-      Decrypt(ciphertext []byte) ([]byte, error)
-      GetPublicKey() (string, error)
-      IsAvailable() bool
-  }
-  ```
-  Add `WithHardwareKey(HardwareKey) Option` to Authenticator. No implementation yet — just the interface and integration points in auth.go.
+- [x] **HardwareKey interface** — `hardware.go`: Sign, Decrypt, GetPublicKey, IsAvailable methods. `WithHardwareKey()` option on Authenticator. Contract-only, no concrete implementations yet. Integration points documented in auth.go.
+
+All Phase 2: commit `301eac1`. 55 tests total, all pass with `-race`.
 
 ## Phase 3: Trust Policy Extensions
 
