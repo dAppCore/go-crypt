@@ -42,10 +42,10 @@ All Phase 2: commit `301eac1`. 55 tests total, all pass with `-race`.
 
 ## Phase 3: Trust Policy Extensions
 
-- [ ] **Approval workflow** — Implement the approval flow that `NeedsApproval` decisions point to. Queue-based: agent requests approval → admin reviews → approve/deny.
-- [ ] **Audit log** — Record all policy evaluations (agent, capability, decision, timestamp). Append-only log for compliance.
-- [ ] **Dynamic policies** — Load policies from YAML/JSON config. Currently hardcoded in `DefaultPolicies()`.
-- [ ] **Scope wildcards** — Support `core/*` scope patterns in ScopedRepos, not just exact strings.
+- [x] **Approval workflow** — `ApprovalQueue` with `Submit`, `Approve`, `Deny`, `Get`, `Pending` methods. Thread-safe queue with unique IDs, status tracking, reviewer attribution. 22 tests including concurrent and end-to-end integration with PolicyEngine.
+- [x] **Audit log** — `AuditLog` with append-only `Record`, `Entries`, `EntriesFor` methods. Optional `io.Writer` for JSON-line persistence. Custom `Decision` JSON marshalling. 18 tests including writer errors and concurrent logging.
+- [x] **Dynamic policies** — `LoadPolicies`/`LoadPoliciesFromFile` parse JSON config. `ApplyPolicies`/`ApplyPoliciesFromFile` replace engine policies. `ExportPolicies` for round-trip serialisation. `DisallowUnknownFields` for strict parsing. 18 tests including round-trip.
+- [x] **Scope wildcards** — `matchScope` supports exact match, single-level wildcard (`core/*`), and recursive wildcard (`core/**`). Updated `repoAllowed` to use pattern matching. 18 tests covering all edge cases including integration with PolicyEngine.
 
 ---
 

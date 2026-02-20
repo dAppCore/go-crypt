@@ -225,14 +225,55 @@ func isRepoScoped(cap Capability) bool {
 }
 
 // repoAllowed checks if repo is in the agent's scoped list.
+// Supports wildcard patterns: "core/*" matches "core/foo" but not "core/foo/bar".
+// "core/**" matches "core/foo", "core/foo/bar", etc.
+// Exact matches are always checked first.
 func repoAllowed(scoped []string, repo string) bool {
 	if repo == "" {
 		return false
 	}
-	for _, r := range scoped {
-		if r == repo {
+	for _, pattern := range scoped {
+		if matchScope(pattern, repo) {
 			return true
 		}
 	}
+	return false
+}
+
+// matchScope checks if a repo matches a scope pattern.
+// Supports exact match, single-level wildcard (*), and recursive wildcard (**).
+func matchScope(pattern, repo string) bool {
+	// Exact match — fast path.
+	if pattern == repo {
+		return true
+	}
+
+	// Check for wildcard patterns.
+	if !strings.Contains(pattern, "*") {
+		return false
+	}
+
+	// "prefix/**" — recursive: matches anything under prefix/.
+	if strings.HasSuffix(pattern, "/**") {
+		prefix := pattern[:len(pattern)-3] // strip "/**"
+		if !strings.HasPrefix(repo, prefix+"/") {
+			return false
+		}
+		// Must have something after the prefix/.
+		return len(repo) > len(prefix)+1
+	}
+
+	// "prefix/*" — single level: matches prefix/X but not prefix/X/Y.
+	if strings.HasSuffix(pattern, "/*") {
+		prefix := pattern[:len(pattern)-2] // strip "/*"
+		if !strings.HasPrefix(repo, prefix+"/") {
+			return false
+		}
+		remainder := repo[len(prefix)+1:]
+		// Must have a non-empty name, and no further slashes.
+		return remainder != "" && !strings.Contains(remainder, "/")
+	}
+
+	// Unsupported wildcard position — fall back to no match.
 	return false
 }
