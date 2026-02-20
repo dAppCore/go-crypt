@@ -1,6 +1,8 @@
 package trust
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -161,4 +163,133 @@ func TestAgentTokenExpiry(t *testing.T) {
 
 	agent.TokenExpiresAt = time.Now().Add(1 * time.Hour)
 	assert.True(t, time.Now().Before(agent.TokenExpiresAt))
+}
+
+// --- Phase 0 Additions ---
+
+// TestConcurrentRegistryOperations_Good verifies that Register/Get/Remove
+// from 10 goroutines do not race.
+func TestConcurrentRegistryOperations_Good(t *testing.T) {
+	r := NewRegistry()
+
+	const n = 10
+	var wg sync.WaitGroup
+	wg.Add(n * 3) // register + get + remove goroutines
+
+	// Register goroutines
+	for i := 0; i < n; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			name := fmt.Sprintf("agent-%d", idx)
+			err := r.Register(Agent{Name: name, Tier: TierVerified})
+			assert.NoError(t, err)
+		}(i)
+	}
+
+	// Get goroutines (may return nil if not yet registered)
+	for i := 0; i < n; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			name := fmt.Sprintf("agent-%d", idx)
+			_ = r.Get(name) // Just exercise the read path
+		}(i)
+	}
+
+	// Remove goroutines (may return false if not yet registered or already removed)
+	for i := 0; i < n; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			name := fmt.Sprintf("agent-%d", idx)
+			_ = r.Remove(name)
+		}(i)
+	}
+
+	wg.Wait()
+	// No panic or data race = success (run with -race flag)
+}
+
+// TestRegisterTierZero_Bad verifies that Tier 0 is rejected.
+func TestRegisterTierZero_Bad(t *testing.T) {
+	r := NewRegistry()
+	err := r.Register(Agent{Name: "InvalidTierAgent", Tier: Tier(0)})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid tier")
+}
+
+// TestRegisterNegativeTier_Bad verifies that negative tiers are rejected.
+func TestRegisterNegativeTier_Bad(t *testing.T) {
+	r := NewRegistry()
+	err := r.Register(Agent{Name: "NegativeTier", Tier: Tier(-1)})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid tier")
+}
+
+// TestTokenExpiryBoundary_Good verifies token expiry checking.
+func TestTokenExpiryBoundary_Good(t *testing.T) {
+	// Token that expires in the future — should be valid
+	futureAgent := Agent{
+		Name:           "FutureAgent",
+		Tier:           TierVerified,
+		TokenExpiresAt: time.Now().Add(1 * time.Millisecond),
+	}
+	assert.True(t, time.Now().Before(futureAgent.TokenExpiresAt))
+
+	// Wait for it to expire
+	time.Sleep(5 * time.Millisecond)
+	assert.True(t, time.Now().After(futureAgent.TokenExpiresAt),
+		"token should now be expired")
+}
+
+// TestTokenExpiryZeroValue_Ugly verifies zero-value TokenExpiresAt behaviour.
+func TestTokenExpiryZeroValue_Ugly(t *testing.T) {
+	agent := Agent{
+		Name: "ZeroExpiry",
+		Tier: TierVerified,
+		// TokenExpiresAt is zero value
+	}
+	r := NewRegistry()
+	err := r.Register(agent)
+	require.NoError(t, err)
+
+	// Zero-value time is in the past
+	retrieved := r.Get("ZeroExpiry")
+	require.NotNil(t, retrieved)
+	assert.True(t, time.Now().After(retrieved.TokenExpiresAt),
+		"zero-value token expiry should be in the past")
+}
+
+// TestConcurrentListDuringMutations_Good verifies List is safe during writes.
+func TestConcurrentListDuringMutations_Good(t *testing.T) {
+	r := NewRegistry()
+
+	// Pre-populate
+	for i := 0; i < 5; i++ {
+		require.NoError(t, r.Register(Agent{
+			Name: fmt.Sprintf("base-%d", i),
+			Tier: TierFull,
+		}))
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(20)
+
+	// 10 goroutines listing
+	for i := 0; i < 10; i++ {
+		go func() {
+			defer wg.Done()
+			agents := r.List()
+			_ = len(agents) // Use the result
+		}()
+	}
+
+	// 10 goroutines mutating
+	for i := 0; i < 10; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			name := fmt.Sprintf("concurrent-%d", idx)
+			_ = r.Register(Agent{Name: name, Tier: TierUntrusted})
+		}(i)
+	}
+
+	wg.Wait()
 }

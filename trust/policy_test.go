@@ -1,6 +1,7 @@
 package trust
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -265,4 +266,107 @@ func TestDefaultRateLimit(t *testing.T) {
 	assert.Equal(t, 60, defaultRateLimit(TierVerified))
 	assert.Equal(t, 0, defaultRateLimit(TierFull))
 	assert.Equal(t, 10, defaultRateLimit(Tier(99))) // unknown defaults to 10
+}
+
+// --- Phase 0 Additions ---
+
+// TestEvaluate_Good_Tier2EmptyScopedReposAllowsAll verifies that a Tier 2
+// agent with empty ScopedRepos is treated as "unrestricted" for repo-scoped
+// capabilities. NOTE: This is a potential security concern documented in
+// FINDINGS.md — empty ScopedRepos bypasses the repo scope check entirely.
+func TestEvaluate_Good_Tier2EmptyScopedReposAllowsAll(t *testing.T) {
+	r := NewRegistry()
+	require.NoError(t, r.Register(Agent{
+		Name:        "Hypnos",
+		Tier:        TierVerified,
+		ScopedRepos: []string{}, // empty — currently means "unrestricted"
+	}))
+	pe := NewPolicyEngine(r)
+
+	// Current behaviour: empty ScopedRepos skips scope check (len == 0)
+	result := pe.Evaluate("Hypnos", CapPushRepo, "host-uk/core")
+	assert.Equal(t, Allow, result.Decision,
+		"empty ScopedRepos currently allows all repos (potential security finding)")
+
+	result = pe.Evaluate("Hypnos", CapReadSecrets, "host-uk/core")
+	assert.Equal(t, Allow, result.Decision)
+
+	result = pe.Evaluate("Hypnos", CapCreatePR, "host-uk/core")
+	assert.Equal(t, Allow, result.Decision)
+
+	// Non-repo-scoped capabilities should still work
+	result = pe.Evaluate("Hypnos", CapCreateIssue, "")
+	assert.Equal(t, Allow, result.Decision)
+	result = pe.Evaluate("Hypnos", CapCommentIssue, "")
+	assert.Equal(t, Allow, result.Decision)
+}
+
+// TestEvaluate_Bad_CapabilityNotInAnyList verifies that a capability not in
+// allowed, denied, or requires_approval lists defaults to deny.
+func TestEvaluate_Bad_CapabilityNotInAnyList(t *testing.T) {
+	r := NewRegistry()
+	require.NoError(t, r.Register(Agent{
+		Name: "TestAgent",
+		Tier: TierFull,
+	}))
+
+	pe := NewPolicyEngine(r)
+
+	// Replace the Tier 3 policy with one that only allows a single capability
+	err := pe.SetPolicy(Policy{
+		Tier:    TierFull,
+		Allowed: []Capability{CapCreateIssue},
+	})
+	require.NoError(t, err)
+
+	// A capability not in the policy's allowed list should be denied
+	result := pe.Evaluate("TestAgent", CapPushRepo, "")
+	assert.Equal(t, Deny, result.Decision)
+	assert.Contains(t, result.Reason, "not granted")
+}
+
+// TestEvaluate_Bad_UnknownCapability verifies that a completely invented
+// capability string is denied.
+func TestEvaluate_Bad_UnknownCapability(t *testing.T) {
+	pe := newTestEngine(t)
+
+	result := pe.Evaluate("Athena", Capability("nonexistent.capability"), "")
+	assert.Equal(t, Deny, result.Decision)
+	assert.Contains(t, result.Reason, "not granted")
+}
+
+// TestConcurrentEvaluate_Good verifies that concurrent policy evaluations
+// with 10 goroutines do not race.
+func TestConcurrentEvaluate_Good(t *testing.T) {
+	pe := newTestEngine(t)
+
+	const n = 10
+	var wg sync.WaitGroup
+	wg.Add(n)
+
+	for i := 0; i < n; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			agents := []string{"Athena", "Clotho", "BugSETI-001"}
+			caps := []Capability{CapPushRepo, CapCreatePR, CapCommentIssue}
+
+			agent := agents[idx%len(agents)]
+			cap := caps[idx%len(caps)]
+			result := pe.Evaluate(agent, cap, "host-uk/core")
+			assert.NotEmpty(t, result.Reason)
+		}(i)
+	}
+
+	wg.Wait()
+}
+
+// TestEvaluate_Bad_Tier2ScopedReposWithEmptyRepoParam verifies that
+// a scoped agent requesting a repo-scoped capability without specifying
+// the repo is denied.
+func TestEvaluate_Bad_Tier2ScopedReposWithEmptyRepoParam(t *testing.T) {
+	pe := newTestEngine(t)
+
+	// Clotho has ScopedRepos but passes empty repo
+	result := pe.Evaluate("Clotho", CapReadSecrets, "")
+	assert.Equal(t, Deny, result.Decision)
 }

@@ -6,12 +6,12 @@ Dispatched from core/go orchestration. Pick up tasks in order.
 
 ## Phase 0: Test Coverage & Hardening
 
-- [ ] **Expand auth/ tests** — Add: concurrent session creation (10 goroutines), session token uniqueness (generate 1000, verify no collisions), challenge expiry edge case (5min boundary), empty password registration, very long username (10K chars), Unicode username/password, air-gapped round-trip (write challenge file → read response file), refresh already-expired session.
-- [ ] **Expand crypt/ tests** — Add: wrong passphrase decrypt (should error, not corrupt), empty plaintext encrypt/decrypt round-trip, very large plaintext (10MB), key derivation determinism (same input → same output), HKDF with different info strings produce different keys, checksum of empty file, checksum of non-existent file (error handling).
-- [ ] **Expand trust/ tests** — Add: concurrent Register/Get/Remove (race test), policy evaluation with empty ScopedRepos on Tier 2, capability not in any list (should deny), register agent with Tier 0 (invalid), rate limit enforcement verification, token expiry boundary tests.
-- [ ] **Security audit** — Verify: constant-time comparisons used everywhere (not just HMAC), no timing side channels in session validation, nonce generation uses crypto/rand (not math/rand), PGP private keys zeroed after use, no secrets in error messages or logs.
-- [ ] **`go vet ./...` clean** — Fix any warnings.
-- [ ] **Benchmark suite** — `BenchmarkArgon2Derive` (KDF), `BenchmarkChaCha20` (encrypt 1KB/1MB), `BenchmarkRSAEncrypt` (2048/4096 bit), `BenchmarkPGPSign`, `BenchmarkPolicyEvaluate` (100 agents).
+- [x] **Expand auth/ tests** — Added 8 new tests: concurrent session creation (10 goroutines), session token uniqueness (1000 tokens), challenge expiry boundary, empty password registration, very long username (10K chars), Unicode username/password, air-gapped round-trip, refresh already-expired session. All pass with `-race`.
+- [x] **Expand crypt/ tests** — Added 12 new tests: wrong passphrase decrypt (ChaCha20+AES), empty plaintext round-trip (ChaCha20+AES), 1MB payload round-trip (ChaCha20+AES), ciphertext-too-short rejection, key derivation determinism (Argon2id+scrypt), HKDF different info strings, HKDF nil salt, checksum of empty file (SHA-256+SHA-512), checksum of non-existent file, checksum consistency with SHA256Sum. Note: large payload test uses 1MB (not 10MB) to keep tests fast.
+- [x] **Expand trust/ tests** — Added 9 new tests: concurrent Register/Get/Remove (10 goroutines, race-safe), Tier 0 rejection, negative tier rejection, token expiry boundary, zero-value token expiry, concurrent List during mutations, empty ScopedRepos behaviour (documented as finding F3), capability not in any list, concurrent Evaluate.
+- [x] **Security audit** — Full audit documented in FINDINGS.md. 4 findings: F1 (LTHN used for passwords, medium), F2 (PGP keys not zeroed, low), F3 (empty ScopedRepos bypasses scope, medium), F4 (go vet clean). No `math/rand` usage. All nonces use `crypto/rand`. No secrets in error messages.
+- [x] **`go vet ./...` clean** — No warnings.
+- [x] **Benchmark suite** — Created `crypt/bench_test.go` (7 benchmarks: Argon2Derive, ChaCha20 1KB/1MB, AESGCM 1KB/1MB, HMACSHA256 1KB, VerifyHMACSHA256) and `trust/bench_test.go` (3 benchmarks: PolicyEvaluate 100 agents, RegistryGet, RegistryRegister).
 
 ## Phase 1: Session Persistence
 

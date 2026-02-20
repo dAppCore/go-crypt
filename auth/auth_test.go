@@ -2,6 +2,9 @@ package auth
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -578,4 +581,279 @@ func TestConcurrentSessions_Good(t *testing.T) {
 			t.Fatalf("concurrent login failed: %v", err)
 		}
 	}
+}
+
+// --- Phase 0 Additions ---
+
+// TestConcurrentSessionCreation_Good verifies that 10 goroutines creating
+// sessions simultaneously do not produce data races or errors.
+func TestConcurrentSessionCreation_Good(t *testing.T) {
+	a, _ := newTestAuth()
+
+	// Register 10 distinct users to avoid contention on a single user record
+	const n = 10
+	userIDs := make([]string, n)
+	for i := 0; i < n; i++ {
+		username := fmt.Sprintf("concurrent-user-%d", i)
+		_, err := a.Register(username, "pass")
+		require.NoError(t, err)
+		userIDs[i] = lthn.Hash(username)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(n)
+	sessions := make([]*Session, n)
+	errs := make([]error, n)
+
+	for i := 0; i < n; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			s, err := a.Login(userIDs[idx], "pass")
+			sessions[idx] = s
+			errs[idx] = err
+		}(i)
+	}
+
+	wg.Wait()
+
+	for i := 0; i < n; i++ {
+		require.NoError(t, errs[i], "goroutine %d failed", i)
+		require.NotNil(t, sessions[i], "goroutine %d returned nil session", i)
+		// Each session token must be valid
+		_, err := a.ValidateSession(sessions[i].Token)
+		assert.NoError(t, err, "session from goroutine %d should be valid", i)
+	}
+}
+
+// TestSessionTokenUniqueness_Good generates 1000 tokens and verifies no collisions.
+func TestSessionTokenUniqueness_Good(t *testing.T) {
+	a, _ := newTestAuth()
+
+	_, err := a.Register("uniqueness-test", "pass")
+	require.NoError(t, err)
+	userID := lthn.Hash("uniqueness-test")
+
+	const n = 1000
+	tokens := make(map[string]bool, n)
+
+	for i := 0; i < n; i++ {
+		session, err := a.Login(userID, "pass")
+		require.NoError(t, err)
+		require.NotNil(t, session)
+
+		if tokens[session.Token] {
+			t.Fatalf("duplicate token detected at iteration %d: %s", i, session.Token)
+		}
+		tokens[session.Token] = true
+	}
+
+	assert.Len(t, tokens, n, "all 1000 tokens should be unique")
+}
+
+// TestChallengeExpiryBoundary_Ugly tests validation right at the 5-minute boundary.
+// The challenge should still be valid just before expiry and rejected after.
+func TestChallengeExpiryBoundary_Ugly(t *testing.T) {
+	// Use a very short TTL to test the boundary without sleeping 5 minutes
+	ttl := 50 * time.Millisecond
+	a, m := newTestAuth(WithChallengeTTL(ttl))
+
+	_, err := a.Register("boundary-user", "pass")
+	require.NoError(t, err)
+	userID := lthn.Hash("boundary-user")
+
+	// Create a challenge and respond immediately (should succeed)
+	challenge, err := a.CreateChallenge(userID)
+	require.NoError(t, err)
+
+	privKey, err := m.Read(userPath(userID, ".key"))
+	require.NoError(t, err)
+
+	decryptedNonce, err := pgp.Decrypt([]byte(challenge.Encrypted), privKey, "pass")
+	require.NoError(t, err)
+
+	signedNonce, err := pgp.Sign(decryptedNonce, privKey, "pass")
+	require.NoError(t, err)
+
+	session, err := a.ValidateResponse(userID, signedNonce)
+	require.NoError(t, err)
+	assert.NotNil(t, session)
+
+	// Now create another challenge and let it expire
+	challenge2, err := a.CreateChallenge(userID)
+	require.NoError(t, err)
+
+	// Wait past the TTL
+	time.Sleep(ttl + 10*time.Millisecond)
+
+	decryptedNonce2, err := pgp.Decrypt([]byte(challenge2.Encrypted), privKey, "pass")
+	require.NoError(t, err)
+
+	signedNonce2, err := pgp.Sign(decryptedNonce2, privKey, "pass")
+	require.NoError(t, err)
+
+	_, err = a.ValidateResponse(userID, signedNonce2)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "challenge expired")
+}
+
+// TestEmptyPasswordRegistration_Good verifies that empty password registration works.
+// PGP key is generated unencrypted in this case.
+func TestEmptyPasswordRegistration_Good(t *testing.T) {
+	a, m := newTestAuth()
+
+	user, err := a.Register("no-password-user", "")
+	require.NoError(t, err)
+	require.NotNil(t, user)
+
+	userID := lthn.Hash("no-password-user")
+
+	// Verify all files are stored
+	assert.True(t, m.IsFile(userPath(userID, ".pub")))
+	assert.True(t, m.IsFile(userPath(userID, ".key")))
+	assert.True(t, m.IsFile(userPath(userID, ".json")))
+
+	// Login with empty password should work
+	session, err := a.Login(userID, "")
+	require.NoError(t, err)
+	assert.NotNil(t, session)
+
+	// Challenge-response flow should also work with empty password
+	challenge, err := a.CreateChallenge(userID)
+	require.NoError(t, err)
+
+	privKey, err := m.Read(userPath(userID, ".key"))
+	require.NoError(t, err)
+
+	decryptedNonce, err := pgp.Decrypt([]byte(challenge.Encrypted), privKey, "")
+	require.NoError(t, err)
+
+	signedNonce, err := pgp.Sign(decryptedNonce, privKey, "")
+	require.NoError(t, err)
+
+	crSession, err := a.ValidateResponse(userID, signedNonce)
+	require.NoError(t, err)
+	assert.NotNil(t, crSession)
+}
+
+// TestVeryLongUsername_Ugly verifies behaviour with a 10K character username.
+func TestVeryLongUsername_Ugly(t *testing.T) {
+	a, _ := newTestAuth()
+
+	longUsername := strings.Repeat("a", 10000)
+	user, err := a.Register(longUsername, "pass")
+	require.NoError(t, err)
+	require.NotNil(t, user)
+
+	// The LTHN hash of the long username should still be a fixed-length identifier
+	userID := lthn.Hash(longUsername)
+	assert.Len(t, userID, 64, "LTHN hash should always be 64 hex chars (SHA-256)")
+
+	// Login should work
+	session, err := a.Login(userID, "pass")
+	require.NoError(t, err)
+	assert.NotNil(t, session)
+}
+
+// TestUnicodeUsernamePassword_Good verifies registration and login with Unicode characters.
+func TestUnicodeUsernamePassword_Good(t *testing.T) {
+	a, _ := newTestAuth()
+
+	// Japanese + emoji + Chinese + Arabic
+	username := "\u65e5\u672c\u8a9e\u30c6\u30b9\u30c8\U0001F680\u4e2d\u6587\u0627\u0644\u0639\u0631\u0628\u064a\u0629"
+	password := "\u00fc\u00f1\u00ee\u00e7\u00f6\u00f0\u00ea\u2603\u2764"
+
+	user, err := a.Register(username, password)
+	require.NoError(t, err)
+	require.NotNil(t, user)
+
+	userID := lthn.Hash(username)
+
+	// Login with correct Unicode password
+	session, err := a.Login(userID, password)
+	require.NoError(t, err)
+	assert.NotNil(t, session)
+
+	// Login with wrong Unicode password should fail
+	_, err = a.Login(userID, "wrong-\u00fc\u00f1\u00ee")
+	assert.Error(t, err)
+}
+
+// TestAirGappedRoundTrip_Good tests the full air-gapped flow:
+// WriteChallengeFile -> client signs offline -> ReadResponseFile
+func TestAirGappedRoundTrip_Good(t *testing.T) {
+	a, m := newTestAuth()
+
+	_, err := a.Register("airgap-roundtrip", "courier-pass")
+	require.NoError(t, err)
+	userID := lthn.Hash("airgap-roundtrip")
+
+	// Step 1: Server writes challenge file
+	challengePath := "airgap/challenge.json"
+	err = a.WriteChallengeFile(userID, challengePath)
+	require.NoError(t, err)
+	assert.True(t, m.IsFile(challengePath))
+
+	// Step 2: Client reads challenge file (simulating courier transport)
+	challengeData, err := m.Read(challengePath)
+	require.NoError(t, err)
+
+	var challenge Challenge
+	err = json.Unmarshal([]byte(challengeData), &challenge)
+	require.NoError(t, err)
+	assert.NotEmpty(t, challenge.Encrypted)
+	assert.True(t, challenge.ExpiresAt.After(time.Now()))
+
+	// Step 3: Client decrypts nonce, signs it, writes response
+	privKey, err := m.Read(userPath(userID, ".key"))
+	require.NoError(t, err)
+
+	decryptedNonce, err := pgp.Decrypt([]byte(challenge.Encrypted), privKey, "courier-pass")
+	require.NoError(t, err)
+	assert.Equal(t, challenge.Nonce, decryptedNonce)
+
+	signedNonce, err := pgp.Sign(decryptedNonce, privKey, "courier-pass")
+	require.NoError(t, err)
+
+	responsePath := "airgap/response.sig"
+	err = m.Write(responsePath, string(signedNonce))
+	require.NoError(t, err)
+
+	// Step 4: Server reads response file and validates
+	session, err := a.ReadResponseFile(userID, responsePath)
+	require.NoError(t, err)
+	require.NotNil(t, session)
+
+	assert.NotEmpty(t, session.Token)
+	assert.Equal(t, userID, session.UserID)
+	assert.True(t, session.ExpiresAt.After(time.Now()))
+
+	// Step 5: Session should be valid
+	validated, err := a.ValidateSession(session.Token)
+	require.NoError(t, err)
+	assert.Equal(t, session.Token, validated.Token)
+}
+
+// TestRefreshExpiredSession_Bad verifies that refreshing an already-expired session fails.
+func TestRefreshExpiredSession_Bad(t *testing.T) {
+	a, _ := newTestAuth(WithSessionTTL(1 * time.Millisecond))
+
+	_, err := a.Register("expired-refresh", "pass")
+	require.NoError(t, err)
+	userID := lthn.Hash("expired-refresh")
+
+	session, err := a.Login(userID, "pass")
+	require.NoError(t, err)
+
+	// Wait for session to expire
+	time.Sleep(10 * time.Millisecond)
+
+	// Refresh should fail
+	_, err = a.RefreshSession(session.Token)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "session expired")
+
+	// The expired session should now be cleaned up (removed from map)
+	_, err = a.ValidateSession(session.Token)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "session not found")
 }
