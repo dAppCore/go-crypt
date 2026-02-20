@@ -34,18 +34,19 @@ func TestRegister_Good(t *testing.T) {
 
 	userID := lthn.Hash("alice")
 
-	// Verify public key is stored
+	// Verify all files are stored (new registrations use .hash, not .lthn)
 	assert.True(t, m.IsFile(userPath(userID, ".pub")))
 	assert.True(t, m.IsFile(userPath(userID, ".key")))
 	assert.True(t, m.IsFile(userPath(userID, ".rev")))
 	assert.True(t, m.IsFile(userPath(userID, ".json")))
-	assert.True(t, m.IsFile(userPath(userID, ".lthn")))
+	assert.True(t, m.IsFile(userPath(userID, ".hash")))
+	assert.False(t, m.IsFile(userPath(userID, ".lthn")), "new registrations should not create .lthn file")
 
 	// Verify user fields
 	assert.NotEmpty(t, user.PublicKey)
 	assert.Equal(t, userID, user.KeyID)
 	assert.NotEmpty(t, user.Fingerprint)
-	assert.Equal(t, lthn.Hash("hunter2"), user.PasswordHash)
+	assert.True(t, strings.HasPrefix(user.PasswordHash, "$argon2id$"), "password hash should be Argon2id format")
 	assert.False(t, user.Created.IsZero())
 }
 
@@ -321,11 +322,12 @@ func TestDeleteUser_Good(t *testing.T) {
 	err = a.DeleteUser(userID)
 	require.NoError(t, err)
 
-	// All files should be gone
+	// All files should be gone (both new .hash and legacy .lthn)
 	assert.False(t, m.IsFile(userPath(userID, ".pub")))
 	assert.False(t, m.IsFile(userPath(userID, ".key")))
 	assert.False(t, m.IsFile(userPath(userID, ".rev")))
 	assert.False(t, m.IsFile(userPath(userID, ".json")))
+	assert.False(t, m.IsFile(userPath(userID, ".hash")))
 	assert.False(t, m.IsFile(userPath(userID, ".lthn")))
 
 	// Session should be gone (validate returns error)
@@ -850,4 +852,352 @@ func TestRefreshExpiredSession_Bad(t *testing.T) {
 	_, err = a.ValidateSession(session.Token)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "session not found")
+}
+
+// --- Phase 2: Password Hash Migration ---
+
+// TestRegisterArgon2id_Good verifies that new registrations use Argon2id format.
+func TestRegisterArgon2id_Good(t *testing.T) {
+	a, m := newTestAuth()
+
+	user, err := a.Register("argon2-user", "strong-pass")
+	require.NoError(t, err)
+
+	userID := lthn.Hash("argon2-user")
+
+	// .hash file should exist with Argon2id format
+	assert.True(t, m.IsFile(userPath(userID, ".hash")))
+	hashContent, err := m.Read(userPath(userID, ".hash"))
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(hashContent, "$argon2id$"), "stored hash should be Argon2id")
+
+	// .lthn file should NOT exist for new registrations
+	assert.False(t, m.IsFile(userPath(userID, ".lthn")))
+
+	// User struct should have Argon2id hash
+	assert.True(t, strings.HasPrefix(user.PasswordHash, "$argon2id$"))
+}
+
+// TestLoginArgon2id_Good verifies login works with Argon2id hashed password.
+func TestLoginArgon2id_Good(t *testing.T) {
+	a, _ := newTestAuth()
+
+	_, err := a.Register("login-argon2", "my-password")
+	require.NoError(t, err)
+	userID := lthn.Hash("login-argon2")
+
+	// Login should succeed with correct password
+	session, err := a.Login(userID, "my-password")
+	require.NoError(t, err)
+	assert.NotEmpty(t, session.Token)
+}
+
+// TestLoginArgon2id_Bad verifies wrong password fails with Argon2id hash.
+func TestLoginArgon2id_Bad(t *testing.T) {
+	a, _ := newTestAuth()
+
+	_, err := a.Register("login-argon2-bad", "correct")
+	require.NoError(t, err)
+	userID := lthn.Hash("login-argon2-bad")
+
+	_, err = a.Login(userID, "wrong")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid password")
+}
+
+// TestLegacyLTHNMigration_Good verifies that a user registered with the legacy
+// LTHN hash format is transparently migrated to Argon2id on successful login.
+func TestLegacyLTHNMigration_Good(t *testing.T) {
+	m := io.NewMockMedium()
+	a := New(m)
+
+	// Simulate a legacy registration by manually writing LTHN-format files
+	userID := lthn.Hash("legacy-user")
+	_ = m.EnsureDir("users")
+
+	// Generate PGP keypair (same as original Register did)
+	kp, err := pgp.CreateKeyPair(userID, userID+"@auth.local", "legacy-pass")
+	require.NoError(t, err)
+
+	_ = m.Write(userPath(userID, ".pub"), kp.PublicKey)
+	_ = m.Write(userPath(userID, ".key"), kp.PrivateKey)
+	_ = m.Write(userPath(userID, ".rev"), "REVOCATION_PLACEHOLDER")
+
+	// Write legacy LTHN hash (this is what old Register did)
+	legacyHash := lthn.Hash("legacy-pass")
+	_ = m.Write(userPath(userID, ".lthn"), legacyHash)
+
+	// No .hash file should exist yet
+	assert.False(t, m.IsFile(userPath(userID, ".hash")))
+
+	// Login with legacy hash should succeed
+	session, err := a.Login(userID, "legacy-pass")
+	require.NoError(t, err)
+	assert.NotEmpty(t, session.Token)
+
+	// After successful login, .hash file should now exist with Argon2id
+	assert.True(t, m.IsFile(userPath(userID, ".hash")), "migration should create .hash file")
+	newHash, err := m.Read(userPath(userID, ".hash"))
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(newHash, "$argon2id$"), "migrated hash should be Argon2id")
+
+	// Subsequent login should use the new Argon2id hash (not LTHN)
+	session2, err := a.Login(userID, "legacy-pass")
+	require.NoError(t, err)
+	assert.NotEmpty(t, session2.Token)
+}
+
+// TestLegacyLTHNLogin_Bad verifies wrong password fails for legacy LTHN users.
+func TestLegacyLTHNLogin_Bad(t *testing.T) {
+	m := io.NewMockMedium()
+	a := New(m)
+
+	userID := lthn.Hash("legacy-bad")
+	_ = m.EnsureDir("users")
+
+	kp, err := pgp.CreateKeyPair(userID, userID+"@auth.local", "real-pass")
+	require.NoError(t, err)
+
+	_ = m.Write(userPath(userID, ".pub"), kp.PublicKey)
+	_ = m.Write(userPath(userID, ".key"), kp.PrivateKey)
+	_ = m.Write(userPath(userID, ".lthn"), lthn.Hash("real-pass"))
+
+	// Wrong password should fail
+	_, err = a.Login(userID, "wrong-pass")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid password")
+
+	// No migration should have occurred
+	assert.False(t, m.IsFile(userPath(userID, ".hash")), "failed login should not create .hash file")
+}
+
+// --- Phase 2: Key Rotation ---
+
+// TestRotateKeyPair_Good verifies the full key rotation flow:
+// register -> login -> rotate -> verify old key can't decrypt -> verify new key works -> sessions invalidated.
+func TestRotateKeyPair_Good(t *testing.T) {
+	a, m := newTestAuth()
+
+	// Register and login
+	_, err := a.Register("rotate-user", "old-pass")
+	require.NoError(t, err)
+	userID := lthn.Hash("rotate-user")
+
+	session, err := a.Login(userID, "old-pass")
+	require.NoError(t, err)
+
+	// Read old public key for comparison
+	oldPubKey, err := m.Read(userPath(userID, ".pub"))
+	require.NoError(t, err)
+
+	// Rotate keypair
+	updatedUser, err := a.RotateKeyPair(userID, "old-pass", "new-pass")
+	require.NoError(t, err)
+	require.NotNil(t, updatedUser)
+
+	// New public key should differ from old
+	newPubKey, err := m.Read(userPath(userID, ".pub"))
+	require.NoError(t, err)
+	assert.NotEqual(t, oldPubKey, newPubKey, "public key should change after rotation")
+	assert.Equal(t, newPubKey, updatedUser.PublicKey)
+
+	// Old password should fail
+	_, err = a.Login(userID, "old-pass")
+	assert.Error(t, err, "old password should not work after rotation")
+
+	// New password should succeed
+	newSession, err := a.Login(userID, "new-pass")
+	require.NoError(t, err)
+	assert.NotEmpty(t, newSession.Token)
+
+	// Old session should be invalidated
+	_, err = a.ValidateSession(session.Token)
+	assert.Error(t, err, "old session should be invalidated after rotation")
+
+	// Metadata should be decryptable with new key
+	encMeta, err := m.Read(userPath(userID, ".json"))
+	require.NoError(t, err)
+	newPrivKey, err := m.Read(userPath(userID, ".key"))
+	require.NoError(t, err)
+	decrypted, err := pgp.Decrypt([]byte(encMeta), newPrivKey, "new-pass")
+	require.NoError(t, err)
+
+	var meta User
+	err = json.Unmarshal(decrypted, &meta)
+	require.NoError(t, err)
+	assert.Equal(t, userID, meta.KeyID)
+	assert.True(t, strings.HasPrefix(meta.PasswordHash, "$argon2id$"))
+}
+
+// TestRotateKeyPair_Bad verifies that rotation fails with wrong old password.
+func TestRotateKeyPair_Bad(t *testing.T) {
+	a, _ := newTestAuth()
+
+	_, err := a.Register("rotate-bad", "correct-pass")
+	require.NoError(t, err)
+	userID := lthn.Hash("rotate-bad")
+
+	// Wrong old password should fail
+	_, err = a.RotateKeyPair(userID, "wrong-pass", "new-pass")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to decrypt metadata")
+}
+
+// TestRotateKeyPair_Ugly verifies rotation for non-existent user.
+func TestRotateKeyPair_Ugly(t *testing.T) {
+	a, _ := newTestAuth()
+
+	_, err := a.RotateKeyPair("nonexistent-user-id", "old", "new")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "user not found")
+}
+
+// TestRotateKeyPair_OldKeyCannotDecrypt_Good verifies old private key
+// cannot decrypt metadata after rotation.
+func TestRotateKeyPair_OldKeyCannotDecrypt_Good(t *testing.T) {
+	a, m := newTestAuth()
+
+	_, err := a.Register("rotate-crypto", "pass-a")
+	require.NoError(t, err)
+	userID := lthn.Hash("rotate-crypto")
+
+	// Save old private key
+	oldPrivKey, err := m.Read(userPath(userID, ".key"))
+	require.NoError(t, err)
+
+	// Rotate
+	_, err = a.RotateKeyPair(userID, "pass-a", "pass-b")
+	require.NoError(t, err)
+
+	// Old private key should NOT be able to decrypt new metadata
+	encMeta, err := m.Read(userPath(userID, ".json"))
+	require.NoError(t, err)
+	_, err = pgp.Decrypt([]byte(encMeta), oldPrivKey, "pass-a")
+	assert.Error(t, err, "old private key should not decrypt metadata after rotation")
+}
+
+// --- Phase 2: Key Revocation ---
+
+// TestRevokeKey_Good verifies the full revocation flow:
+// register -> login -> revoke -> login fails -> challenge fails -> sessions invalidated.
+func TestRevokeKey_Good(t *testing.T) {
+	a, m := newTestAuth()
+
+	_, err := a.Register("revoke-user", "pass")
+	require.NoError(t, err)
+	userID := lthn.Hash("revoke-user")
+
+	// Login to create a session
+	session, err := a.Login(userID, "pass")
+	require.NoError(t, err)
+
+	// User should not be revoked yet
+	assert.False(t, a.IsRevoked(userID))
+
+	// Revoke the key
+	err = a.RevokeKey(userID, "pass", "compromised key material")
+	require.NoError(t, err)
+
+	// User should now be revoked
+	assert.True(t, a.IsRevoked(userID))
+
+	// Verify .rev file contains valid JSON
+	revContent, err := m.Read(userPath(userID, ".rev"))
+	require.NoError(t, err)
+	assert.NotEqual(t, "REVOCATION_PLACEHOLDER", revContent)
+
+	var rev Revocation
+	err = json.Unmarshal([]byte(revContent), &rev)
+	require.NoError(t, err)
+	assert.Equal(t, userID, rev.UserID)
+	assert.Equal(t, "compromised key material", rev.Reason)
+	assert.False(t, rev.RevokedAt.IsZero())
+
+	// Login should fail for revoked user
+	_, err = a.Login(userID, "pass")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "key has been revoked")
+
+	// CreateChallenge should fail for revoked user
+	_, err = a.CreateChallenge(userID)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "key has been revoked")
+
+	// Old session should be invalidated
+	_, err = a.ValidateSession(session.Token)
+	assert.Error(t, err)
+}
+
+// TestRevokeKey_Bad verifies revocation fails with wrong password.
+func TestRevokeKey_Bad(t *testing.T) {
+	a, _ := newTestAuth()
+
+	_, err := a.Register("revoke-bad", "correct")
+	require.NoError(t, err)
+	userID := lthn.Hash("revoke-bad")
+
+	err = a.RevokeKey(userID, "wrong", "test reason")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid password")
+
+	// Should NOT be revoked after failed attempt
+	assert.False(t, a.IsRevoked(userID))
+}
+
+// TestRevokeKey_Ugly verifies revocation for non-existent user.
+func TestRevokeKey_Ugly(t *testing.T) {
+	a, _ := newTestAuth()
+
+	err := a.RevokeKey("nonexistent-user-id", "pass", "reason")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "user not found")
+}
+
+// TestIsRevoked_Placeholder_Good verifies that the legacy placeholder is not
+// treated as a valid revocation.
+func TestIsRevoked_Placeholder_Good(t *testing.T) {
+	a, m := newTestAuth()
+
+	_, err := a.Register("placeholder-user", "pass")
+	require.NoError(t, err)
+	userID := lthn.Hash("placeholder-user")
+
+	// New registrations write "REVOCATION_PLACEHOLDER"
+	revContent, err := m.Read(userPath(userID, ".rev"))
+	require.NoError(t, err)
+	assert.Equal(t, "REVOCATION_PLACEHOLDER", revContent)
+
+	// Should NOT be considered revoked
+	assert.False(t, a.IsRevoked(userID))
+}
+
+// TestIsRevoked_NoRevFile_Good verifies that a missing .rev file returns false.
+func TestIsRevoked_NoRevFile_Good(t *testing.T) {
+	a, _ := newTestAuth()
+
+	assert.False(t, a.IsRevoked("completely-nonexistent"))
+}
+
+// TestRevokeKey_LegacyUser_Good verifies revocation works for a legacy user
+// with only a .lthn hash file (no .hash file).
+func TestRevokeKey_LegacyUser_Good(t *testing.T) {
+	m := io.NewMockMedium()
+	a := New(m)
+
+	userID := lthn.Hash("legacy-revoke")
+	_ = m.EnsureDir("users")
+
+	kp, err := pgp.CreateKeyPair(userID, userID+"@auth.local", "legacy-pass")
+	require.NoError(t, err)
+
+	_ = m.Write(userPath(userID, ".pub"), kp.PublicKey)
+	_ = m.Write(userPath(userID, ".key"), kp.PrivateKey)
+	_ = m.Write(userPath(userID, ".rev"), "REVOCATION_PLACEHOLDER")
+	_ = m.Write(userPath(userID, ".lthn"), lthn.Hash("legacy-pass"))
+
+	// Revoke with LTHN-verified password
+	err = a.RevokeKey(userID, "legacy-pass", "decommissioned")
+	require.NoError(t, err)
+
+	assert.True(t, a.IsRevoked(userID))
 }

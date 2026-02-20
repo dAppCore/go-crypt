@@ -19,9 +19,10 @@
 //	users/
 //	  {userID}.pub      PGP public key (armored)
 //	  {userID}.key      PGP private key (armored, password-encrypted)
-//	  {userID}.rev      Revocation certificate (placeholder)
+//	  {userID}.rev      Revocation record (JSON) or legacy placeholder
 //	  {userID}.json     User metadata (encrypted with user's public key)
-//	  {userID}.lthn     LTHN password hash
+//	  {userID}.hash     Argon2id password hash (new registrations)
+//	  {userID}.lthn     LTHN password hash (legacy, migrated on login)
 package auth
 
 import (
@@ -30,11 +31,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	coreerr "forge.lthn.ai/core/go/pkg/framework/core"
 
+	"forge.lthn.ai/core/go-crypt/crypt"
 	"forge.lthn.ai/core/go-crypt/crypt/lthn"
 	"forge.lthn.ai/core/go-crypt/crypt/pgp"
 	"forge.lthn.ai/core/go/pkg/io"
@@ -59,7 +62,7 @@ type User struct {
 	PublicKey    string    `json:"public_key"`
 	KeyID        string    `json:"key_id"`
 	Fingerprint  string    `json:"fingerprint"`
-	PasswordHash string    `json:"password_hash"` // LTHN hash
+	PasswordHash string    `json:"password_hash"` // Argon2id (new) or LTHN (legacy)
 	Created      time.Time `json:"created"`
 	LastLogin    time.Time `json:"last_login"`
 }
@@ -76,6 +79,14 @@ type Session struct {
 	Token     string    `json:"token"`
 	UserID    string    `json:"user_id"`
 	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// Revocation records the details of a revoked user key.
+// Stored as JSON in the user's .rev file, replacing the legacy placeholder.
+type Revocation struct {
+	UserID    string    `json:"user_id"`
+	Reason    string    `json:"reason"`
+	RevokedAt time.Time `json:"revoked_at"`
 }
 
 // Option configures an Authenticator.
@@ -108,9 +119,14 @@ func WithSessionStore(s SessionStore) Option {
 // be backed by disk, memory (MockMedium), or any other storage backend.
 // Sessions are persisted via a SessionStore (in-memory by default,
 // optionally SQLite-backed for crash recovery).
+//
+// An optional HardwareKey can be provided via WithHardwareKey for
+// hardware-backed cryptographic operations (PKCS#11, YubiKey, etc.).
+// See auth/hardware.go for the interface definition and integration points.
 type Authenticator struct {
 	medium       io.Medium
 	store        SessionStore
+	hardwareKey  HardwareKey           // optional hardware key (nil = software only)
 	challenges   map[string]*Challenge // userID -> pending challenge
 	mu           sync.RWMutex          // protects challenges map only
 	challengeTTL time.Duration
@@ -145,7 +161,7 @@ func userPath(userID, ext string) string {
 // Register creates a new user account. It hashes the username with LTHN to
 // produce a userID, generates a PGP keypair (protected by the given password),
 // and persists the public key, private key, revocation placeholder, password
-// hash, and encrypted metadata via the Medium.
+// hash (Argon2id), and encrypted metadata via the Medium.
 func (a *Authenticator) Register(username, password string) (*User, error) {
 	const op = "auth.Register"
 
@@ -182,9 +198,12 @@ func (a *Authenticator) Register(username, password string) (*User, error) {
 		return nil, coreerr.E(op, "failed to write revocation certificate", err)
 	}
 
-	// Store LTHN password hash
-	passwordHash := lthn.Hash(password)
-	if err := a.medium.Write(userPath(userID, ".lthn"), passwordHash); err != nil {
+	// Store Argon2id password hash (replaces legacy LTHN hash for new registrations)
+	passwordHash, err := crypt.HashPassword(password)
+	if err != nil {
+		return nil, coreerr.E(op, "failed to hash password", err)
+	}
+	if err := a.medium.Write(userPath(userID, ".hash"), passwordHash); err != nil {
 		return nil, coreerr.E(op, "failed to write password hash", err)
 	}
 
@@ -222,6 +241,11 @@ func (a *Authenticator) Register(username, password string) (*User, error) {
 // The client must decrypt the nonce and sign it to prove key ownership.
 func (a *Authenticator) CreateChallenge(userID string) (*Challenge, error) {
 	const op = "auth.CreateChallenge"
+
+	// Reject challenges for revoked users
+	if a.IsRevoked(userID) {
+		return nil, coreerr.E(op, "key has been revoked", nil)
+	}
 
 	// Read user's public key
 	pubKey, err := a.medium.Read(userPath(userID, ".pub"))
@@ -354,8 +378,8 @@ func (a *Authenticator) DeleteUser(userID string) error {
 		return coreerr.E(op, "user not found", nil)
 	}
 
-	// Remove all artifacts
-	extensions := []string{".pub", ".key", ".rev", ".json", ".lthn"}
+	// Remove all artifacts (both new .hash and legacy .lthn)
+	extensions := []string{".pub", ".key", ".rev", ".json", ".hash", ".lthn"}
 	for _, ext := range extensions {
 		p := userPath(userID, ext)
 		if a.medium.IsFile(p) {
@@ -372,23 +396,203 @@ func (a *Authenticator) DeleteUser(userID string) error {
 }
 
 // Login performs password-based authentication as a convenience method.
-// It verifies the password against the stored LTHN hash and, on success,
+// It verifies the password against the stored hash and, on success,
 // creates a new session. This bypasses the PGP challenge-response flow.
+//
+// Hash format detection:
+//   - If a .hash file exists, its content starts with "$argon2id$" and is verified
+//     using constant-time Argon2id comparison.
+//   - Otherwise, falls back to legacy .lthn file with LTHN hash verification.
+//     On successful legacy login, the password is re-hashed with Argon2id and
+//     a .hash file is written (transparent migration).
 func (a *Authenticator) Login(userID, password string) (*Session, error) {
 	const op = "auth.Login"
 
-	// Read stored password hash
+	// Reject login for revoked users
+	if a.IsRevoked(userID) {
+		return nil, coreerr.E(op, "key has been revoked", nil)
+	}
+
+	// Try Argon2id hash first (.hash file)
+	if a.medium.IsFile(userPath(userID, ".hash")) {
+		storedHash, err := a.medium.Read(userPath(userID, ".hash"))
+		if err != nil {
+			return nil, coreerr.E(op, "failed to read password hash", err)
+		}
+
+		if strings.HasPrefix(storedHash, "$argon2id$") {
+			valid, err := crypt.VerifyPassword(password, storedHash)
+			if err != nil {
+				return nil, coreerr.E(op, "failed to verify password", err)
+			}
+			if !valid {
+				return nil, coreerr.E(op, "invalid password", nil)
+			}
+			return a.createSession(userID)
+		}
+	}
+
+	// Fall back to legacy LTHN hash (.lthn file)
 	storedHash, err := a.medium.Read(userPath(userID, ".lthn"))
 	if err != nil {
 		return nil, coreerr.E(op, "user not found", err)
 	}
 
-	// Verify password
 	if !lthn.Verify(password, storedHash) {
 		return nil, coreerr.E(op, "invalid password", nil)
 	}
 
+	// Migrate: re-hash with Argon2id and write .hash file
+	newHash, err := crypt.HashPassword(password)
+	if err == nil {
+		// Best-effort migration — do not fail login if migration write fails
+		_ = a.medium.Write(userPath(userID, ".hash"), newHash)
+	}
+
 	return a.createSession(userID)
+}
+
+// RotateKeyPair generates a new PGP keypair for the given user, re-encrypts
+// their metadata with the new key, updates the password hash, and invalidates
+// all existing sessions. The caller must provide the current password
+// (oldPassword) to decrypt existing metadata and the new password (newPassword)
+// to protect the new keypair.
+func (a *Authenticator) RotateKeyPair(userID, oldPassword, newPassword string) (*User, error) {
+	const op = "auth.RotateKeyPair"
+
+	// Verify the user exists
+	if !a.medium.IsFile(userPath(userID, ".pub")) {
+		return nil, coreerr.E(op, "user not found", nil)
+	}
+
+	// Load current private key for metadata decryption
+	privKeyArmor, err := a.medium.Read(userPath(userID, ".key"))
+	if err != nil {
+		return nil, coreerr.E(op, "failed to read private key", err)
+	}
+
+	// Load and decrypt current metadata
+	encMeta, err := a.medium.Read(userPath(userID, ".json"))
+	if err != nil {
+		return nil, coreerr.E(op, "failed to read user metadata", err)
+	}
+
+	metaJSON, err := pgp.Decrypt([]byte(encMeta), privKeyArmor, oldPassword)
+	if err != nil {
+		return nil, coreerr.E(op, "failed to decrypt metadata (wrong password?)", err)
+	}
+
+	var user User
+	if err := json.Unmarshal(metaJSON, &user); err != nil {
+		return nil, coreerr.E(op, "failed to unmarshal user metadata", err)
+	}
+
+	// Generate new PGP keypair
+	newKP, err := pgp.CreateKeyPair(userID, userID+"@auth.local", newPassword)
+	if err != nil {
+		return nil, coreerr.E(op, "failed to create new PGP keypair", err)
+	}
+
+	// Update user metadata with new key material
+	user.PublicKey = newKP.PublicKey
+	user.Fingerprint = lthn.Hash(newKP.PublicKey)
+
+	// Hash new password with Argon2id
+	newHash, err := crypt.HashPassword(newPassword)
+	if err != nil {
+		return nil, coreerr.E(op, "failed to hash new password", err)
+	}
+	user.PasswordHash = newHash
+
+	// Re-encrypt metadata with new public key
+	updatedMeta, err := json.Marshal(&user)
+	if err != nil {
+		return nil, coreerr.E(op, "failed to marshal updated metadata", err)
+	}
+
+	encUpdatedMeta, err := pgp.Encrypt(updatedMeta, newKP.PublicKey)
+	if err != nil {
+		return nil, coreerr.E(op, "failed to encrypt metadata with new key", err)
+	}
+
+	// Write new files (overwrite existing)
+	if err := a.medium.Write(userPath(userID, ".pub"), newKP.PublicKey); err != nil {
+		return nil, coreerr.E(op, "failed to write new public key", err)
+	}
+	if err := a.medium.Write(userPath(userID, ".key"), newKP.PrivateKey); err != nil {
+		return nil, coreerr.E(op, "failed to write new private key", err)
+	}
+	if err := a.medium.Write(userPath(userID, ".json"), string(encUpdatedMeta)); err != nil {
+		return nil, coreerr.E(op, "failed to write updated metadata", err)
+	}
+	if err := a.medium.Write(userPath(userID, ".hash"), newHash); err != nil {
+		return nil, coreerr.E(op, "failed to write new password hash", err)
+	}
+
+	// Invalidate all sessions for this user
+	_ = a.store.DeleteByUser(userID)
+
+	return &user, nil
+}
+
+// RevokeKey marks a user's key as revoked. It verifies the password first,
+// writes a JSON revocation record to the .rev file (replacing the placeholder),
+// and invalidates all sessions for the user.
+func (a *Authenticator) RevokeKey(userID, password, reason string) error {
+	const op = "auth.RevokeKey"
+
+	// Verify user exists
+	if !a.medium.IsFile(userPath(userID, ".pub")) {
+		return coreerr.E(op, "user not found", nil)
+	}
+
+	// Verify password — try Argon2id first, then fall back to LTHN
+	if err := a.verifyPassword(userID, password); err != nil {
+		return coreerr.E(op, err.Error(), nil)
+	}
+
+	// Write revocation record as JSON
+	rev := Revocation{
+		UserID:    userID,
+		Reason:    reason,
+		RevokedAt: time.Now(),
+	}
+	revJSON, err := json.Marshal(&rev)
+	if err != nil {
+		return coreerr.E(op, "failed to marshal revocation record", err)
+	}
+	if err := a.medium.Write(userPath(userID, ".rev"), string(revJSON)); err != nil {
+		return coreerr.E(op, "failed to write revocation record", err)
+	}
+
+	// Invalidate all sessions
+	_ = a.store.DeleteByUser(userID)
+
+	return nil
+}
+
+// IsRevoked checks whether a user's key has been revoked by inspecting the
+// .rev file. Returns true only if the file contains valid revocation JSON
+// (not the legacy "REVOCATION_PLACEHOLDER" string).
+func (a *Authenticator) IsRevoked(userID string) bool {
+	content, err := a.medium.Read(userPath(userID, ".rev"))
+	if err != nil {
+		return false
+	}
+
+	// Legacy placeholder is not a valid revocation
+	if content == "REVOCATION_PLACEHOLDER" {
+		return false
+	}
+
+	// Attempt to parse as JSON revocation record
+	var rev Revocation
+	if err := json.Unmarshal([]byte(content), &rev); err != nil {
+		return false
+	}
+
+	// Valid revocation must have a non-zero timestamp
+	return !rev.RevokedAt.IsZero()
 }
 
 // WriteChallengeFile writes an encrypted challenge to a file for air-gapped
@@ -431,6 +635,36 @@ func (a *Authenticator) ReadResponseFile(userID, path string) (*Session, error) 
 	}
 
 	return session, nil
+}
+
+// verifyPassword checks the given password against stored hashes for a user.
+// Tries Argon2id (.hash) first, then falls back to legacy LTHN (.lthn).
+// Returns nil on success, or an error describing the failure.
+func (a *Authenticator) verifyPassword(userID, password string) error {
+	// Try Argon2id hash first (.hash file)
+	if a.medium.IsFile(userPath(userID, ".hash")) {
+		storedHash, err := a.medium.Read(userPath(userID, ".hash"))
+		if err == nil && strings.HasPrefix(storedHash, "$argon2id$") {
+			valid, verr := crypt.VerifyPassword(password, storedHash)
+			if verr != nil {
+				return fmt.Errorf("failed to verify password")
+			}
+			if !valid {
+				return fmt.Errorf("invalid password")
+			}
+			return nil
+		}
+	}
+
+	// Fall back to legacy LTHN hash (.lthn file)
+	storedHash, err := a.medium.Read(userPath(userID, ".lthn"))
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+	if !lthn.Verify(password, storedHash) {
+		return fmt.Errorf("invalid password")
+	}
+	return nil
 }
 
 // createSession generates a cryptographically random session token and
