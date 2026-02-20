@@ -25,6 +25,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -94,29 +95,44 @@ func WithSessionTTL(d time.Duration) Option {
 	}
 }
 
+// WithSessionStore sets the SessionStore implementation.
+// If not provided, an in-memory store is used (sessions lost on restart).
+func WithSessionStore(s SessionStore) Option {
+	return func(a *Authenticator) {
+		a.store = s
+	}
+}
+
 // Authenticator manages PGP-based challenge-response authentication.
 // All user data and keys are persisted through an io.Medium, which may
 // be backed by disk, memory (MockMedium), or any other storage backend.
+// Sessions are persisted via a SessionStore (in-memory by default,
+// optionally SQLite-backed for crash recovery).
 type Authenticator struct {
 	medium       io.Medium
-	sessions     map[string]*Session
+	store        SessionStore
 	challenges   map[string]*Challenge // userID -> pending challenge
-	mu           sync.RWMutex
+	mu           sync.RWMutex          // protects challenges map only
 	challengeTTL time.Duration
 	sessionTTL   time.Duration
 }
 
 // New creates an Authenticator that persists user data via the given Medium.
+// By default, sessions are stored in memory. Use WithSessionStore to provide
+// a persistent implementation (e.g. SQLiteSessionStore).
 func New(m io.Medium, opts ...Option) *Authenticator {
 	a := &Authenticator{
 		medium:       m,
-		sessions:     make(map[string]*Session),
 		challenges:   make(map[string]*Challenge),
 		challengeTTL: DefaultChallengeTTL,
 		sessionTTL:   DefaultSessionTTL,
 	}
 	for _, opt := range opts {
 		opt(a)
+	}
+	// Default to in-memory store if none provided via WithSessionStore
+	if a.store == nil {
+		a.store = NewMemorySessionStore()
 	}
 	return a
 }
@@ -278,18 +294,13 @@ func (a *Authenticator) ValidateResponse(userID string, signedNonce []byte) (*Se
 func (a *Authenticator) ValidateSession(token string) (*Session, error) {
 	const op = "auth.ValidateSession"
 
-	a.mu.RLock()
-	session, exists := a.sessions[token]
-	a.mu.RUnlock()
-
-	if !exists {
+	session, err := a.store.Get(token)
+	if err != nil {
 		return nil, coreerr.E(op, "session not found", nil)
 	}
 
 	if time.Now().After(session.ExpiresAt) {
-		a.mu.Lock()
-		delete(a.sessions, token)
-		a.mu.Unlock()
+		_ = a.store.Delete(token)
 		return nil, coreerr.E(op, "session expired", nil)
 	}
 
@@ -300,20 +311,20 @@ func (a *Authenticator) ValidateSession(token string) (*Session, error) {
 func (a *Authenticator) RefreshSession(token string) (*Session, error) {
 	const op = "auth.RefreshSession"
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	session, exists := a.sessions[token]
-	if !exists {
+	session, err := a.store.Get(token)
+	if err != nil {
 		return nil, coreerr.E(op, "session not found", nil)
 	}
 
 	if time.Now().After(session.ExpiresAt) {
-		delete(a.sessions, token)
+		_ = a.store.Delete(token)
 		return nil, coreerr.E(op, "session expired", nil)
 	}
 
 	session.ExpiresAt = time.Now().Add(a.sessionTTL)
+	if err := a.store.Set(session); err != nil {
+		return nil, coreerr.E(op, "failed to update session", err)
+	}
 	return session, nil
 }
 
@@ -321,14 +332,9 @@ func (a *Authenticator) RefreshSession(token string) (*Session, error) {
 func (a *Authenticator) RevokeSession(token string) error {
 	const op = "auth.RevokeSession"
 
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	if _, exists := a.sessions[token]; !exists {
+	if err := a.store.Delete(token); err != nil {
 		return coreerr.E(op, "session not found", nil)
 	}
-
-	delete(a.sessions, token)
 	return nil
 }
 
@@ -360,13 +366,7 @@ func (a *Authenticator) DeleteUser(userID string) error {
 	}
 
 	// Revoke any active sessions for this user
-	a.mu.Lock()
-	for token, session := range a.sessions {
-		if session.UserID == userID {
-			delete(a.sessions, token)
-		}
-	}
-	a.mu.Unlock()
+	_ = a.store.DeleteByUser(userID)
 
 	return nil
 }
@@ -434,7 +434,7 @@ func (a *Authenticator) ReadResponseFile(userID, path string) (*Session, error) 
 }
 
 // createSession generates a cryptographically random session token and
-// stores the session in the in-memory session map.
+// stores the session via the SessionStore.
 func (a *Authenticator) createSession(userID string) (*Session, error) {
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
@@ -447,9 +447,34 @@ func (a *Authenticator) createSession(userID string) (*Session, error) {
 		ExpiresAt: time.Now().Add(a.sessionTTL),
 	}
 
-	a.mu.Lock()
-	a.sessions[session.Token] = session
-	a.mu.Unlock()
+	if err := a.store.Set(session); err != nil {
+		return nil, fmt.Errorf("auth: failed to persist session: %w", err)
+	}
 
 	return session, nil
+}
+
+// StartCleanup runs a background goroutine that periodically removes expired
+// sessions from the store. It stops when the context is cancelled.
+func (a *Authenticator) StartCleanup(ctx context.Context, interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				count, err := a.store.Cleanup()
+				if err != nil {
+					fmt.Printf("auth: session cleanup error: %v\n", err)
+					continue
+				}
+				if count > 0 {
+					fmt.Printf("auth: cleaned up %d expired session(s)\n", count)
+				}
+			}
+		}
+	}()
 }

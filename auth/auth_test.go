@@ -315,7 +315,7 @@ func TestDeleteUser_Good(t *testing.T) {
 	userID := lthn.Hash("larry")
 
 	// Also create a session that should be cleaned up
-	_, err = a.Login(userID, "pass")
+	session, err := a.Login(userID, "pass")
 	require.NoError(t, err)
 
 	err = a.DeleteUser(userID)
@@ -328,16 +328,10 @@ func TestDeleteUser_Good(t *testing.T) {
 	assert.False(t, m.IsFile(userPath(userID, ".json")))
 	assert.False(t, m.IsFile(userPath(userID, ".lthn")))
 
-	// Session should be gone
-	a.mu.RLock()
-	sessionCount := 0
-	for _, s := range a.sessions {
-		if s.UserID == userID {
-			sessionCount++
-		}
-	}
-	a.mu.RUnlock()
-	assert.Equal(t, 0, sessionCount)
+	// Session should be gone (validate returns error)
+	_, err = a.ValidateSession(session.Token)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "session not found")
 }
 
 func TestDeleteUser_Bad(t *testing.T) {

@@ -15,10 +15,10 @@ Dispatched from core/go orchestration. Pick up tasks in order.
 
 ## Phase 1: Session Persistence
 
-- [ ] **Session storage interface** — Extract in-memory session map into `SessionStore` interface with `Get`, `Set`, `Delete`, `Cleanup` methods.
-- [ ] **SQLite session store** — Implement `SessionStore` backed by go-store (SQLite KV). Migrate session tokens + expiry to persistent storage.
-- [ ] **Background cleanup** — Goroutine to purge expired sessions periodically. Configurable interval.
-- [ ] **Session migration** — Backward-compatible: in-memory as default, optional persistent store via config.
+- [x] **Session storage interface** — Extracted in-memory session map into `SessionStore` interface with `Get`, `Set`, `Delete`, `DeleteByUser`, `Cleanup` methods. `MemorySessionStore` wraps the original map+mutex pattern. `ErrSessionNotFound` sentinel error.
+- [x] **SQLite session store** — `SQLiteSessionStore` backed by go-store (SQLite KV). Sessions stored as JSON in `"sessions"` group. Mutex-serialised for SQLite single-writer safety.
+- [x] **Background cleanup** — `StartCleanup(ctx, interval)` goroutine purges expired sessions periodically. Stops on context cancellation.
+- [x] **Session migration** — Backward-compatible: `MemorySessionStore` is default, `WithSessionStore(store)` option for persistent store. All existing tests updated and passing.
 
 ## Phase 2: Key Management
 

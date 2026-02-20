@@ -27,6 +27,7 @@ go vet ./...                     # Static analysis
 | Module | Local Path | Notes |
 |--------|-----------|-------|
 | `forge.lthn.ai/core/go` | `../go` | Framework (core.E, core.Crypt, io.Medium) |
+| `forge.lthn.ai/core/go-store` | `../go-store` | SQLite KV store (session persistence) |
 
 **Do NOT change the replace directive path.** Use go.work for local resolution if needed.
 
@@ -48,7 +49,11 @@ go vet ./...                     # Static analysis
 2. Client signs offline
 3. `ReadResponseFile(userID, path)` → verify, issue session
 
-**Session management**: In-memory `sync.RWMutex`-protected map. 32-byte hex tokens, 24h TTL. `ValidateSession`, `RefreshSession`, `RevokeSession`.
+**Session management**: Abstracted behind `SessionStore` interface. 32-byte hex tokens, 24h TTL. `ValidateSession`, `RefreshSession`, `RevokeSession`. Two implementations:
+- `MemorySessionStore` — in-memory `sync.RWMutex`-protected map (default, sessions lost on restart)
+- `SQLiteSessionStore` — persistent via go-store (SQLite KV), mutex-serialised for single-writer safety
+
+Configure via `WithSessionStore(store)` option. Background cleanup via `StartCleanup(ctx, interval)`.
 
 **Protected users**: `"server"` cannot be deleted.
 
@@ -118,7 +123,7 @@ Service wrapper implementing `core.Crypt` interface. RSA-4096, SHA-256, AES-256.
 ## Security Considerations
 
 1. **LTHN hash is NOT for passwords** — deterministic, no random salt. Use `HashPassword()` (Argon2id) instead.
-2. **Sessions are in-memory only** — lost on restart. No Redis/DB backend yet.
+2. **Sessions default to in-memory** — use `WithSessionStore(NewSQLiteSessionStore(path))` for persistence across restarts.
 3. **PGP output is armored** — ~33% Base64 overhead. Consider compression for large payloads.
 4. **Policy engine returns decisions but doesn't enforce approval workflow** — higher-level layer needed.
 5. **Challenge nonces are 32 bytes** — 256-bit, cryptographically random.
