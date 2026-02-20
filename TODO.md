@@ -22,9 +22,42 @@ Dispatched from core/go orchestration. Pick up tasks in order.
 
 ## Phase 2: Key Management
 
-- [ ] **Key rotation** — Add `RotateKeyPair(userID, oldPassword, newPassword)` to auth.Authenticator. Generate new keypair, re-encrypt metadata, update stored keys.
-- [ ] **Key revocation** — Implement revocation certificate flow. Currently `.rev` is a placeholder.
-- [ ] **Hardware key support** — Interface for PKCS#11 / YubiKey backing. Not implemented, but define the contract.
+### Step 2.1: Password hash migration (addresses Finding F1)
+
+- [ ] **Migrate Login() from LTHN to Argon2id** — Currently `auth.Login()` verifies passwords via `lthn.Verify()` which uses non-constant-time comparison. Change to use `crypt.HashPassword()`/`crypt.VerifyPassword()` (Argon2id) for new registrations. Add migration path: on login, if stored hash is LTHN format, re-hash with Argon2id and update `.lthn` file. Update `.lthn` file extension to `.hash` or keep for backward compatibility.
+
+### Step 2.2: Key rotation
+
+- [ ] **Add `RotateKeyPair(userID, oldPassword, newPassword string) (*User, error)`** — Full flow:
+  1. Load current `.key` and `.pub` via `io.Medium`
+  2. Decrypt metadata `.json` with old private key + oldPassword via `pgp.Decrypt()`
+  3. Generate new keypair via `pgp.CreateKeyPair(userID, userID+"@auth.local", newPassword)`
+  4. Re-encrypt metadata with new public key via `pgp.Encrypt()`
+  5. Write new `.key`, `.pub`, `.json` files (overwrite existing)
+  6. Invalidate all sessions for this user via `store.DeleteByUser(userID)`
+  7. Return updated User struct
+
+- [ ] **Test RotateKeyPair** — Register user → rotate → verify old key can't decrypt → verify new key works → verify sessions invalidated.
+
+### Step 2.3: Key revocation
+
+- [ ] **Replace `.rev` placeholder** — Currently stores literal string `"REVOCATION_PLACEHOLDER"`. Options:
+  - Option A: Generate proper OpenPGP revocation cert (may need go-crypto API research)
+  - Option B: Store revocation timestamp + reason as JSON (simpler, sufficient for our use case)
+  - Implement `RevokeKey(userID, password string) error` and `IsRevoked(userID string) bool`
+
+### Step 2.4: Hardware key interface (contract only)
+
+- [ ] **Define HardwareKey interface** — Contract for PKCS#11 / YubiKey integration:
+  ```go
+  type HardwareKey interface {
+      Sign(data []byte) ([]byte, error)
+      Decrypt(ciphertext []byte) ([]byte, error)
+      GetPublicKey() (string, error)
+      IsAvailable() bool
+  }
+  ```
+  Add `WithHardwareKey(HardwareKey) Option` to Authenticator. No implementation yet — just the interface and integration points in auth.go.
 
 ## Phase 3: Trust Policy Extensions
 
