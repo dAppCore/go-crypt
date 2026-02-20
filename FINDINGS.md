@@ -149,3 +149,31 @@ In `policy.go:122`, the repo scope check is: `if isRepoScoped(cap) && len(agent.
 #### F4: `go vet` Clean
 
 `go vet ./...` produces no warnings. PASS.
+
+---
+
+## Phase 2: Key Management Implementation (20 Feb 2026)
+
+### F1 Resolution — Argon2id Migration
+
+Finding F1 addressed in `301eac1`. New registrations now use `crypt.HashPassword()` (Argon2id) with random salt and constant-time verification. Hash stored in `.hash` file. Legacy `.lthn` files transparently migrated on successful login: LTHN hash verified → Argon2id re-hash → `.hash` file written. Both paths handled by shared `verifyPassword()` helper.
+
+### Password Verification Dual-Path Design
+
+The `verifyPassword()` helper was extracted after `TestRevokeKey_Bad` failed — new registrations don't write `.lthn` files, so the fallback returned "user not found" instead of "invalid password". The helper tries Argon2id (`.hash`) first, then LTHN (`.lthn`), returning appropriate error messages for each path. Used by both `Login()` and `RevokeKey()`.
+
+### Revocation Design Choice
+
+Chose Option B (JSON record) over Option A (OpenPGP revocation cert). The `Revocation` struct stores `{UserID, Reason, RevokedAt}` as JSON. `IsRevoked()` parses JSON and ignores legacy `"REVOCATION_PLACEHOLDER"` strings. Login and CreateChallenge both check revocation before proceeding.
+
+### Key Rotation Flow
+
+`RotateKeyPair()` implements full key rotation: load private key → decrypt metadata with old password → generate new PGP keypair → re-encrypt metadata → overwrite `.pub/.key/.json/.hash` → invalidate sessions via `store.DeleteByUser()`. The old key material is implicitly discarded (same F2 limitation as PGP — Go GC, not zeroed).
+
+### HardwareKey Interface
+
+Contract-only definition in `hardware.go`. Four methods: `Sign`, `Decrypt`, `GetPublicKey`, `IsAvailable`. Integration points documented but not wired up. The `Authenticator.hardwareKey` field is set via `WithHardwareKey()` option.
+
+### Test Coverage After Phase 2
+
+55 test functions across auth package. Key new tests: Argon2id registration/login (5), key rotation (4), key revocation (6). All pass with `-race`.
