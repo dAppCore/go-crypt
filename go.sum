@@ -1,3 +1,7 @@
+forge.lthn.ai/core/go v0.0.0-20260221181337-58ca902320b6 h1:ZbDgD5QIf8gDlVm3ZUpRl4RVE5nN2K0cqV+vK09aSQY=
+forge.lthn.ai/core/go v0.0.0-20260221181337-58ca902320b6/go.mod h1:rOph/YLaJ/loWaP9bNSPsEiE30IL7uBDsIcNr7ISG/0=
+forge.lthn.ai/core/go-store v0.1.1-0.20260220151120-0284110ccadf h1:EDKI+OM0M+l4+VclG5XuUDoYAM8yu8uleFYReeEYwHY=
+forge.lthn.ai/core/go-store v0.1.1-0.20260220151120-0284110ccadf/go.mod h1:FpUlLEX/ebyoxpk96F7ktr0vYvmFtC5Rpi9fi88UVqw=
 github.com/ProtonMail/go-crypto v1.3.0 h1:ILq8+Sf5If5DCpHQp4PbZdS1J7HDFRXz/+xKBiRGFrw=
 github.com/ProtonMail/go-crypto v1.3.0/go.mod h1:9whxjD8Rbs29b4XWbB8irEcE8KHMqaR2e7GWU1R+/PE=
 github.com/cloudflare/circl v1.6.3 h1:9GPOhQGF9MCYUeXyMYlqTR6a5gTrgR/fBLXvUgtVcg8=
