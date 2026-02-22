@@ -3,8 +3,8 @@ module forge.lthn.ai/core/go-crypt
 go 1.25.5
 
 require (
-	forge.lthn.ai/core/go v0.0.0-20260221181337-58ca902320b6
-	forge.lthn.ai/core/go-store v0.1.1-0.20260220151120-0284110ccadf
+	forge.lthn.ai/core/go main
+	forge.lthn.ai/core/go-store main
 	github.com/ProtonMail/go-crypto v1.3.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
