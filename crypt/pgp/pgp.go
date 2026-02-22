@@ -1,7 +1,7 @@
 // Package pgp provides OpenPGP key generation, encryption, decryption,
 // signing, and verification using the ProtonMail go-crypto library.
 //
-// Ported from Enchantrix (github.com/Snider/Enchantrix/pkg/crypt/std/pgp).
+// Ported from Enchantrix (forge.lthn.ai/Snider/Enchantrix/pkg/crypt/std/pgp).
 package pgp
 
 import (
