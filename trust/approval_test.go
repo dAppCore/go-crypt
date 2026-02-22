@@ -214,7 +214,7 @@ func TestApprovalConcurrent_Good(t *testing.T) {
 	var mu sync.Mutex
 
 	// Submit concurrently
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
 			id, err := q.Submit(
@@ -234,7 +234,7 @@ func TestApprovalConcurrent_Good(t *testing.T) {
 
 	// Approve/deny concurrently
 	wg.Add(n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
 			mu.Lock()

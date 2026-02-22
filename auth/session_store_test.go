@@ -64,7 +64,7 @@ func TestMemorySessionStore_DeleteByUser_Good(t *testing.T) {
 	store := NewMemorySessionStore()
 
 	// Create sessions for two users
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		err := store.Set(&Session{
 			Token:     fmt.Sprintf("user-a-token-%d", i),
 			UserID:    "user-a",
@@ -85,7 +85,7 @@ func TestMemorySessionStore_DeleteByUser_Good(t *testing.T) {
 	require.NoError(t, err)
 
 	// user-a sessions should be gone
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		_, err := store.Get(fmt.Sprintf("user-a-token-%d", i))
 		assert.ErrorIs(t, err, ErrSessionNotFound)
 	}
@@ -143,7 +143,7 @@ func TestMemorySessionStore_Concurrent_Good(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
 			token := fmt.Sprintf("concurrent-token-%d", idx)
@@ -220,7 +220,7 @@ func TestSQLiteSessionStore_DeleteByUser_Good(t *testing.T) {
 	defer store.Close()
 
 	// Create sessions for two users
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		err := store.Set(&Session{
 			Token:     fmt.Sprintf("sqlite-user-a-%d", i),
 			UserID:    "user-a",
@@ -241,7 +241,7 @@ func TestSQLiteSessionStore_DeleteByUser_Good(t *testing.T) {
 	require.NoError(t, err)
 
 	// user-a sessions should be gone
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		_, err := store.Get(fmt.Sprintf("sqlite-user-a-%d", i))
 		assert.ErrorIs(t, err, ErrSessionNotFound)
 	}
@@ -336,7 +336,7 @@ func TestSQLiteSessionStore_Concurrent_Good(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
 			token := fmt.Sprintf("sqlite-concurrent-%d", idx)
@@ -425,8 +425,7 @@ func TestAuthenticator_StartCleanup_Good(t *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	// Start cleanup with a short interval
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	a.StartCleanup(ctx, 10*time.Millisecond)
 

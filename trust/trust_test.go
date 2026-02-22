@@ -177,7 +177,7 @@ func TestConcurrentRegistryOperations_Good(t *testing.T) {
 	wg.Add(n * 3) // register + get + remove goroutines
 
 	// Register goroutines
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
 			name := fmt.Sprintf("agent-%d", idx)
@@ -187,7 +187,7 @@ func TestConcurrentRegistryOperations_Good(t *testing.T) {
 	}
 
 	// Get goroutines (may return nil if not yet registered)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
 			name := fmt.Sprintf("agent-%d", idx)
@@ -196,7 +196,7 @@ func TestConcurrentRegistryOperations_Good(t *testing.T) {
 	}
 
 	// Remove goroutines (may return false if not yet registered or already removed)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
 			name := fmt.Sprintf("agent-%d", idx)
@@ -263,7 +263,7 @@ func TestConcurrentListDuringMutations_Good(t *testing.T) {
 	r := NewRegistry()
 
 	// Pre-populate
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		require.NoError(t, r.Register(Agent{
 			Name: fmt.Sprintf("base-%d", i),
 			Tier: TierFull,
@@ -274,7 +274,7 @@ func TestConcurrentListDuringMutations_Good(t *testing.T) {
 	wg.Add(20)
 
 	// 10 goroutines listing
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			defer wg.Done()
 			agents := r.List()
@@ -283,7 +283,7 @@ func TestConcurrentListDuringMutations_Good(t *testing.T) {
 	}
 
 	// 10 goroutines mutating
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		go func(idx int) {
 			defer wg.Done()
 			name := fmt.Sprintf("concurrent-%d", idx)

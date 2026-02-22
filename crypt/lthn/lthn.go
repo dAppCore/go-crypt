@@ -74,7 +74,7 @@ func createSalt(input string) string {
 	}
 	runes := []rune(input)
 	salt := make([]rune, len(runes))
-	for i := 0; i < len(runes); i++ {
+	for i := range runes {
 		char := runes[len(runes)-1-i]
 		if replacement, ok := keyMap[char]; ok {
 			salt[i] = replacement

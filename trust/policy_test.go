@@ -344,7 +344,7 @@ func TestConcurrentEvaluate_Good(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
 			agents := []string{"Athena", "Clotho", "BugSETI-001"}

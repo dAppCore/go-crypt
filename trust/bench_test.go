@@ -8,7 +8,7 @@ import (
 // BenchmarkPolicyEvaluate measures policy evaluation across 100 registered agents.
 func BenchmarkPolicyEvaluate(b *testing.B) {
 	r := NewRegistry()
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		tier := TierUntrusted
 		switch i % 3 {
 		case 0:
@@ -41,7 +41,7 @@ func BenchmarkPolicyEvaluate(b *testing.B) {
 // BenchmarkRegistryGet measures agent lookup performance.
 func BenchmarkRegistryGet(b *testing.B) {
 	r := NewRegistry()
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		_ = r.Register(Agent{
 			Name: fmt.Sprintf("agent-%d", i),
 			Tier: TierVerified,

@@ -89,7 +89,7 @@ func TestAuditEntries_Good_Empty(t *testing.T) {
 func TestAuditEntries_Good_AppendOnly(t *testing.T) {
 	log := NewAuditLog(nil)
 
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		log.Record(EvalResult{
 			Agent:    fmt.Sprintf("agent-%d", i),
 			Cap:      CapPushRepo,
@@ -155,7 +155,7 @@ func TestAuditRecord_Good_MultipleLines(t *testing.T) {
 	var buf bytes.Buffer
 	log := NewAuditLog(&buf)
 
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		log.Record(EvalResult{
 			Agent:    fmt.Sprintf("agent-%d", i),
 			Cap:      CapPushRepo,
@@ -240,7 +240,7 @@ func TestAuditConcurrent_Good(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(n)
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
 			log.Record(EvalResult{

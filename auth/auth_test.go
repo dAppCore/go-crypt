@@ -555,7 +555,7 @@ func TestConcurrentSessions_Good(t *testing.T) {
 	sessions := make(chan *Session, n)
 	errs := make(chan error, n)
 
-	for i := 0; i < n; i++ {
+	for range n {
 		go func() {
 			s, err := a.Login(userID, "pass")
 			if err != nil {
@@ -566,7 +566,7 @@ func TestConcurrentSessions_Good(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < n; i++ {
+	for range n {
 		select {
 		case s := <-sessions:
 			require.NotNil(t, s)
@@ -589,7 +589,7 @@ func TestConcurrentSessionCreation_Good(t *testing.T) {
 	// Register 10 distinct users to avoid contention on a single user record
 	const n = 10
 	userIDs := make([]string, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		username := fmt.Sprintf("concurrent-user-%d", i)
 		_, err := a.Register(username, "pass")
 		require.NoError(t, err)
@@ -601,7 +601,7 @@ func TestConcurrentSessionCreation_Good(t *testing.T) {
 	sessions := make([]*Session, n)
 	errs := make([]error, n)
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
 			s, err := a.Login(userIDs[idx], "pass")
@@ -612,7 +612,7 @@ func TestConcurrentSessionCreation_Good(t *testing.T) {
 
 	wg.Wait()
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		require.NoError(t, errs[i], "goroutine %d failed", i)
 		require.NotNil(t, sessions[i], "goroutine %d returned nil session", i)
 		// Each session token must be valid
@@ -632,7 +632,7 @@ func TestSessionTokenUniqueness_Good(t *testing.T) {
 	const n = 1000
 	tokens := make(map[string]bool, n)
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		session, err := a.Login(userID, "pass")
 		require.NoError(t, err)
 		require.NotNil(t, session)

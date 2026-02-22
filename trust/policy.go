@@ -2,6 +2,7 @@ package trust
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -92,26 +93,22 @@ func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) 
 	}
 
 	// Check explicit denials first.
-	for _, denied := range policy.Denied {
-		if denied == cap {
-			return EvalResult{
-				Decision: Deny,
-				Agent:    agentName,
-				Cap:      cap,
-				Reason:   fmt.Sprintf("capability %s is denied for tier %s", cap, agent.Tier),
-			}
+	if slices.Contains(policy.Denied, cap) {
+		return EvalResult{
+			Decision: Deny,
+			Agent:    agentName,
+			Cap:      cap,
+			Reason:   fmt.Sprintf("capability %s is denied for tier %s", cap, agent.Tier),
 		}
 	}
 
 	// Check if capability requires approval.
-	for _, approval := range policy.RequiresApproval {
-		if approval == cap {
-			return EvalResult{
-				Decision: NeedsApproval,
-				Agent:    agentName,
-				Cap:      cap,
-				Reason:   fmt.Sprintf("capability %s requires approval for tier %s", cap, agent.Tier),
-			}
+	if slices.Contains(policy.RequiresApproval, cap) {
+		return EvalResult{
+			Decision: NeedsApproval,
+			Agent:    agentName,
+			Cap:      cap,
+			Reason:   fmt.Sprintf("capability %s requires approval for tier %s", cap, agent.Tier),
 		}
 	}
 
@@ -182,11 +179,11 @@ func (pe *PolicyEngine) loadDefaults() {
 	pe.policies[TierVerified] = &Policy{
 		Tier: TierVerified,
 		Allowed: []Capability{
-			CapPushRepo,     // scoped to assigned repos
-			CapCreatePR,     // can create, not merge
+			CapPushRepo, // scoped to assigned repos
+			CapCreatePR, // can create, not merge
 			CapCreateIssue,
 			CapCommentIssue,
-			CapReadSecrets,  // scoped to their repos
+			CapReadSecrets, // scoped to their repos
 		},
 		RequiresApproval: []Capability{
 			CapMergePR,
@@ -202,7 +199,7 @@ func (pe *PolicyEngine) loadDefaults() {
 	pe.policies[TierUntrusted] = &Policy{
 		Tier: TierUntrusted,
 		Allowed: []Capability{
-			CapCreatePR,    // fork only, checked at enforcement layer
+			CapCreatePR, // fork only, checked at enforcement layer
 			CapCommentIssue,
 		},
 		Denied: []Capability{
