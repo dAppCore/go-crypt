@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"forge.lthn.ai/core/go/pkg/cli"
+	"forge.lthn.ai/core/cli/pkg/cli"
 )
 
 // Keygen command flags

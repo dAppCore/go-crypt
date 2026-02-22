@@ -3,6 +3,7 @@ module forge.lthn.ai/core/go-crypt
 go 1.26.0
 
 require (
+	forge.lthn.ai/core/cli v0.0.1
 	forge.lthn.ai/core/go v0.0.1
 	forge.lthn.ai/core/go-store v0.1.0
 	github.com/ProtonMail/go-crypto v1.3.0

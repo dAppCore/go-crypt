@@ -11,7 +11,7 @@
 // Flags: --verbose, --coverage, --short, --pkg, --run, --race, --json
 package testcmd
 
-import "forge.lthn.ai/core/go/pkg/cli"
+import "forge.lthn.ai/core/cli/pkg/cli"
 
 func init() {
 	cli.RegisterCommands(AddTestCommands)
