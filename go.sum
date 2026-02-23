@@ -1,9 +1,9 @@
-forge.lthn.ai/core/cli v0.0.3 h1:Qd/ACf8as4cwWoqAzkLIPF86NhXzfkkt1t/6xmgznVw=
-forge.lthn.ai/core/cli v0.0.3/go.mod h1:xa3Nqw3sUtYYJ1k+1jYul18tgs6sBevCUsGsHJI1hHA=
-forge.lthn.ai/core/go v0.0.1 h1:ubk4nmkA3treOUNgPS28wKd1jB6cUlEQUV7jDdGa3zM=
-forge.lthn.ai/core/go v0.0.1/go.mod h1:59YsnuMaAGQUxIhX68oK2/HnhQJEPWL1iEZhDTrNCbY=
-forge.lthn.ai/core/go-store v0.1.1 h1:93ObEmMAuAC6e4COf9DVkv0wfy5g36QnS0mx6lW7DH8=
-forge.lthn.ai/core/go-store v0.1.1/go.mod h1:XNas48nIZSXOVC1UTQ93Qf5gaeFfEmuYQv4fxDihKwk=
+forge.lthn.ai/core/cli v0.0.4 h1:jPpxtz1ULVJypgvPwdq0qH/G4PRMlyYiHo7dAy2uexI=
+forge.lthn.ai/core/cli v0.0.4/go.mod h1:YKLTEkGkJ8s9i43pbY6VmzoROMREI3hPRaEr+Qdq7Aw=
+forge.lthn.ai/core/go v0.0.9 h1:f1FlnFGBvV280N+rI0MEejNT7yNt42PE3Nm9kHE73Rw=
+forge.lthn.ai/core/go v0.0.9/go.mod h1:k3dpMA1jzxIiuFrwmZUzK3cMZd5xQRmPiYI7DInFJug=
+forge.lthn.ai/core/go-store v0.1.2 h1:aqI/QQ/MJQvB0yt009odmFEuBYjePs7Ne3H9cimwpY4=
+forge.lthn.ai/core/go-store v0.1.2/go.mod h1:op+ftjAqYskPv4OGvHZQf7/DLiRnFIdT0XCQTKR/GjE=
 github.com/ProtonMail/go-crypto v1.3.0 h1:ILq8+Sf5If5DCpHQp4PbZdS1J7HDFRXz/+xKBiRGFrw=
 github.com/ProtonMail/go-crypto v1.3.0/go.mod h1:9whxjD8Rbs29b4XWbB8irEcE8KHMqaR2e7GWU1R+/PE=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
