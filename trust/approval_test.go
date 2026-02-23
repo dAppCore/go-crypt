@@ -201,6 +201,22 @@ func TestApprovalPending_Good_Empty(t *testing.T) {
 	assert.Empty(t, q.Pending())
 }
 
+func TestApprovalPendingSeq_Good(t *testing.T) {
+	q := NewApprovalQueue()
+	q.Submit("Clotho", CapMergePR, "host-uk/core")
+	q.Submit("Hypnos", CapMergePR, "host-uk/docs")
+
+	id3, _ := q.Submit("Darbs", CapMergePR, "host-uk/tools")
+	q.Approve(id3, "admin", "")
+
+	count := 0
+	for req := range q.PendingSeq() {
+		assert.Equal(t, ApprovalPending, req.Status)
+		count++
+	}
+	assert.Equal(t, 2, count)
+}
+
 // --- Concurrent operations ---
 
 func TestApprovalConcurrent_Good(t *testing.T) {

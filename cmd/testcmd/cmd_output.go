@@ -2,10 +2,11 @@ package testcmd
 
 import (
 	"bufio"
+	"cmp"
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -119,8 +120,8 @@ func printCoverageSummary(results testResults) {
 	fmt.Printf("\n  %s\n", testHeaderStyle.Render(i18n.T("cmd.test.coverage_by_package")))
 
 	// Sort packages by name
-	sort.Slice(results.packages, func(i, j int) bool {
-		return results.packages[i].name < results.packages[j].name
+	slices.SortFunc(results.packages, func(a, b packageCoverage) int {
+		return cmp.Compare(a.name, b.name)
 	})
 
 	// Find max package name length for alignment

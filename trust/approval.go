@@ -2,6 +2,7 @@ package trust
 
 import (
 	"fmt"
+	"iter"
 	"sync"
 	"time"
 )
@@ -164,6 +165,22 @@ func (q *ApprovalQueue) Pending() []ApprovalRequest {
 		}
 	}
 	return out
+}
+
+// PendingSeq returns an iterator over all requests with ApprovalPending status.
+func (q *ApprovalQueue) PendingSeq() iter.Seq[ApprovalRequest] {
+	return func(yield func(ApprovalRequest) bool) {
+		q.mu.RLock()
+		defer q.mu.RUnlock()
+
+		for _, req := range q.requests {
+			if req.Status == ApprovalPending {
+				if !yield(*req) {
+					return
+				}
+			}
+		}
+	}
 }
 
 // Len returns the total number of requests in the queue.

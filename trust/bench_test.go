@@ -31,7 +31,7 @@ func BenchmarkPolicyEvaluate(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		agentName := fmt.Sprintf("agent-%d", i%100)
 		cap := caps[i%len(caps)]
 		_ = pe.Evaluate(agentName, cap, "host-uk/core")
@@ -49,7 +49,7 @@ func BenchmarkRegistryGet(b *testing.B) {
 	}
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		name := fmt.Sprintf("agent-%d", i%100)
 		_ = r.Get(name)
 	}
@@ -60,7 +60,7 @@ func BenchmarkRegistryRegister(b *testing.B) {
 	r := NewRegistry()
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := range b.N {
 		_ = r.Register(Agent{
 			Name: fmt.Sprintf("bench-agent-%d", i),
 			Tier: TierVerified,

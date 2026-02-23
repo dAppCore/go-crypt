@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"iter"
 	"sync"
 	"time"
 )
@@ -103,6 +104,20 @@ func (l *AuditLog) Entries() []AuditEntry {
 	return out
 }
 
+// EntriesSeq returns an iterator over all audit entries.
+func (l *AuditLog) EntriesSeq() iter.Seq[AuditEntry] {
+	return func(yield func(AuditEntry) bool) {
+		l.mu.Lock()
+		defer l.mu.Unlock()
+
+		for _, e := range l.entries {
+			if !yield(e) {
+				return
+			}
+		}
+	}
+}
+
 // Len returns the number of entries in the log.
 func (l *AuditLog) Len() int {
 	l.mu.Lock()
@@ -122,4 +137,20 @@ func (l *AuditLog) EntriesFor(agent string) []AuditEntry {
 		}
 	}
 	return out
+}
+
+// EntriesForSeq returns an iterator over audit entries for a specific agent.
+func (l *AuditLog) EntriesForSeq(agent string) iter.Seq[AuditEntry] {
+	return func(yield func(AuditEntry) bool) {
+		l.mu.Lock()
+		defer l.mu.Unlock()
+
+		for _, e := range l.entries {
+			if e.Agent == agent {
+				if !yield(e) {
+					return
+				}
+			}
+		}
+	}
 }

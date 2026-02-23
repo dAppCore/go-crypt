@@ -13,7 +13,7 @@ func BenchmarkArgon2Derive(b *testing.B) {
 	_, _ = rand.Read(salt)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = DeriveKey(passphrase, salt, argon2KeyLen)
 	}
 }
@@ -27,7 +27,7 @@ func BenchmarkChaCha20Encrypt_1KB(b *testing.B) {
 
 	b.ResetTimer()
 	b.SetBytes(1024)
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = ChaCha20Encrypt(plaintext, key)
 	}
 }
@@ -41,7 +41,7 @@ func BenchmarkChaCha20Encrypt_1MB(b *testing.B) {
 
 	b.ResetTimer()
 	b.SetBytes(1024 * 1024)
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = ChaCha20Encrypt(plaintext, key)
 	}
 }
@@ -55,7 +55,7 @@ func BenchmarkAESGCMEncrypt_1KB(b *testing.B) {
 
 	b.ResetTimer()
 	b.SetBytes(1024)
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = AESGCMEncrypt(plaintext, key)
 	}
 }
@@ -69,7 +69,7 @@ func BenchmarkAESGCMEncrypt_1MB(b *testing.B) {
 
 	b.ResetTimer()
 	b.SetBytes(1024 * 1024)
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = AESGCMEncrypt(plaintext, key)
 	}
 }
@@ -83,7 +83,7 @@ func BenchmarkHMACSHA256_1KB(b *testing.B) {
 
 	b.ResetTimer()
 	b.SetBytes(1024)
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = HMACSHA256(message, key)
 	}
 }
@@ -97,7 +97,7 @@ func BenchmarkVerifyHMACSHA256(b *testing.B) {
 	mac := HMACSHA256(message, key)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_ = VerifyHMAC(message, key, mac, sha256.New)
 	}
 }

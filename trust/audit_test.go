@@ -114,6 +114,26 @@ func TestAuditEntriesFor_Good(t *testing.T) {
 	for _, e := range athenaEntries {
 		assert.Equal(t, "Athena", e.Agent)
 	}
+
+	// Test iterator version
+	count := 0
+	for e := range log.EntriesForSeq("Athena") {
+		assert.Equal(t, "Athena", e.Agent)
+		count++
+	}
+	assert.Equal(t, 2, count)
+}
+
+func TestAuditEntriesSeq_Good(t *testing.T) {
+	log := NewAuditLog(nil)
+	log.Record(EvalResult{Agent: "Athena", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
+	log.Record(EvalResult{Agent: "Clotho", Cap: CapCreatePR, Decision: Allow, Reason: "ok"}, "")
+
+	count := 0
+	for range log.EntriesSeq() {
+		count++
+	}
+	assert.Equal(t, 2, count)
 }
 
 func TestAuditEntriesFor_Bad_NotFound(t *testing.T) {

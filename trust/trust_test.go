@@ -151,6 +151,22 @@ func TestRegistryList_Good_Snapshot(t *testing.T) {
 	assert.Equal(t, TierFull, r.Get("Athena").Tier)
 }
 
+func TestRegistryListSeq_Good(t *testing.T) {
+	r := NewRegistry()
+	require.NoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
+	require.NoError(t, r.Register(Agent{Name: "Clotho", Tier: TierVerified}))
+
+	count := 0
+	names := make(map[string]bool)
+	for a := range r.ListSeq() {
+		names[a.Name] = true
+		count++
+	}
+	assert.Equal(t, 2, count)
+	assert.True(t, names["Athena"])
+	assert.True(t, names["Clotho"])
+}
+
 // --- Agent ---
 
 func TestAgentTokenExpiry(t *testing.T) {

@@ -12,6 +12,7 @@ package trust
 
 import (
 	"fmt"
+	"iter"
 	"sync"
 	"time"
 )
@@ -51,15 +52,15 @@ func (t Tier) Valid() bool {
 type Capability string
 
 const (
-	CapPushRepo      Capability = "repo.push"
-	CapMergePR       Capability = "pr.merge"
-	CapCreatePR      Capability = "pr.create"
-	CapCreateIssue   Capability = "issue.create"
-	CapCommentIssue  Capability = "issue.comment"
-	CapReadSecrets   Capability = "secrets.read"
-	CapRunPrivileged Capability = "cmd.privileged"
+	CapPushRepo        Capability = "repo.push"
+	CapMergePR         Capability = "pr.merge"
+	CapCreatePR        Capability = "pr.create"
+	CapCreateIssue     Capability = "issue.create"
+	CapCommentIssue    Capability = "issue.comment"
+	CapReadSecrets     Capability = "secrets.read"
+	CapRunPrivileged   Capability = "cmd.privileged"
 	CapAccessWorkspace Capability = "workspace.access"
-	CapModifyFlows   Capability = "flows.modify"
+	CapModifyFlows     Capability = "flows.modify"
 )
 
 // Agent represents an agent identity in the trust system.
@@ -141,6 +142,19 @@ func (r *Registry) List() []Agent {
 		out = append(out, *a)
 	}
 	return out
+}
+
+// ListSeq returns an iterator over all registered agents.
+func (r *Registry) ListSeq() iter.Seq[Agent] {
+	return func(yield func(Agent) bool) {
+		r.mu.RLock()
+		defer r.mu.RUnlock()
+		for _, a := range r.agents {
+			if !yield(*a) {
+				return
+			}
+		}
+	}
 }
 
 // Len returns the number of registered agents.

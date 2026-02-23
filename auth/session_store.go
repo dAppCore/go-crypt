@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"maps"
 	"sync"
 	"time"
 )
@@ -75,11 +76,9 @@ func (m *MemorySessionStore) DeleteByUser(userID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	for token, session := range m.sessions {
-		if session.UserID == userID {
-			delete(m.sessions, token)
-		}
-	}
+	maps.DeleteFunc(m.sessions, func(token string, session *Session) bool {
+		return session.UserID == userID
+	})
 	return nil
 }
 
@@ -90,11 +89,12 @@ func (m *MemorySessionStore) Cleanup() (int, error) {
 
 	now := time.Now()
 	count := 0
-	for token, session := range m.sessions {
+	maps.DeleteFunc(m.sessions, func(token string, session *Session) bool {
 		if now.After(session.ExpiresAt) {
-			delete(m.sessions, token)
 			count++
+			return true
 		}
-	}
+		return false
+	})
 	return count, nil
 }
