@@ -1,3 +1,7 @@
+[![Go Reference](https://pkg.go.dev/badge/forge.lthn.ai/core/go-crypt.svg)](https://pkg.go.dev/forge.lthn.ai/core/go-crypt)
+[![License: EUPL-1.2](https://img.shields.io/badge/License-EUPL--1.2-blue.svg)](LICENSE.md)
+[![Go Version](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat&logo=go)](go.mod)
+
 # go-crypt
 
 Cryptographic primitives, authentication, and trust policy engine for the Lethean agent platform. Provides symmetric encryption (ChaCha20-Poly1305 and AES-256-GCM with Argon2id KDF), OpenPGP challenge-response authentication with online and air-gapped courier modes, Argon2id password hashing, RSA-OAEP key generation, RFC-0004 deterministic content hashing, and a three-tier agent trust policy engine with an audit log and approval queue.
