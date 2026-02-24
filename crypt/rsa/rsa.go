@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 )
 
@@ -49,7 +50,7 @@ func (s *Service) GenerateKeyPair(bits int) (publicKey, privateKey []byte, err e
 func (s *Service) Encrypt(publicKey, data, label []byte) ([]byte, error) {
 	block, _ := pem.Decode(publicKey)
 	if block == nil {
-		return nil, fmt.Errorf("failed to decode public key")
+		return nil, errors.New("failed to decode public key")
 	}
 
 	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
@@ -59,7 +60,7 @@ func (s *Service) Encrypt(publicKey, data, label []byte) ([]byte, error) {
 
 	rsaPub, ok := pub.(*rsa.PublicKey)
 	if !ok {
-		return nil, fmt.Errorf("not an RSA public key")
+		return nil, errors.New("not an RSA public key")
 	}
 
 	ciphertext, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, rsaPub, data, label)
@@ -74,7 +75,7 @@ func (s *Service) Encrypt(publicKey, data, label []byte) ([]byte, error) {
 func (s *Service) Decrypt(privateKey, ciphertext, label []byte) ([]byte, error) {
 	block, _ := pem.Decode(privateKey)
 	if block == nil {
-		return nil, fmt.Errorf("failed to decode private key")
+		return nil, errors.New("failed to decode private key")
 	}
 
 	priv, err := x509.ParsePKCS1PrivateKey(block.Bytes)

@@ -1,6 +1,7 @@
 package trust
 
 import (
+	"errors"
 	"fmt"
 	"iter"
 	"sync"
@@ -73,10 +74,10 @@ func NewApprovalQueue() *ApprovalQueue {
 // Returns an error if the agent name or capability is empty.
 func (q *ApprovalQueue) Submit(agent string, cap Capability, repo string) (string, error) {
 	if agent == "" {
-		return "", fmt.Errorf("trust.ApprovalQueue.Submit: agent name is required")
+		return "", errors.New("trust.ApprovalQueue.Submit: agent name is required")
 	}
 	if cap == "" {
-		return "", fmt.Errorf("trust.ApprovalQueue.Submit: capability is required")
+		return "", errors.New("trust.ApprovalQueue.Submit: capability is required")
 	}
 
 	q.mu.Lock()
