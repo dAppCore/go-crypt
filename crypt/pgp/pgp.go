@@ -6,6 +6,7 @@ package pgp
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 
@@ -194,7 +195,7 @@ func Sign(data []byte, privateKeyArmor, password string) ([]byte, error) {
 
 	signer := keyring[0]
 	if signer.PrivateKey == nil {
-		return nil, fmt.Errorf("pgp: private key not found in keyring")
+		return nil, errors.New("pgp: private key not found in keyring")
 	}
 
 	if signer.PrivateKey.Encrypted {

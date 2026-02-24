@@ -11,6 +11,7 @@
 package trust
 
 import (
+	"errors"
 	"fmt"
 	"iter"
 	"sync"
@@ -97,7 +98,7 @@ func NewRegistry() *Registry {
 // Returns an error if the agent name is empty or the tier is invalid.
 func (r *Registry) Register(agent Agent) error {
 	if agent.Name == "" {
-		return fmt.Errorf("trust.Register: agent name is required")
+		return errors.New("trust.Register: agent name is required")
 	}
 	if !agent.Tier.Valid() {
 		return fmt.Errorf("trust.Register: invalid tier %d for agent %q", agent.Tier, agent.Name)

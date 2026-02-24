@@ -30,6 +30,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -647,10 +648,10 @@ func (a *Authenticator) verifyPassword(userID, password string) error {
 		if err == nil && strings.HasPrefix(storedHash, "$argon2id$") {
 			valid, verr := crypt.VerifyPassword(password, storedHash)
 			if verr != nil {
-				return fmt.Errorf("failed to verify password")
+				return errors.New("failed to verify password")
 			}
 			if !valid {
-				return fmt.Errorf("invalid password")
+				return errors.New("invalid password")
 			}
 			return nil
 		}
@@ -659,10 +660,10 @@ func (a *Authenticator) verifyPassword(userID, password string) error {
 	// Fall back to legacy LTHN hash (.lthn file)
 	storedHash, err := a.medium.Read(userPath(userID, ".lthn"))
 	if err != nil {
-		return fmt.Errorf("user not found")
+		return errors.New("user not found")
 	}
 	if !lthn.Verify(password, storedHash) {
-		return fmt.Errorf("invalid password")
+		return errors.New("invalid password")
 	}
 	return nil
 }
