@@ -11,7 +11,7 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 
 	core "forge.lthn.ai/core/go-log"
-	framework "forge.lthn.ai/core/go/pkg/framework/core"
+	framework "forge.lthn.ai/core/go/pkg/core"
 )
 
 // Service implements the framework.Crypt interface using OpenPGP.
