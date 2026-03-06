@@ -5,6 +5,9 @@ go 1.26.0
 require (
 	forge.lthn.ai/core/cli v0.1.0
 	forge.lthn.ai/core/go v0.1.0
+	forge.lthn.ai/core/go-i18n v0.0.1
+	forge.lthn.ai/core/go-io v0.0.1
+	forge.lthn.ai/core/go-log v0.0.1
 	forge.lthn.ai/core/go-store v0.1.3
 	github.com/ProtonMail/go-crypto v1.3.0
 	github.com/spf13/cobra v1.10.2
@@ -13,6 +16,7 @@ require (
 )
 
 require (
+	forge.lthn.ai/core/go-inference v0.0.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/bubbletea v1.3.10 // indirect
 	github.com/charmbracelet/colorprofile v0.4.2 // indirect
@@ -28,7 +32,6 @@ require (
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect

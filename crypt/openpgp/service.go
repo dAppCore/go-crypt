@@ -9,16 +9,18 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/armor"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
-	core "forge.lthn.ai/core/go/pkg/framework/core"
+
+	core "forge.lthn.ai/core/go-log"
+	framework "forge.lthn.ai/core/go/pkg/framework/core"
 )
 
-// Service implements the core.Crypt interface using OpenPGP.
+// Service implements the framework.Crypt interface using OpenPGP.
 type Service struct {
-	core *core.Core
+	core *framework.Core
 }
 
 // New creates a new OpenPGP service instance.
-func New(c *core.Core) (any, error) {
+func New(c *framework.Core) (any, error) {
 	return &Service{core: c}, nil
 }
 
@@ -172,7 +174,7 @@ func (s *Service) DecryptPGP(privateKey, message, passphrase string, opts ...any
 }
 
 // HandleIPCEvents handles PGP-related IPC messages.
-func (s *Service) HandleIPCEvents(c *core.Core, msg core.Message) error {
+func (s *Service) HandleIPCEvents(c *framework.Core, msg framework.Message) error {
 	switch m := msg.(type) {
 	case map[string]any:
 		action, _ := m["action"].(string)
@@ -187,5 +189,5 @@ func (s *Service) HandleIPCEvents(c *core.Core, msg core.Message) error {
 	return nil
 }
 
-// Ensure Service implements core.Crypt.
-var _ core.Crypt = (*Service)(nil)
+// Ensure Service implements framework.Crypt.
+var _ framework.Crypt = (*Service)(nil)

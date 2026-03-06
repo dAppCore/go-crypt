@@ -13,7 +13,7 @@ import (
 
 	"forge.lthn.ai/core/go-crypt/crypt/lthn"
 	"forge.lthn.ai/core/go-crypt/crypt/pgp"
-	"forge.lthn.ai/core/go/pkg/io"
+	"forge.lthn.ai/core/go-io"
 )
 
 // helper creates a fresh Authenticator backed by MockMedium.

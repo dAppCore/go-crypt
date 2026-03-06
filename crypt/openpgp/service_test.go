@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"testing"
 
-	core "forge.lthn.ai/core/go/pkg/framework/core"
+	framework "forge.lthn.ai/core/go/pkg/framework/core"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateKeyPair(t *testing.T) {
-	c, _ := core.New()
+	c, _ := framework.New()
 	s := &Service{core: c}
 
 	privKey, err := s.CreateKeyPair("test user", "password123")
@@ -19,7 +19,7 @@ func TestCreateKeyPair(t *testing.T) {
 }
 
 func TestEncryptDecrypt(t *testing.T) {
-	c, _ := core.New()
+	c, _ := framework.New()
 	s := &Service{core: c}
 
 	passphrase := "secret"

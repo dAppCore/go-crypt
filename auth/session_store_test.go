@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"forge.lthn.ai/core/go-crypt/crypt/lthn"
-	"forge.lthn.ai/core/go/pkg/io"
+	"forge.lthn.ai/core/go-io"
 )
 
 // --- MemorySessionStore ---

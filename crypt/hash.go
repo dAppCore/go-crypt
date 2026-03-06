@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	core "forge.lthn.ai/core/go/pkg/framework/core"
+	core "forge.lthn.ai/core/go-log"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/bcrypt"
 )
