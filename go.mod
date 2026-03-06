@@ -4,7 +4,6 @@ go 1.26.0
 
 require (
 	forge.lthn.ai/core/cli v0.1.0
-	forge.lthn.ai/core/go v0.1.0
 	forge.lthn.ai/core/go-i18n v0.0.1
 	forge.lthn.ai/core/go-io v0.0.1
 	forge.lthn.ai/core/go-log v0.0.1
@@ -16,6 +15,7 @@ require (
 )
 
 require (
+	forge.lthn.ai/core/go v0.1.0 // indirect
 	forge.lthn.ai/core/go-inference v0.0.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/bubbletea v1.3.10 // indirect
