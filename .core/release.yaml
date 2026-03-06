@@ -1,0 +1,20 @@
+version: 1
+
+project:
+  name: go-crypt
+  repository: core/go-crypt
+
+publishers: []
+
+changelog:
+  include:
+    - feat
+    - fix
+    - perf
+    - refactor
+  exclude:
+    - chore
+    - docs
+    - style
+    - test
+    - ci
