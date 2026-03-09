@@ -18,6 +18,7 @@ package lthn
 
 import (
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 )
 
@@ -87,8 +88,8 @@ func createSalt(input string) string {
 
 // Verify checks if an input string produces the given hash.
 // Returns true if Hash(input) equals the provided hash value.
-// Uses direct string comparison - for security-critical applications,
-// consider using constant-time comparison.
+// Uses constant-time comparison to prevent timing attacks.
 func Verify(input string, hash string) bool {
-	return Hash(input) == hash
+	computed := Hash(input)
+	return subtle.ConstantTimeCompare([]byte(computed), []byte(hash)) == 1
 }
