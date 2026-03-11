@@ -1,207 +1,299 @@
-# Architecture — go-crypt
-
-`forge.lthn.ai/core/go-crypt` provides cryptographic primitives, authentication,
-and a trust policy engine for the Lethean agent platform. The module is ~1,938
-source LOC across three top-level packages (`auth`, `crypt`, `trust`) and five
-sub-packages (`crypt/chachapoly`, `crypt/lthn`, `crypt/pgp`, `crypt/rsa`,
-`crypt/openpgp`).
-
+---
+title: Architecture
+description: Internal design, key types, data flow, and algorithm reference for go-crypt.
 ---
 
-## Package Map
+# Architecture
+
+`forge.lthn.ai/core/go-crypt` is organised into three top-level packages
+(`crypt`, `auth`, `trust`) and five sub-packages under `crypt/`. Each
+package is self-contained and can be imported independently.
 
 ```
 go-crypt/
-├── auth/                   OpenPGP challenge-response authentication, sessions, key management
-│   ├── auth.go             Authenticator struct, registration, login, key rotation/revocation
+├── auth/                   OpenPGP challenge-response authentication
+│   ├── auth.go             Authenticator: registration, login, key rotation, revocation
 │   ├── session_store.go    SessionStore interface + MemorySessionStore
-│   ├── session_store_sqlite.go  SQLiteSessionStore (persistent via go-store)
-│   └── hardware.go         HardwareKey interface (contract only, no implementations)
-├── crypt/                  Symmetric encryption, key derivation, hashing
-│   ├── crypt.go            High-level Encrypt/Decrypt (ChaCha20) and EncryptAES/DecryptAES
-│   ├── kdf.go              DeriveKey (Argon2id), DeriveKeyScrypt, HKDF
-│   ├── symmetric.go        ChaCha20Encrypt/Decrypt, AESGCMEncrypt/Decrypt
-│   ├── hash.go             HashPassword/VerifyPassword (Argon2id), HashBcrypt/VerifyBcrypt
-│   ├── hmac.go             HMACSHA256, HMACSHA512, VerifyHMAC
-│   ├── checksum.go         SHA256File, SHA512File, SHA256Sum, SHA512Sum
+│   ├── session_store_sqlite.go   SQLiteSessionStore (persistent via go-store)
+│   └── hardware.go         HardwareKey interface (contract only, no implementations yet)
+├── crypt/                  Symmetric encryption, hashing, key derivation
+│   ├── crypt.go            High-level Encrypt/Decrypt and EncryptAES/DecryptAES
+│   ├── kdf.go              Key derivation: Argon2id, scrypt, HKDF-SHA256
+│   ├── symmetric.go        Low-level ChaCha20-Poly1305 and AES-256-GCM
+│   ├── hash.go             Password hashing: Argon2id and bcrypt
+│   ├── hmac.go             HMAC-SHA256, HMAC-SHA512, constant-time verify
+│   ├── checksum.go         SHA-256 and SHA-512 file/data checksums
 │   ├── chachapoly/         Standalone ChaCha20-Poly1305 AEAD wrapper
 │   ├── lthn/               RFC-0004 quasi-salted deterministic hash
 │   ├── pgp/                OpenPGP primitives (ProtonMail go-crypto)
-│   ├── rsa/                RSA OAEP-SHA256 key generation and encryption
+│   ├── rsa/                RSA-OAEP-SHA256 key generation and encryption
 │   └── openpgp/            Service wrapper implementing core.Crypt interface
-└── trust/                  Agent trust model and policy engine
-    ├── trust.go            Registry, Agent struct, Tier enum
-    ├── policy.go           PolicyEngine, 9 capabilities, Evaluate
-    ├── approval.go         ApprovalQueue for NeedsApproval workflow
-    ├── audit.go            AuditLog — append-only policy evaluation log
-    ├── config.go           LoadPolicies/ExportPolicies — JSON config round-trip
-    └── scope.go            matchScope — wildcard pattern matching for repo scopes
+├── trust/                  Agent trust model and policy engine
+│   ├── trust.go            Registry, Agent struct, Tier enum
+│   ├── policy.go           PolicyEngine, capabilities, Evaluate()
+│   ├── approval.go         ApprovalQueue for NeedsApproval decisions
+│   ├── audit.go            AuditLog: append-only policy evaluation log
+│   └── config.go           JSON policy configuration: load, apply, export
+└── cmd/
+    └── crypt/              CLI commands registered with core CLI
 ```
 
 ---
 
-## crypt/ — Symmetric Encryption and Hashing
+## crypt/ -- Symmetric Encryption and Hashing
 
-### High-Level API (`crypt.go`)
+### High-Level API
 
-The entry point for most callers. `Encrypt`/`Decrypt` chain Argon2id key
-derivation with ChaCha20-Poly1305 AEAD:
+The `crypt.Encrypt` and `crypt.Decrypt` functions are the primary entry
+points. They chain Argon2id key derivation with XChaCha20-Poly1305 AEAD
+encryption. A random salt is generated and prepended to the output so that
+callers need only track the passphrase.
 
 ```
-Encrypt(plaintext, passphrase):
+Encrypt(plaintext, passphrase) -> salt || nonce || ciphertext
+
   1. Generate 16-byte random salt (crypto/rand)
-  2. DeriveKey(passphrase, salt) → 32-byte key via Argon2id
-  3. ChaCha20Encrypt(plaintext, key) → 24-byte nonce || ciphertext
-  4. Output: salt || nonce || ciphertext
+  2. DeriveKey(passphrase, salt) -> 32-byte key via Argon2id
+  3. ChaCha20Encrypt(plaintext, key) -> 24-byte nonce || ciphertext
+  4. Prepend salt to the result
 ```
 
-`EncryptAES`/`DecryptAES` follow the same structure but use AES-256-GCM
+`EncryptAES` and `DecryptAES` follow the same pattern but use AES-256-GCM
 with a 12-byte nonce instead of the 24-byte XChaCha20 nonce.
 
-### Key Derivation (`kdf.go`)
+Both ciphers produce self-describing byte layouts. Callers must not alter
+the layout between encrypt and decrypt.
 
-Three KDF functions are provided:
+| Function | Cipher | Nonce | Wire Format |
+|----------|--------|-------|-------------|
+| `Encrypt` / `Decrypt` | XChaCha20-Poly1305 | 24 bytes | salt(16) + nonce(24) + ciphertext |
+| `EncryptAES` / `DecryptAES` | AES-256-GCM | 12 bytes | salt(16) + nonce(12) + ciphertext |
 
-| Function | Algorithm | Parameters |
-|----------|-----------|------------|
-| `DeriveKey` | Argon2id | Memory=64MB, Time=3, Parallelism=4, KeyLen=32 |
-| `DeriveKeyScrypt` | scrypt | N=32768, r=8, p=1 |
-| `HKDF` | HKDF-SHA256 | Variable key length, optional salt and info |
+### Key Derivation (kdf.go)
 
-Argon2id parameters are within the OWASP recommended range for interactive
-logins. `HKDF` is used for key expansion when a high-entropy secret is already
-available (e.g. deriving sub-keys from a master key).
+Three key derivation functions serve different use cases:
 
-### Low-Level Symmetric (`symmetric.go`)
+| Function | Algorithm | Parameters | Use Case |
+|----------|-----------|------------|----------|
+| `DeriveKey` | Argon2id | Memory=64MB, Time=3, Parallelism=4, KeyLen=32 | Primary KDF for passphrase-based encryption |
+| `DeriveKeyScrypt` | scrypt | N=32768, r=8, p=1 | Alternative KDF where Argon2id is unavailable |
+| `HKDF` | HKDF-SHA256 | Variable key length, optional salt/info | Key expansion from high-entropy secrets |
 
-`ChaCha20Encrypt` prepends the 24-byte nonce to the ciphertext and returns a
-single byte slice. `AESGCMEncrypt` prepends the 12-byte nonce. Both use
-`crypto/rand` for nonce generation. The ciphertext format self-describes the
-nonce position; callers must not alter the layout between encrypt and decrypt.
+The Argon2id parameters sit within the OWASP-recommended range for
+interactive logins. `HKDF` is intended for deriving sub-keys from a master
+key that already has high entropy; it should not be used directly with
+low-entropy passphrases.
 
-### Password Hashing (`hash.go`)
+### Low-Level Symmetric Ciphers (symmetric.go)
 
-`HashPassword` produces an Argon2id format string:
+`ChaCha20Encrypt` and `AESGCMEncrypt` each generate a random nonce via
+`crypto/rand` and prepend it to the ciphertext. The corresponding decrypt
+functions extract the nonce from the front of the byte slice.
+
+```go
+// ChaCha20-Poly1305: 32-byte key required
+ciphertext, err := crypt.ChaCha20Encrypt(plaintext, key)
+plaintext, err := crypt.ChaCha20Decrypt(ciphertext, key)
+
+// AES-256-GCM: 32-byte key required
+ciphertext, err := crypt.AESGCMEncrypt(plaintext, key)
+plaintext, err := crypt.AESGCMDecrypt(ciphertext, key)
+```
+
+### Password Hashing (hash.go)
+
+`HashPassword` produces a self-describing Argon2id hash string:
 
 ```
 $argon2id$v=19$m=65536,t=3,p=4$<base64-salt>$<base64-hash>
 ```
 
-`VerifyPassword` re-derives the hash from the stored parameters and uses
-`crypto/subtle.ConstantTimeCompare` for the final comparison. This avoids
-timing side-channels during password verification.
+`VerifyPassword` re-derives the hash from the parameters encoded in the
+string and uses `crypto/subtle.ConstantTimeCompare` for the final
+comparison. This prevents timing side-channels during password verification.
 
-`HashBcrypt`/`VerifyBcrypt` wrap `golang.org/x/crypto/bcrypt` as a fallback
-for systems where bcrypt is required by policy.
+`HashBcrypt` and `VerifyBcrypt` wrap `golang.org/x/crypto/bcrypt` as a
+fallback for environments where bcrypt is mandated by policy.
 
-### HMAC (`hmac.go`)
+### HMAC (hmac.go)
 
-`HMACSHA256`/`HMACSHA512` return raw MAC bytes. `VerifyHMAC` uses
-`crypto/hmac.Equal` (constant-time) to compare a computed MAC against an
-expected value.
+Three functions for message authentication codes:
 
-### Checksums (`checksum.go`)
+- `HMACSHA256(message, key)` -- returns raw 32-byte MAC.
+- `HMACSHA512(message, key)` -- returns raw 64-byte MAC.
+- `VerifyHMAC(message, key, mac, hashFunc)` -- constant-time verification
+  using `crypto/hmac.Equal`.
 
-`SHA256File`/`SHA512File` compute checksums of files via streaming reads.
-`SHA256Sum`/`SHA512Sum` operate on byte slices. All return lowercase hex strings.
+### Checksums (checksum.go)
+
+File checksums use streaming reads to handle arbitrarily large files without
+loading them entirely into memory:
+
+```go
+hash, err := crypt.SHA256File("/path/to/file")  // hex string
+hash, err := crypt.SHA512File("/path/to/file")  // hex string
+
+// In-memory checksums
+hash := crypt.SHA256Sum(data)  // hex string
+hash := crypt.SHA512Sum(data)  // hex string
+```
 
 ### crypt/chachapoly/
 
-A standalone AEAD wrapper with slightly different capacity pre-allocation. The
-nonce (24 bytes) is prepended to the ciphertext on encrypt and stripped on
-decrypt. This package exists separately from `crypt/symmetric.go` for callers
-that import only ChaCha20-Poly1305 without the full `crypt` package.
+A standalone ChaCha20-Poly1305 package that can be imported independently.
+It pre-allocates `cap(nonce) + len(plaintext) + overhead` before appending,
+which reduces allocations for small payloads.
 
-Note: the two implementations are nearly identical. The main difference is that
-`chachapoly` pre-allocates `cap(nonce) + len(plaintext) + overhead` before
-appending, which can reduce allocations for small payloads.
+```go
+import "forge.lthn.ai/core/go-crypt/crypt/chachapoly"
 
-### crypt/lthn/
+ciphertext, err := chachapoly.Encrypt(plaintext, key)  // key must be 32 bytes
+plaintext, err := chachapoly.Decrypt(ciphertext, key)
+```
 
-RFC-0004 quasi-salted deterministic hash. The algorithm:
+This is functionally identical to `crypt.ChaCha20Encrypt` and exists as a
+separate import path for callers that only need the AEAD primitive.
+
+### crypt/lthn/ -- RFC-0004 Deterministic Hash
+
+The LTHN hash produces a deterministic, verifiable identifier from any
+input string. The algorithm:
 
 1. Reverse the input string.
-2. Apply leet-speak character substitutions (`o`→`0`, `l`→`1`, `e`→`3`,
-   `a`→`4`, `s`→`z`, `t`→`7`, and inverses).
-3. Concatenate original input with the derived quasi-salt.
-4. Return SHA-256 of the concatenation, hex-encoded.
+2. Apply "leet speak" character substitutions (`o` to `0`, `l` to `1`,
+   `e` to `3`, `a` to `4`, `s` to `z`, `t` to `7`, and their inverses).
+3. Concatenate the original input with the derived quasi-salt.
+4. Return the SHA-256 digest, hex-encoded (64 characters).
 
-This is deterministic — the same input always produces the same output. It is
-designed for content identifiers, cache keys, and deduplication. It is **not**
-suitable for password hashing because there is no random salt and the
-comparison in `Verify` is not constant-time.
+```go
+import "forge.lthn.ai/core/go-crypt/crypt/lthn"
 
-### crypt/pgp/
+hash := lthn.Hash("hello")
+valid := lthn.Verify("hello", hash)  // true
+```
 
-OpenPGP primitives via `github.com/ProtonMail/go-crypto`:
+The substitution map can be customised via `lthn.SetKeyMap()` for
+application-specific derivation.
 
-- `CreateKeyPair(name, email, password)` — generates a DSA primary key with an
-  RSA encryption subkey; returns armored public and private keys.
-- `Encrypt(plaintext, publicKey)` — produces an armored PGP message.
-- `Decrypt(ciphertext, privateKey, password)` — decrypts an armored message.
-- `Sign(data, privateKey, password)` — creates a detached armored signature.
-- `Verify(data, signature, publicKey)` — verifies a detached signature.
+**Important**: LTHN is designed for content identifiers, cache keys, and
+deduplication. It is not suitable for password hashing because it uses no
+random salt and the comparison in `Verify` uses `subtle.ConstantTimeCompare`
+but the hash itself is deterministic and fast.
 
-PGP output is Base64-armored, which adds approximately 33% overhead relative
-to raw binary. For large payloads consider compression before encryption.
+### crypt/pgp/ -- OpenPGP Primitives
 
-### crypt/rsa/
+Full OpenPGP support via `github.com/ProtonMail/go-crypto`:
 
-RSA OAEP-SHA256. `GenerateKeyPair(bits)` generates an RSA keypair (minimum
-2048 bit is enforced at the call site). `Encrypt`/`Decrypt` use
-`crypto/rsa.EncryptOAEP` with SHA-256. Keys are serialised as PEM blocks.
+```go
+import "forge.lthn.ai/core/go-crypt/crypt/pgp"
 
-### crypt/openpgp/
+// Generate a keypair (private key optionally password-protected)
+kp, err := pgp.CreateKeyPair("Alice", "alice@example.com", "password")
+// kp.PublicKey  -- armored PGP public key
+// kp.PrivateKey -- armored PGP private key
 
-Service wrapper that implements the `core.Crypt` interface from `forge.lthn.ai/core/go`.
-Uses RSA-4096 with SHA-256 and AES-256. This is the only IPC-aware component
-in go-crypt: `HandleIPCEvents` dispatches the `"openpgp.create_key_pair"` action
-when registered with a Core instance.
+// Encrypt data for a recipient
+ciphertext, err := pgp.Encrypt(data, kp.PublicKey)
+
+// Decrypt with private key
+plaintext, err := pgp.Decrypt(ciphertext, kp.PrivateKey, "password")
+
+// Sign data (detached armored signature)
+signature, err := pgp.Sign(data, kp.PrivateKey, "password")
+
+// Verify a detached signature
+err := pgp.Verify(data, signature, kp.PublicKey)
+```
+
+All PGP output is Base64-armored, adding approximately 33% overhead
+relative to raw binary. For large payloads, consider compression before
+encryption.
+
+### crypt/rsa/ -- RSA-OAEP
+
+RSA encryption with OAEP-SHA256 padding. A minimum key size of 2048 bits
+is enforced at the API level.
+
+```go
+import "forge.lthn.ai/core/go-crypt/crypt/rsa"
+
+svc := rsa.NewService()
+
+// Generate a keypair (PEM-encoded)
+pubKey, privKey, err := svc.GenerateKeyPair(4096)
+
+// Encrypt / Decrypt with optional label
+ciphertext, err := svc.Encrypt(pubKey, plaintext, label)
+plaintext, err := svc.Decrypt(privKey, ciphertext, label)
+```
+
+### crypt/openpgp/ -- Core Service Integration
+
+A service wrapper that implements the `core.Crypt` interface from
+`forge.lthn.ai/core/go`. This is the only component in go-crypt that
+integrates with the Core framework's IPC system.
+
+```go
+import "forge.lthn.ai/core/go-crypt/crypt/openpgp"
+
+// Register as a Core service
+core.New(core.WithService(openpgp.New))
+
+// Handles the "openpgp.create_key_pair" IPC action
+```
+
+The service generates RSA-4096 keypairs with SHA-256 hashing and AES-256
+encryption for private key protection.
 
 ---
 
-## auth/ — OpenPGP Authentication
+## auth/ -- OpenPGP Authentication
 
 ### Authenticator
 
-The `Authenticator` struct manages all user identity operations. It takes an
-`io.Medium` (from `forge.lthn.ai/core/go`) for storage and an optional
-`SessionStore` for session persistence.
+The `Authenticator` struct is the central type for user identity operations.
+It takes an `io.Medium` for storage and supports functional options for
+configuration.
 
 ```go
 a := auth.New(medium,
-    auth.WithSessionStore(auth.NewSQLiteSessionStore("/var/lib/app/sessions.db")),
-    auth.WithSessionTTL(8*time.Hour),
-    auth.WithChallengeTTL(2*time.Minute),
+    auth.WithSessionStore(sqliteStore),
+    auth.WithSessionTTL(8 * time.Hour),
+    auth.WithChallengeTTL(2 * time.Minute),
+    auth.WithHardwareKey(yubikey),  // future: hardware-backed crypto
 )
 ```
 
 ### Storage Layout
 
-All user artefacts are stored under `users/` on the Medium, keyed by a userID
-derived from `lthn.Hash(username)`:
+All user artefacts are stored under `users/` on the Medium, keyed by a
+userID derived from `lthn.Hash(username)`:
 
 | File | Content |
 |------|---------|
 | `users/{userID}.pub` | Armored PGP public key |
 | `users/{userID}.key` | Armored PGP private key (password-encrypted) |
-| `users/{userID}.rev` | JSON revocation record, or legacy placeholder string |
-| `users/{userID}.json` | User metadata, PGP-encrypted with the user's public key |
-| `users/{userID}.hash` | Argon2id password hash (new registrations and migrated accounts) |
-| `users/{userID}.lthn` | Legacy LTHN hash (pre-Phase-2 registrations only) |
+| `users/{userID}.rev` | JSON revocation record, or legacy placeholder |
+| `users/{userID}.json` | User metadata (PGP-encrypted with user's public key) |
+| `users/{userID}.hash` | Argon2id password hash |
+| `users/{userID}.lthn` | Legacy LTHN hash (migrated transparently on login) |
 
-### Registration
+### Registration Flow
 
 `Register(username, password)`:
 
 1. Derive `userID = lthn.Hash(username)`.
-2. Check `users/{userID}.pub` does not exist.
-3. `pgp.CreateKeyPair(userID, ...)` → armored keypair.
-4. Write `.pub`, `.key`, `.rev` (placeholder).
-5. `crypt.HashPassword(password)` → Argon2id hash string → write `.hash`.
-6. JSON-marshal `User` metadata, PGP-encrypt with public key, write `.json`.
+2. Check that `users/{userID}.pub` does not already exist.
+3. Generate a PGP keypair via `pgp.CreateKeyPair`.
+4. Store `.pub`, `.key`, `.rev` (placeholder).
+5. Hash the password with Argon2id and store as `.hash`.
+6. Marshal user metadata as JSON, encrypt with the user's PGP public key,
+   store as `.json`.
 
-### Online Challenge-Response
+### Online Challenge-Response Flow
+
+This is the primary authentication mechanism. It proves that the client
+holds the private key corresponding to a registered public key.
 
 ```
 Client                              Server
@@ -209,55 +301,58 @@ Client                              Server
   |-- CreateChallenge(userID) -------> |
   |                                    | 1. Generate 32-byte nonce (crypto/rand)
   |                                    | 2. PGP-encrypt nonce with user's public key
-  |                                    | 3. Store pending challenge (TTL: 5 min)
+  |                                    | 3. Store pending challenge (default TTL: 5 min)
   | <-- Challenge{Encrypted} --------- |
   |                                    |
-  | (client decrypts nonce, signs it)  |
+  | (decrypt nonce, sign with privkey) |
   |                                    |
   |-- ValidateResponse(signedNonce) -> |
   |                                    | 4. Verify detached PGP signature
-  |                                    | 5. Create session (32-byte token, 24h TTL)
+  |                                    | 5. Create session (32-byte token, default 24h TTL)
   | <-- Session{Token} --------------- |
 ```
 
 ### Air-Gapped (Courier) Mode
 
-`WriteChallengeFile(userID, path)` writes the encrypted challenge as JSON to
-the Medium. The client signs the nonce offline. `ReadResponseFile(userID, path)`
-reads the armored signature and calls `ValidateResponse` to complete authentication.
-This mode supports agents or users who cannot receive live HTTP responses.
+For agents that cannot receive live HTTP responses:
+
+- `WriteChallengeFile(userID, path)` writes the encrypted challenge as JSON
+  to the Medium.
+- The client signs the nonce offline.
+- `ReadResponseFile(userID, path)` reads the armored signature and validates
+  it, completing the authentication.
 
 ### Password-Based Login
 
-`Login(userID, password)` bypasses the PGP challenge-response flow and verifies
-the password directly. It supports both hash formats via a dual-path strategy:
+`Login(userID, password)` bypasses the PGP challenge-response flow. It
+supports both hash formats with automatic migration:
 
-1. If `users/{userID}.hash` exists and starts with `$argon2id$`: verify with
-   `crypt.VerifyPassword` (constant-time Argon2id comparison).
-2. Otherwise fall back to `users/{userID}.lthn`: verify with `lthn.Verify`.
-   On success, transparently re-hash the password with Argon2id and write a
-   `.hash` file (best-effort, does not fail the login if the write fails).
+1. If `.hash` exists and starts with `$argon2id$`: verify with
+   constant-time Argon2id comparison.
+2. Otherwise, fall back to `.lthn` and verify with `lthn.Verify`.
+   On success, re-hash with Argon2id and write a `.hash` file
+   (best-effort -- login succeeds even if the migration write fails).
 
 ### Key Management
 
-**Rotation** (`RotateKeyPair(userID, oldPassword, newPassword)`):
-- Load and decrypt current metadata using the old private key and password.
-- Generate a new PGP keypair.
+**Rotation** via `RotateKeyPair(userID, oldPassword, newPassword)`:
+
+- Decrypt current metadata with the old private key and password.
+- Generate a new PGP keypair protected by the new password.
 - Re-encrypt metadata with the new public key.
 - Overwrite `.pub`, `.key`, `.json`, `.hash`.
-- Invalidate all active sessions for the user via `store.DeleteByUser`.
+- Invalidate all active sessions for the user.
 
-**Revocation** (`RevokeKey(userID, password, reason)`):
-- Verify password (dual-path, same as Login).
+**Revocation** via `RevokeKey(userID, password, reason)`:
+
+- Verify the password (tries Argon2id first, then LTHN).
 - Write a `Revocation{UserID, Reason, RevokedAt}` JSON record to `.rev`.
 - Invalidate all sessions.
-- `IsRevoked` returns true only when the `.rev` file contains valid JSON with a
-  non-zero `RevokedAt`. The legacy `"REVOCATION_PLACEHOLDER"` string is treated
-  as non-revoked for backward compatibility.
-- Both `Login` and `CreateChallenge` reject revoked users immediately.
+- Both `Login` and `CreateChallenge` immediately reject revoked users.
 
 **Protected users**: The `"server"` userID cannot be deleted. It holds the
-server keypair; deletion would permanently destroy the server's joining data.
+server keypair; deleting it would permanently destroy the server's joining
+data.
 
 ### Session Management
 
@@ -275,20 +370,19 @@ type SessionStore interface {
 
 Two implementations are provided:
 
-| Implementation | Persistence | Concurrency |
-|----------------|-------------|-------------|
-| `MemorySessionStore` | None (lost on restart) | `sync.RWMutex` |
-| `SQLiteSessionStore` | SQLite via go-store | Single mutex (SQLite single-writer) |
+| Store | Persistence | Concurrency Model |
+|-------|-------------|-------------------|
+| `MemorySessionStore` | None (lost on restart) | `sync.RWMutex` with defensive copies |
+| `SQLiteSessionStore` | SQLite via go-store | Single `sync.Mutex` (SQLite single-writer) |
 
-Session tokens are 32 bytes from `crypto/rand`, hex-encoded to 64 characters
-(256-bit entropy). Expiry is checked on every `ValidateSession` and
-`RefreshSession` call; expired sessions are deleted on access. Background
-cleanup runs via `StartCleanup(ctx, interval)`.
+Session tokens are 32 bytes from `crypto/rand`, hex-encoded to 64
+characters (256-bit entropy). Expired sessions are cleaned up either on
+access or via the `StartCleanup(ctx, interval)` background goroutine.
 
 ### Hardware Key Interface
 
-`hardware.go` defines a `HardwareKey` interface for future PKCS#11, YubiKey,
-or TPM integration:
+`hardware.go` defines a `HardwareKey` interface for future PKCS#11,
+YubiKey, or TPM integration:
 
 ```go
 type HardwareKey interface {
@@ -299,110 +393,166 @@ type HardwareKey interface {
 }
 ```
 
-Configured via `WithHardwareKey(hk)`. Integration points are documented in
-`auth.go` but not yet wired — there are no concrete implementations in this
-module.
+Configured via `WithHardwareKey(hk)`. No concrete implementations exist
+yet -- this is a contract-only definition.
 
 ---
 
-## trust/ — Agent Trust and Policy Engine
-
-### Registry
-
-`Registry` is a thread-safe map of agent names to `Agent` structs, protected by
-`sync.RWMutex`. An `Agent` carries:
-
-- `Name` — unique identifier (e.g. `"Athena"`, `"BugSETI-42"`).
-- `Tier` — trust level (1, 2, or 3).
-- `ScopedRepos` — repository patterns constraining Tier 2 repo access.
-- `RateLimit` — requests per minute (0 = unlimited for Tier 3).
-- `TokenExpiresAt` — optional token expiry.
-
-Default rate limits by tier: Tier 1 = 10/min, Tier 2 = 60/min, Tier 3 = unlimited.
+## trust/ -- Agent Trust and Policy Engine
 
 ### Trust Tiers
 
-| Tier | Name | Default Rate Limit | Typical Agents |
-|------|------|-------------------|----------------|
-| 3 | Full | Unlimited | Athena, Virgil, Charon |
-| 2 | Verified | 60/min | Clotho, Hypnos (scoped repos) |
-| 1 | Untrusted | 10/min | BugSETI community instances |
+Agents are assigned one of three trust tiers:
+
+| Tier | Name | Value | Default Rate Limit | Typical Agents |
+|------|------|-------|-------------------|----------------|
+| Full | `TierFull` | 3 | Unlimited | Athena, Virgil, Charon |
+| Verified | `TierVerified` | 2 | 60 req/min | Clotho, Hypnos |
+| Untrusted | `TierUntrusted` | 1 | 10 req/min | Community instances |
+
+### Registry
+
+`Registry` is a thread-safe map of agent names to `Agent` structs:
+
+```go
+registry := trust.NewRegistry()
+err := registry.Register(trust.Agent{
+    Name:        "Clotho",
+    Tier:        trust.TierVerified,
+    ScopedRepos: []string{"core/*"},
+    RateLimit:   30,
+})
+
+agent := registry.Get("Clotho")
+agents := registry.List()      // snapshot slice
+for a := range registry.ListSeq() { ... }  // iterator
+```
 
 ### Capabilities
 
-Nine capabilities are defined:
+Nine capabilities are defined as typed constants:
 
-| Capability | Description |
-|------------|-------------|
-| `repo.push` | Push commits to a repository |
-| `pr.create` | Open a pull request |
-| `pr.merge` | Merge a pull request |
-| `issue.create` | Create an issue |
-| `issue.comment` | Comment on an issue |
-| `secrets.read` | Read repository secrets |
-| `cmd.privileged` | Run privileged shell commands |
-| `workspace.access` | Access another agent's workspace |
-| `flows.modify` | Modify CI/CD flow definitions |
+| Capability | Constant | Description |
+|------------|----------|-------------|
+| `repo.push` | `CapPushRepo` | Push commits to a repository |
+| `pr.create` | `CapCreatePR` | Open a pull request |
+| `pr.merge` | `CapMergePR` | Merge a pull request |
+| `issue.create` | `CapCreateIssue` | Create an issue |
+| `issue.comment` | `CapCommentIssue` | Comment on an issue |
+| `secrets.read` | `CapReadSecrets` | Read repository secrets |
+| `cmd.privileged` | `CapRunPrivileged` | Run privileged shell commands |
+| `workspace.access` | `CapAccessWorkspace` | Access another agent's workspace |
+| `flows.modify` | `CapModifyFlows` | Modify CI/CD flow definitions |
 
 ### Policy Engine
 
-`NewPolicyEngine(registry)` loads default policies. Evaluation order in
-`Evaluate(agentName, cap, repo)`:
+`NewPolicyEngine(registry)` creates an engine with default policies.
+`Evaluate` returns one of three decisions:
 
-1. Agent not in registry → Deny.
-2. No policy for agent's tier → Deny.
-3. Capability in `Denied` list → Deny.
-4. Capability in `RequiresApproval` list → NeedsApproval.
-5. Capability in `Allowed` list:
-   - If repo-scoped capability and `len(agent.ScopedRepos) > 0`: check repo
-     against scope patterns → Deny if no match.
-   - Otherwise → Allow.
-6. Capability not in any list → Deny.
+```go
+engine := trust.NewPolicyEngine(registry)
+result := engine.Evaluate("Clotho", trust.CapPushRepo, "core/go-crypt")
 
-Default policies by tier:
+switch result.Decision {
+case trust.Allow:
+    // Proceed
+case trust.Deny:
+    // Reject with result.Reason
+case trust.NeedsApproval:
+    // Submit to ApprovalQueue
+}
+```
 
-| Tier | Allowed | RequiresApproval | Denied |
-|------|---------|-----------------|--------|
-| Full (3) | All 9 capabilities | — | — |
+**Evaluation order**:
+
+1. Agent not in registry -- `Deny`.
+2. No policy for the agent's tier -- `Deny`.
+3. Capability in the `Denied` list -- `Deny`.
+4. Capability in the `RequiresApproval` list -- `NeedsApproval`.
+5. Capability in the `Allowed` list:
+   - If the capability is repo-scoped and the agent has `ScopedRepos`:
+     check the repo against scope patterns. No match -- `Deny`.
+   - Otherwise -- `Allow`.
+6. Capability not in any list -- `Deny`.
+
+**Default policies by tier**:
+
+| Tier | Allowed | Requires Approval | Denied |
+|------|---------|-------------------|--------|
+| Full (3) | All 9 capabilities | -- | -- |
 | Verified (2) | repo.push, pr.create, issue.create, issue.comment, secrets.read | pr.merge | workspace.access, flows.modify, cmd.privileged |
-| Untrusted (1) | pr.create, issue.comment | — | repo.push, pr.merge, issue.create, secrets.read, cmd.privileged, workspace.access, flows.modify |
+| Untrusted (1) | pr.create, issue.comment | -- | repo.push, pr.merge, issue.create, secrets.read, cmd.privileged, workspace.access, flows.modify |
 
 ### Repo Scope Matching
 
-`matchScope(pattern, repo)` supports three forms:
+Tier 2 agents can have their repository access restricted via `ScopedRepos`.
+Three pattern types are supported:
 
 | Pattern | Matches | Does Not Match |
 |---------|---------|----------------|
-| `core/go-crypt` | `core/go-crypt` | `core/go-crypt/sub` |
-| `core/*` | `core/go-crypt` | `core/go-crypt/sub` |
-| `core/**` | `core/go-crypt`, `core/go-crypt/sub` | `other/repo` |
+| `core/go-crypt` | `core/go-crypt` (exact) | `core/go-crypt/sub` |
+| `core/*` | `core/go-crypt`, `core/php` | `core/go-crypt/sub`, `other/repo` |
+| `core/**` | `core/go-crypt`, `core/php/sub`, `core/a/b/c` | `other/repo` |
 
-Empty `ScopedRepos` on a Tier 2 agent is treated as unrestricted (no scope
-check is applied). See known limitations in `docs/history.md` (Finding F3).
+Wildcards are only supported at the end of patterns.
 
 ### Approval Queue
 
-`ApprovalQueue` is a thread-safe queue for `NeedsApproval` decisions. It is
-separate from the `PolicyEngine` — the engine returns `NeedsApproval` as a
-decision, and the caller is responsible for submitting to the queue and polling
-for resolution. The queue tracks: submitting agent, capability, repo context,
-status (pending/approved/denied), reviewer identity, and timestamps.
+When the policy engine returns `NeedsApproval`, the caller is responsible
+for submitting the request to an `ApprovalQueue`:
+
+```go
+queue := trust.NewApprovalQueue()
+
+// Submit a request
+id, err := queue.Submit("Clotho", trust.CapMergePR, "core/go-crypt")
+
+// Review pending requests
+for _, req := range queue.Pending() { ... }
+
+// Approve or deny
+queue.Approve(id, "admin", "Looks good")
+queue.Deny(id, "admin", "Not yet authorised")
+
+// Check status
+req := queue.Get(id)  // req.Status == trust.ApprovalApproved
+```
+
+The queue is thread-safe and tracks timestamps, reviewer identity, and
+reasons for each decision.
 
 ### Audit Log
 
-`AuditLog` records every policy evaluation as an `AuditEntry`. Entries are
-stored in-memory and optionally streamed as JSON lines to an `io.Writer` for
-persistence. `Decision` marshals to/from string (`"allow"`, `"deny"`,
-`"needs_approval"`). `EntriesFor(agent)` filters by agent name.
+Every policy evaluation can be recorded in an append-only audit log:
+
+```go
+log := trust.NewAuditLog(os.Stdout)  // or nil for in-memory only
+
+result := engine.Evaluate("Clotho", trust.CapPushRepo, "core/php")
+log.Record(result, "core/php")
+
+// Query entries
+entries := log.Entries()
+agentEntries := log.EntriesFor("Clotho")
+for e := range log.EntriesForSeq("Clotho") { ... }
+```
+
+When an `io.Writer` is provided, each entry is serialised as a JSON line
+for persistent storage. The `Decision` type marshals to and from string
+values (`"allow"`, `"deny"`, `"needs_approval"`).
 
 ### Dynamic Policy Configuration
 
-Policies can be loaded from JSON and applied at runtime:
+Policies can be loaded from JSON at runtime:
 
 ```go
+// Load from file
 engine.ApplyPoliciesFromFile("/etc/agent/policies.json")
 
-// Export current state
+// Load from reader
+engine.ApplyPolicies(reader)
+
+// Export current policies
 engine.ExportPolicies(os.Stdout)
 ```
 
@@ -412,16 +562,17 @@ JSON format:
 {
   "policies": [
     {
-      "tier": 1,
-      "allowed": ["pr.create", "issue.comment"],
-      "denied": ["repo.push", "pr.merge"]
+      "tier": 2,
+      "allowed": ["repo.push", "pr.create", "issue.create"],
+      "requires_approval": ["pr.merge"],
+      "denied": ["cmd.privileged", "workspace.access"]
     }
   ]
 }
 ```
 
-`json.Decoder.DisallowUnknownFields()` is set during load to catch
-configuration errors early.
+The JSON decoder uses `DisallowUnknownFields()` to catch configuration
+errors early.
 
 ---
 
@@ -432,56 +583,41 @@ configuration errors early.
 | KDF (primary) | Argon2id | Memory=64MB, Time=3, Parallelism=4, KeyLen=32 |
 | KDF (alternative) | scrypt | N=32768, r=8, p=1 |
 | KDF (expansion) | HKDF-SHA256 | Variable key length |
-| Symmetric (primary) | ChaCha20-Poly1305 | 24-byte nonce (XChaCha20), 32-byte key |
+| Symmetric (primary) | XChaCha20-Poly1305 | 24-byte nonce, 32-byte key |
 | Symmetric (alternative) | AES-256-GCM | 12-byte nonce, 32-byte key |
-| Password hash | Argon2id | Custom `$argon2id$` format string with random salt |
-| Password hash (legacy) | LTHN quasi-salted SHA-256 | RFC-0004 (deterministic, no random salt) |
-| Password hash (fallback) | Bcrypt | Configurable cost |
-| Content ID | LTHN quasi-salted SHA-256 | RFC-0004 |
-| Asymmetric | RSA-OAEP-SHA256 | 2048+ bit |
-| PGP keypair | DSA primary + RSA subkey | ProtonMail go-crypto |
-| PGP service | RSA-4096 + AES-256 + SHA-256 | core.Crypt interface |
-| HMAC | HMAC-SHA256 / HMAC-SHA512 | Constant-time verify |
-| Challenge nonce | crypto/rand | 32 bytes (256-bit) |
+| Password hash (primary) | Argon2id | `$argon2id$` format with random 16-byte salt |
+| Password hash (fallback) | bcrypt | Configurable cost |
+| Content ID | LTHN quasi-salted SHA-256 | RFC-0004 (deterministic, no random salt) |
+| Asymmetric | RSA-OAEP-SHA256 | 2048+ bit keys |
+| PGP (pgp/) | DSA primary + RSA subkey | ProtonMail go-crypto |
+| PGP (openpgp/) | RSA-4096 + AES-256 + SHA-256 | core.Crypt interface |
+| HMAC | HMAC-SHA256 / HMAC-SHA512 | Constant-time verification |
+| Challenge nonce | crypto/rand | 32 bytes (256-bit entropy) |
 | Session token | crypto/rand | 32 bytes, hex-encoded (64 chars) |
-
----
-
-## Dependencies
-
-| Module | Version | Role |
-|--------|---------|------|
-| `forge.lthn.ai/core/go` | local | `core.E` error helper, `core.Crypt` interface, `io.Medium` storage |
-| `forge.lthn.ai/core/go-store` | local | SQLite KV store for session persistence |
-| `github.com/ProtonMail/go-crypto` | v1.3.0 | OpenPGP (actively maintained fork, post-quantum research) |
-| `golang.org/x/crypto` | v0.48.0 | Argon2, ChaCha20-Poly1305, scrypt, HKDF, bcrypt |
-| `github.com/cloudflare/circl` | v1.6.3 | Indirect; elliptic curves via ProtonMail |
-
----
-
-## Integration Points
-
-| Consumer | Package Used | Purpose |
-|----------|-------------|---------|
-| go-p2p | `crypt/` | UEPS consent-gated encryption |
-| go-scm / AgentCI | `trust/` | Agent capability evaluation before CI operations |
-| go-agentic | `auth/` | Agent session management |
-| core/go | `crypt/openpgp/` | Service registered via `core.Crypt` interface |
 
 ---
 
 ## Security Notes
 
-1. The LTHN hash (`crypt/lthn`) is **not** suitable for password hashing. It
-   is deterministic with no random salt. Use `crypt.HashPassword` (Argon2id).
-2. PGP private keys are not zeroed after use. The ProtonMail `go-crypto`
+1. The LTHN hash (`crypt/lthn`) is **not** suitable for password hashing.
+   It is deterministic with no random salt. Use `crypt.HashPassword`
+   (Argon2id) for passwords.
+
+2. PGP private keys are not zeroed after use. The ProtonMail go-crypto
    library does not expose a `Wipe` method. This is a known upstream
-   limitation; mitigating it would require forking the library.
-3. Empty `ScopedRepos` on a Tier 2 agent currently bypasses the repo scope
-   check (treated as unrestricted). Explicit `["*"]` or `["org/**"]` should be
-   required for unrestricted Tier 2 access if this design is revisited.
+   limitation.
+
+3. Empty `ScopedRepos` on a Tier 2 agent currently bypasses the repo
+   scope check (treated as unrestricted). Explicit `["*"]` or
+   `["org/**"]` should be required for unrestricted Tier 2 access if
+   this design is revisited.
+
 4. The `PolicyEngine` returns decisions but does not enforce the approval
-   workflow. A higher-level layer (go-agentic, go-scm) must handle the
-   `NeedsApproval` case by routing through the `ApprovalQueue`.
-5. The `MemorySessionStore` is the default. Use `WithSessionStore(NewSQLiteSessionStore(path))`
-   for persistence across restarts.
+   workflow. A higher-level layer must handle `NeedsApproval` by routing
+   through the `ApprovalQueue`.
+
+5. All randomness uses `crypto/rand`. Never use `math/rand` for
+   cryptographic purposes in this codebase.
+
+6. Error messages never include secret material. Strings are kept generic:
+   `"invalid password"`, `"session not found"`, `"failed to decrypt"`.
