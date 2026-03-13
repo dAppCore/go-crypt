@@ -6,7 +6,6 @@ package testcmd
 import (
 	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-i18n"
-	"github.com/spf13/cobra"
 )
 
 // Style aliases from shared
@@ -32,11 +31,11 @@ var (
 	testJSON     bool
 )
 
-var testCmd = &cobra.Command{
+var testCmd = &cli.Command{
 	Use:   "test",
 	Short: i18n.T("cmd.test.short"),
 	Long:  i18n.T("cmd.test.long"),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cli.Command, args []string) error {
 		return runTest(testVerbose, testCoverage, testShort, testPkg, testRun, testRace, testJSON)
 	},
 }
@@ -52,7 +51,7 @@ func initTestFlags() {
 }
 
 // AddTestCommands registers the 'test' command and all subcommands.
-func AddTestCommands(root *cobra.Command) {
+func AddTestCommands(root *cli.Command) {
 	initTestFlags()
 	root.AddCommand(testCmd)
 }
