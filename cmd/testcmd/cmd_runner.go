@@ -2,7 +2,6 @@ package testcmd
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -11,12 +10,13 @@ import (
 	"strings"
 
 	"forge.lthn.ai/core/go-i18n"
+	coreerr "forge.lthn.ai/core/go-log"
 )
 
 func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bool) error {
 	// Detect if we're in a Go project
 	if _, err := os.Stat("go.mod"); os.IsNotExist(err) {
-		return errors.New(i18n.T("cmd.test.error.no_go_mod"))
+		return coreerr.E("cmd.test", i18n.T("cmd.test.error.no_go_mod"), nil)
 	}
 
 	// Build command arguments
@@ -94,7 +94,7 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 		// JSON output for CI/agents
 		printJSONResults(results, exitCode)
 		if exitCode != 0 {
-			return errors.New(i18n.T("i18n.fail.run", "tests"))
+			return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), nil)
 		}
 		return nil
 	}
@@ -110,7 +110,7 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 
 	if exitCode != 0 {
 		fmt.Printf("\n%s %s\n", testFailStyle.Render(i18n.T("cli.fail")), i18n.T("cmd.test.tests_failed"))
-		return errors.New(i18n.T("i18n.fail.run", "tests"))
+		return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), nil)
 	}
 
 	fmt.Printf("\n%s %s\n", testPassStyle.Render(i18n.T("cli.pass")), i18n.T("common.result.all_passed"))

@@ -2,11 +2,11 @@ package crypt
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"forge.lthn.ai/core/cli/pkg/cli"
 	"forge.lthn.ai/core/go-crypt/crypt"
+	coreio "forge.lthn.ai/core/go-io"
 )
 
 // Encrypt command flags
@@ -53,10 +53,11 @@ func runEncrypt(path string) error {
 		return cli.Err("passphrase cannot be empty")
 	}
 
-	data, err := os.ReadFile(path)
+	raw, err := coreio.Local.Read(path)
 	if err != nil {
 		return cli.Wrap(err, "failed to read file")
 	}
+	data := []byte(raw)
 
 	var encrypted []byte
 	if encryptAES {
@@ -69,7 +70,7 @@ func runEncrypt(path string) error {
 	}
 
 	outPath := path + ".enc"
-	if err := os.WriteFile(outPath, encrypted, 0o600); err != nil {
+	if err := coreio.Local.Write(outPath, string(encrypted)); err != nil {
 		return cli.Wrap(err, "failed to write encrypted file")
 	}
 
@@ -86,10 +87,11 @@ func runDecrypt(path string) error {
 		return cli.Err("passphrase cannot be empty")
 	}
 
-	data, err := os.ReadFile(path)
+	raw, err := coreio.Local.Read(path)
 	if err != nil {
 		return cli.Wrap(err, "failed to read file")
 	}
+	data := []byte(raw)
 
 	var decrypted []byte
 	if encryptAES {
@@ -106,7 +108,7 @@ func runDecrypt(path string) error {
 		outPath = path + ".dec"
 	}
 
-	if err := os.WriteFile(outPath, decrypted, 0o600); err != nil {
+	if err := coreio.Local.Write(outPath, string(decrypted)); err != nil {
 		return cli.Wrap(err, "failed to write decrypted file")
 	}
 

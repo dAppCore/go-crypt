@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	coreerr "forge.lthn.ai/core/go-log"
 )
 
 // PolicyConfig is the JSON-serialisable representation of a trust policy.
@@ -24,7 +26,7 @@ type PoliciesConfig struct {
 func LoadPoliciesFromFile(path string) ([]Policy, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("trust.LoadPoliciesFromFile: %w", err)
+		return nil, coreerr.E("trust.LoadPoliciesFromFile", "failed to open file", err)
 	}
 	defer f.Close()
 	return LoadPolicies(f)
@@ -36,7 +38,7 @@ func LoadPolicies(r io.Reader) ([]Policy, error) {
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&cfg); err != nil {
-		return nil, fmt.Errorf("trust.LoadPolicies: %w", err)
+		return nil, coreerr.E("trust.LoadPolicies", "failed to decode JSON", err)
 	}
 	return convertPolicies(cfg)
 }
@@ -48,7 +50,7 @@ func convertPolicies(cfg PoliciesConfig) ([]Policy, error) {
 	for i, pc := range cfg.Policies {
 		tier := Tier(pc.Tier)
 		if !tier.Valid() {
-			return nil, fmt.Errorf("trust.LoadPolicies: invalid tier %d at index %d", pc.Tier, i)
+			return nil, coreerr.E("trust.LoadPolicies", fmt.Sprintf("invalid tier %d at index %d", pc.Tier, i), nil)
 		}
 
 		p := Policy{
@@ -72,7 +74,7 @@ func (pe *PolicyEngine) ApplyPolicies(r io.Reader) error {
 	}
 	for _, p := range policies {
 		if err := pe.SetPolicy(p); err != nil {
-			return fmt.Errorf("trust.ApplyPolicies: %w", err)
+			return coreerr.E("trust.ApplyPolicies", "failed to set policy", err)
 		}
 	}
 	return nil
@@ -82,7 +84,7 @@ func (pe *PolicyEngine) ApplyPolicies(r io.Reader) error {
 func (pe *PolicyEngine) ApplyPoliciesFromFile(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("trust.ApplyPoliciesFromFile: %w", err)
+		return coreerr.E("trust.ApplyPoliciesFromFile", "failed to open file", err)
 	}
 	defer f.Close()
 	return pe.ApplyPolicies(f)
@@ -107,7 +109,7 @@ func (pe *PolicyEngine) ExportPolicies(w io.Writer) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(cfg); err != nil {
-		return fmt.Errorf("trust.ExportPolicies: %w", err)
+		return coreerr.E("trust.ExportPolicies", "failed to encode JSON", err)
 	}
 	return nil
 }

@@ -2,11 +2,12 @@ package trust
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"iter"
 	"sync"
 	"time"
+
+	coreerr "forge.lthn.ai/core/go-log"
 )
 
 // AuditEntry records a single policy evaluation for compliance.
@@ -44,7 +45,7 @@ func (d *Decision) UnmarshalJSON(data []byte) error {
 	case "needs_approval":
 		*d = NeedsApproval
 	default:
-		return fmt.Errorf("trust: unknown decision %q", s)
+		return coreerr.E("trust.Decision.UnmarshalJSON", "unknown decision: "+s, nil)
 	}
 	return nil
 }
@@ -83,11 +84,11 @@ func (l *AuditLog) Record(result EvalResult, repo string) error {
 	if l.writer != nil {
 		data, err := json.Marshal(entry)
 		if err != nil {
-			return fmt.Errorf("trust.AuditLog.Record: marshal failed: %w", err)
+			return coreerr.E("trust.AuditLog.Record", "marshal failed", err)
 		}
 		data = append(data, '\n')
 		if _, err := l.writer.Write(data); err != nil {
-			return fmt.Errorf("trust.AuditLog.Record: write failed: %w", err)
+			return coreerr.E("trust.AuditLog.Record", "write failed", err)
 		}
 	}
 

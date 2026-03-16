@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	coreerr "forge.lthn.ai/core/go-log"
 )
 
 // Policy defines the access rules for a given trust tier.
@@ -146,7 +148,7 @@ func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) 
 // SetPolicy replaces the policy for a given tier.
 func (pe *PolicyEngine) SetPolicy(p Policy) error {
 	if !p.Tier.Valid() {
-		return fmt.Errorf("trust.SetPolicy: invalid tier %d", p.Tier)
+		return coreerr.E("trust.SetPolicy", fmt.Sprintf("invalid tier %d", p.Tier), nil)
 	}
 	pe.policies[p.Tier] = &p
 	return nil

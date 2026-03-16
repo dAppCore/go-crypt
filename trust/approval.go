@@ -1,11 +1,12 @@
 package trust
 
 import (
-	"errors"
 	"fmt"
 	"iter"
 	"sync"
 	"time"
+
+	coreerr "forge.lthn.ai/core/go-log"
 )
 
 // ApprovalStatus represents the state of an approval request.
@@ -74,10 +75,10 @@ func NewApprovalQueue() *ApprovalQueue {
 // Returns an error if the agent name or capability is empty.
 func (q *ApprovalQueue) Submit(agent string, cap Capability, repo string) (string, error) {
 	if agent == "" {
-		return "", errors.New("trust.ApprovalQueue.Submit: agent name is required")
+		return "", coreerr.E("trust.ApprovalQueue.Submit", "agent name is required", nil)
 	}
 	if cap == "" {
-		return "", errors.New("trust.ApprovalQueue.Submit: capability is required")
+		return "", coreerr.E("trust.ApprovalQueue.Submit", "capability is required", nil)
 	}
 
 	q.mu.Lock()
@@ -106,10 +107,10 @@ func (q *ApprovalQueue) Approve(id string, reviewedBy string, reason string) err
 
 	req, ok := q.requests[id]
 	if !ok {
-		return fmt.Errorf("trust.ApprovalQueue.Approve: request %q not found", id)
+		return coreerr.E("trust.ApprovalQueue.Approve", fmt.Sprintf("request %q not found", id), nil)
 	}
 	if req.Status != ApprovalPending {
-		return fmt.Errorf("trust.ApprovalQueue.Approve: request %q is already %s", id, req.Status)
+		return coreerr.E("trust.ApprovalQueue.Approve", fmt.Sprintf("request %q is already %s", id, req.Status), nil)
 	}
 
 	req.Status = ApprovalApproved
@@ -127,10 +128,10 @@ func (q *ApprovalQueue) Deny(id string, reviewedBy string, reason string) error 
 
 	req, ok := q.requests[id]
 	if !ok {
-		return fmt.Errorf("trust.ApprovalQueue.Deny: request %q not found", id)
+		return coreerr.E("trust.ApprovalQueue.Deny", fmt.Sprintf("request %q not found", id), nil)
 	}
 	if req.Status != ApprovalPending {
-		return fmt.Errorf("trust.ApprovalQueue.Deny: request %q is already %s", id, req.Status)
+		return coreerr.E("trust.ApprovalQueue.Deny", fmt.Sprintf("request %q is already %s", id, req.Status), nil)
 	}
 
 	req.Status = ApprovalDenied

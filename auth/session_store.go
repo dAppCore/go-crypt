@@ -1,14 +1,15 @@
 package auth
 
 import (
-	"errors"
 	"maps"
 	"sync"
 	"time"
+
+	coreerr "forge.lthn.ai/core/go-log"
 )
 
 // ErrSessionNotFound is returned when a session token is not found.
-var ErrSessionNotFound = errors.New("auth: session not found")
+var ErrSessionNotFound = coreerr.E("auth", "session not found", nil)
 
 // SessionStore abstracts session persistence.
 type SessionStore interface {
