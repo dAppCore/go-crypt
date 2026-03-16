@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 
+	coreerr "forge.lthn.ai/core/go-log"
+
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
@@ -32,7 +34,7 @@ func Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 
 	minLen := aead.NonceSize() + aead.Overhead()
 	if len(ciphertext) < minLen {
-		return nil, fmt.Errorf("ciphertext too short: got %d bytes, need at least %d bytes", len(ciphertext), minLen)
+		return nil, coreerr.E("chachapoly.Decrypt", fmt.Sprintf("ciphertext too short: got %d bytes, need at least %d bytes", len(ciphertext), minLen), nil)
 	}
 
 	nonce, ciphertext := ciphertext[:aead.NonceSize()], ciphertext[aead.NonceSize():]

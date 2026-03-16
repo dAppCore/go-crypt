@@ -11,11 +11,12 @@
 package trust
 
 import (
-	"errors"
 	"fmt"
 	"iter"
 	"sync"
 	"time"
+
+	coreerr "forge.lthn.ai/core/go-log"
 )
 
 // Tier represents an agent's trust level in the system.
@@ -98,10 +99,10 @@ func NewRegistry() *Registry {
 // Returns an error if the agent name is empty or the tier is invalid.
 func (r *Registry) Register(agent Agent) error {
 	if agent.Name == "" {
-		return errors.New("trust.Register: agent name is required")
+		return coreerr.E("trust.Register", "agent name is required", nil)
 	}
 	if !agent.Tier.Valid() {
-		return fmt.Errorf("trust.Register: invalid tier %d for agent %q", agent.Tier, agent.Name)
+		return coreerr.E("trust.Register", fmt.Sprintf("invalid tier %d for agent %q", agent.Tier, agent.Name), nil)
 	}
 	if agent.CreatedAt.IsZero() {
 		agent.CreatedAt = time.Now()

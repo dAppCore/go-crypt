@@ -30,7 +30,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -642,16 +641,18 @@ func (a *Authenticator) ReadResponseFile(userID, path string) (*Session, error) 
 // Tries Argon2id (.hash) first, then falls back to legacy LTHN (.lthn).
 // Returns nil on success, or an error describing the failure.
 func (a *Authenticator) verifyPassword(userID, password string) error {
+	const op = "auth.verifyPassword"
+
 	// Try Argon2id hash first (.hash file)
 	if a.medium.IsFile(userPath(userID, ".hash")) {
 		storedHash, err := a.medium.Read(userPath(userID, ".hash"))
 		if err == nil && strings.HasPrefix(storedHash, "$argon2id$") {
 			valid, verr := crypt.VerifyPassword(password, storedHash)
 			if verr != nil {
-				return errors.New("failed to verify password")
+				return coreerr.E(op, "failed to verify password", nil)
 			}
 			if !valid {
-				return errors.New("invalid password")
+				return coreerr.E(op, "invalid password", nil)
 			}
 			return nil
 		}
@@ -660,10 +661,10 @@ func (a *Authenticator) verifyPassword(userID, password string) error {
 	// Fall back to legacy LTHN hash (.lthn file)
 	storedHash, err := a.medium.Read(userPath(userID, ".lthn"))
 	if err != nil {
-		return errors.New("user not found")
+		return coreerr.E(op, "user not found", nil)
 	}
 	if !lthn.Verify(password, storedHash) {
-		return errors.New("invalid password")
+		return coreerr.E(op, "invalid password", nil)
 	}
 	return nil
 }
@@ -671,9 +672,11 @@ func (a *Authenticator) verifyPassword(userID, password string) error {
 // createSession generates a cryptographically random session token and
 // stores the session via the SessionStore.
 func (a *Authenticator) createSession(userID string) (*Session, error) {
+	const op = "auth.createSession"
+
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
-		return nil, fmt.Errorf("auth: failed to generate session token: %w", err)
+		return nil, coreerr.E(op, "failed to generate session token", err)
 	}
 
 	session := &Session{
@@ -683,7 +686,7 @@ func (a *Authenticator) createSession(userID string) (*Session, error) {
 	}
 
 	if err := a.store.Set(session); err != nil {
-		return nil, fmt.Errorf("auth: failed to persist session: %w", err)
+		return nil, coreerr.E(op, "failed to persist session", err)
 	}
 
 	return session, nil
