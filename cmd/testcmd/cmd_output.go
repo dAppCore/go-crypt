@@ -171,15 +171,15 @@ func formatCoverage(cov float64) string {
 }
 
 func shortenPackageName(name string) string {
-	// Remove common prefixes
-	prefixes := []string{
-		"forge.lthn.ai/core/cli/",
-		"forge.lthn.ai/core/gui/",
-	}
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(name, prefix) {
-			return strings.TrimPrefix(name, prefix)
+	const forgePrefix = "forge.lthn.ai/core/"
+	if strings.HasPrefix(name, forgePrefix) {
+		remainder := strings.TrimPrefix(name, forgePrefix)
+		// If there's a sub-path (e.g. "go/pkg/foo"), strip the module name
+		if idx := strings.Index(remainder, "/"); idx >= 0 {
+			return remainder[idx+1:]
 		}
+		// Module root (e.g. "cli-php") — return as-is
+		return remainder
 	}
 	return filepath.Base(name)
 }
