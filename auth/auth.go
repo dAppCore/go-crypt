@@ -420,19 +420,21 @@ func (a *Authenticator) Login(userID, password string) (*Session, error) {
 			return nil, coreerr.E(op, "failed to read password hash", err)
 		}
 
-		if strings.HasPrefix(storedHash, "$argon2id$") {
-			valid, err := crypt.VerifyPassword(password, storedHash)
-			if err != nil {
-				return nil, coreerr.E(op, "failed to verify password", err)
-			}
-			if !valid {
-				return nil, coreerr.E(op, "invalid password", nil)
-			}
-			return a.createSession(userID)
+		if !strings.HasPrefix(storedHash, "$argon2id$") {
+			return nil, coreerr.E(op, "corrupted password hash", nil)
 		}
+
+		valid, err := crypt.VerifyPassword(password, storedHash)
+		if err != nil {
+			return nil, coreerr.E(op, "failed to verify password", err)
+		}
+		if !valid {
+			return nil, coreerr.E(op, "invalid password", nil)
+		}
+		return a.createSession(userID)
 	}
 
-	// Fall back to legacy LTHN hash (.lthn file)
+	// Fall back to legacy LTHN hash (.lthn file) — only when no .hash file exists
 	storedHash, err := a.medium.Read(userPath(userID, ".lthn"))
 	if err != nil {
 		return nil, coreerr.E(op, "user not found", err)
@@ -646,19 +648,25 @@ func (a *Authenticator) verifyPassword(userID, password string) error {
 	// Try Argon2id hash first (.hash file)
 	if a.medium.IsFile(userPath(userID, ".hash")) {
 		storedHash, err := a.medium.Read(userPath(userID, ".hash"))
-		if err == nil && strings.HasPrefix(storedHash, "$argon2id$") {
-			valid, verr := crypt.VerifyPassword(password, storedHash)
-			if verr != nil {
-				return coreerr.E(op, "failed to verify password", nil)
-			}
-			if !valid {
-				return coreerr.E(op, "invalid password", nil)
-			}
-			return nil
+		if err != nil {
+			return coreerr.E(op, "failed to read password hash", err)
 		}
+
+		if !strings.HasPrefix(storedHash, "$argon2id$") {
+			return coreerr.E(op, "corrupted password hash", nil)
+		}
+
+		valid, verr := crypt.VerifyPassword(password, storedHash)
+		if verr != nil {
+			return coreerr.E(op, "failed to verify password", verr)
+		}
+		if !valid {
+			return coreerr.E(op, "invalid password", nil)
+		}
+		return nil
 	}
 
-	// Fall back to legacy LTHN hash (.lthn file)
+	// Fall back to legacy LTHN hash (.lthn file) — only when no .hash file exists
 	storedHash, err := a.medium.Read(userPath(userID, ".lthn"))
 	if err != nil {
 		return coreerr.E(op, "user not found", nil)

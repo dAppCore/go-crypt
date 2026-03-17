@@ -27,21 +27,23 @@ func Encrypt(plaintext []byte, key []byte) ([]byte, error) {
 
 // Decrypt decrypts data using ChaCha20-Poly1305.
 func Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
+	const op = "chachapoly.Decrypt"
+
 	aead, err := chacha20poly1305.NewX(key)
 	if err != nil {
-		return nil, err
+		return nil, coreerr.E(op, "failed to create cipher", err)
 	}
 
 	minLen := aead.NonceSize() + aead.Overhead()
 	if len(ciphertext) < minLen {
-		return nil, coreerr.E("chachapoly.Decrypt", fmt.Sprintf("ciphertext too short: got %d bytes, need at least %d bytes", len(ciphertext), minLen), nil)
+		return nil, coreerr.E(op, fmt.Sprintf("ciphertext too short: got %d bytes, need at least %d bytes", len(ciphertext), minLen), nil)
 	}
 
 	nonce, ciphertext := ciphertext[:aead.NonceSize()], ciphertext[aead.NonceSize():]
 
 	decrypted, err := aead.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return nil, err
+		return nil, coreerr.E(op, "decryption failed", err)
 	}
 
 	if len(decrypted) == 0 {
