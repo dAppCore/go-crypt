@@ -4,18 +4,18 @@ go 1.26.0
 
 require (
 	forge.lthn.ai/core/cli v0.3.7
-	forge.lthn.ai/core/go v0.3.2
+	forge.lthn.ai/core/go v0.3.3
 	forge.lthn.ai/core/go-i18n v0.1.7
-	forge.lthn.ai/core/go-io v0.1.6
+	forge.lthn.ai/core/go-io v0.1.7
 	forge.lthn.ai/core/go-log v0.0.4
-	forge.lthn.ai/core/go-store v0.1.9
+	forge.lthn.ai/core/go-store v0.1.10
 	github.com/ProtonMail/go-crypto v1.4.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.49.0
 )
 
 require (
-	forge.lthn.ai/core/go-inference v0.1.6 // indirect
+	forge.lthn.ai/core/go-inference v0.1.7 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/bubbletea v1.3.10 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
