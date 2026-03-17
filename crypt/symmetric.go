@@ -5,7 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 
-	core "forge.lthn.ai/core/go-log"
+	coreerr "forge.lthn.ai/core/go-log"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
@@ -15,12 +15,12 @@ import (
 func ChaCha20Encrypt(plaintext, key []byte) ([]byte, error) {
 	aead, err := chacha20poly1305.NewX(key)
 	if err != nil {
-		return nil, core.E("crypt.ChaCha20Encrypt", "failed to create cipher", err)
+		return nil, coreerr.E("crypt.ChaCha20Encrypt", "failed to create cipher", err)
 	}
 
 	nonce := make([]byte, aead.NonceSize())
 	if _, err := rand.Read(nonce); err != nil {
-		return nil, core.E("crypt.ChaCha20Encrypt", "failed to generate nonce", err)
+		return nil, coreerr.E("crypt.ChaCha20Encrypt", "failed to generate nonce", err)
 	}
 
 	ciphertext := aead.Seal(nonce, nonce, plaintext, nil)
@@ -32,18 +32,18 @@ func ChaCha20Encrypt(plaintext, key []byte) ([]byte, error) {
 func ChaCha20Decrypt(ciphertext, key []byte) ([]byte, error) {
 	aead, err := chacha20poly1305.NewX(key)
 	if err != nil {
-		return nil, core.E("crypt.ChaCha20Decrypt", "failed to create cipher", err)
+		return nil, coreerr.E("crypt.ChaCha20Decrypt", "failed to create cipher", err)
 	}
 
 	nonceSize := aead.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return nil, core.E("crypt.ChaCha20Decrypt", "ciphertext too short", nil)
+		return nil, coreerr.E("crypt.ChaCha20Decrypt", "ciphertext too short", nil)
 	}
 
 	nonce, encrypted := ciphertext[:nonceSize], ciphertext[nonceSize:]
 	plaintext, err := aead.Open(nil, nonce, encrypted, nil)
 	if err != nil {
-		return nil, core.E("crypt.ChaCha20Decrypt", "failed to decrypt", err)
+		return nil, coreerr.E("crypt.ChaCha20Decrypt", "failed to decrypt", err)
 	}
 
 	return plaintext, nil
@@ -55,17 +55,17 @@ func ChaCha20Decrypt(ciphertext, key []byte) ([]byte, error) {
 func AESGCMEncrypt(plaintext, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, core.E("crypt.AESGCMEncrypt", "failed to create cipher", err)
+		return nil, coreerr.E("crypt.AESGCMEncrypt", "failed to create cipher", err)
 	}
 
 	aead, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, core.E("crypt.AESGCMEncrypt", "failed to create GCM", err)
+		return nil, coreerr.E("crypt.AESGCMEncrypt", "failed to create GCM", err)
 	}
 
 	nonce := make([]byte, aead.NonceSize())
 	if _, err := rand.Read(nonce); err != nil {
-		return nil, core.E("crypt.AESGCMEncrypt", "failed to generate nonce", err)
+		return nil, coreerr.E("crypt.AESGCMEncrypt", "failed to generate nonce", err)
 	}
 
 	ciphertext := aead.Seal(nonce, nonce, plaintext, nil)
@@ -77,23 +77,23 @@ func AESGCMEncrypt(plaintext, key []byte) ([]byte, error) {
 func AESGCMDecrypt(ciphertext, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, core.E("crypt.AESGCMDecrypt", "failed to create cipher", err)
+		return nil, coreerr.E("crypt.AESGCMDecrypt", "failed to create cipher", err)
 	}
 
 	aead, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, core.E("crypt.AESGCMDecrypt", "failed to create GCM", err)
+		return nil, coreerr.E("crypt.AESGCMDecrypt", "failed to create GCM", err)
 	}
 
 	nonceSize := aead.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return nil, core.E("crypt.AESGCMDecrypt", "ciphertext too short", nil)
+		return nil, coreerr.E("crypt.AESGCMDecrypt", "ciphertext too short", nil)
 	}
 
 	nonce, encrypted := ciphertext[:nonceSize], ciphertext[nonceSize:]
 	plaintext, err := aead.Open(nil, nonce, encrypted, nil)
 	if err != nil {
-		return nil, core.E("crypt.AESGCMDecrypt", "failed to decrypt", err)
+		return nil, coreerr.E("crypt.AESGCMDecrypt", "failed to decrypt", err)
 	}
 
 	return plaintext, nil

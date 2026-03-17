@@ -10,7 +10,7 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/armor"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 
-	core "forge.lthn.ai/core/go-log"
+	coreerr "forge.lthn.ai/core/go-log"
 	framework "forge.lthn.ai/core/go/pkg/core"
 )
 
@@ -36,19 +36,19 @@ func (s *Service) CreateKeyPair(name, passphrase string) (string, error) {
 
 	entity, err := openpgp.NewEntity(name, "Workspace Key", "", config)
 	if err != nil {
-		return "", core.E("openpgp.CreateKeyPair", "failed to create entity", err)
+		return "", coreerr.E("openpgp.CreateKeyPair", "failed to create entity", err)
 	}
 
 	// Encrypt private key if passphrase is provided
 	if passphrase != "" {
 		err = entity.PrivateKey.Encrypt([]byte(passphrase))
 		if err != nil {
-			return "", core.E("openpgp.CreateKeyPair", "failed to encrypt private key", err)
+			return "", coreerr.E("openpgp.CreateKeyPair", "failed to encrypt private key", err)
 		}
 		for _, subkey := range entity.Subkeys {
 			err = subkey.PrivateKey.Encrypt([]byte(passphrase))
 			if err != nil {
-				return "", core.E("openpgp.CreateKeyPair", "failed to encrypt subkey", err)
+				return "", coreerr.E("openpgp.CreateKeyPair", "failed to encrypt subkey", err)
 			}
 		}
 	}
@@ -56,14 +56,14 @@ func (s *Service) CreateKeyPair(name, passphrase string) (string, error) {
 	var buf bytes.Buffer
 	w, err := armor.Encode(&buf, openpgp.PrivateKeyType, nil)
 	if err != nil {
-		return "", core.E("openpgp.CreateKeyPair", "failed to create armor encoder", err)
+		return "", coreerr.E("openpgp.CreateKeyPair", "failed to create armor encoder", err)
 	}
 
 	// Manual serialization to avoid panic from re-signing encrypted keys
 	err = s.serializeEntity(w, entity)
 	if err != nil {
 		w.Close()
-		return "", core.E("openpgp.CreateKeyPair", "failed to serialize private key", err)
+		return "", coreerr.E("openpgp.CreateKeyPair", "failed to serialize private key", err)
 	}
 	w.Close()
 
@@ -104,13 +104,13 @@ func (s *Service) serializeEntity(w goio.Writer, e *openpgp.Entity) error {
 func (s *Service) EncryptPGP(writer goio.Writer, recipientPath, data string, opts ...any) (string, error) {
 	entityList, err := openpgp.ReadArmoredKeyRing(strings.NewReader(recipientPath))
 	if err != nil {
-		return "", core.E("openpgp.EncryptPGP", "failed to read recipient key", err)
+		return "", coreerr.E("openpgp.EncryptPGP", "failed to read recipient key", err)
 	}
 
 	var armoredBuf bytes.Buffer
 	armoredWriter, err := armor.Encode(&armoredBuf, "PGP MESSAGE", nil)
 	if err != nil {
-		return "", core.E("openpgp.EncryptPGP", "failed to create armor encoder", err)
+		return "", coreerr.E("openpgp.EncryptPGP", "failed to create armor encoder", err)
 	}
 
 	// MultiWriter to write to both the provided writer and our armored buffer
@@ -119,14 +119,14 @@ func (s *Service) EncryptPGP(writer goio.Writer, recipientPath, data string, opt
 	w, err := openpgp.Encrypt(mw, entityList, nil, nil, nil)
 	if err != nil {
 		armoredWriter.Close()
-		return "", core.E("openpgp.EncryptPGP", "failed to start encryption", err)
+		return "", coreerr.E("openpgp.EncryptPGP", "failed to start encryption", err)
 	}
 
 	_, err = goio.WriteString(w, data)
 	if err != nil {
 		w.Close()
 		armoredWriter.Close()
-		return "", core.E("openpgp.EncryptPGP", "failed to write data", err)
+		return "", coreerr.E("openpgp.EncryptPGP", "failed to write data", err)
 	}
 
 	w.Close()
@@ -139,14 +139,14 @@ func (s *Service) EncryptPGP(writer goio.Writer, recipientPath, data string, opt
 func (s *Service) DecryptPGP(privateKey, message, passphrase string, opts ...any) (string, error) {
 	entityList, err := openpgp.ReadArmoredKeyRing(strings.NewReader(privateKey))
 	if err != nil {
-		return "", core.E("openpgp.DecryptPGP", "failed to read private key", err)
+		return "", coreerr.E("openpgp.DecryptPGP", "failed to read private key", err)
 	}
 
 	entity := entityList[0]
 	if entity.PrivateKey.Encrypted {
 		err = entity.PrivateKey.Decrypt([]byte(passphrase))
 		if err != nil {
-			return "", core.E("openpgp.DecryptPGP", "failed to decrypt private key", err)
+			return "", coreerr.E("openpgp.DecryptPGP", "failed to decrypt private key", err)
 		}
 		for _, subkey := range entity.Subkeys {
 			_ = subkey.PrivateKey.Decrypt([]byte(passphrase))
@@ -156,18 +156,18 @@ func (s *Service) DecryptPGP(privateKey, message, passphrase string, opts ...any
 	// Decrypt armored message
 	block, err := armor.Decode(strings.NewReader(message))
 	if err != nil {
-		return "", core.E("openpgp.DecryptPGP", "failed to decode armored message", err)
+		return "", coreerr.E("openpgp.DecryptPGP", "failed to decode armored message", err)
 	}
 
 	md, err := openpgp.ReadMessage(block.Body, entityList, nil, nil)
 	if err != nil {
-		return "", core.E("openpgp.DecryptPGP", "failed to read message", err)
+		return "", coreerr.E("openpgp.DecryptPGP", "failed to read message", err)
 	}
 
 	var buf bytes.Buffer
 	_, err = goio.Copy(&buf, md.UnverifiedBody)
 	if err != nil {
-		return "", core.E("openpgp.DecryptPGP", "failed to read decrypted body", err)
+		return "", coreerr.E("openpgp.DecryptPGP", "failed to read decrypted body", err)
 	}
 
 	return buf.String(), nil

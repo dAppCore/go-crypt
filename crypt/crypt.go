@@ -1,7 +1,7 @@
 package crypt
 
 import (
-	core "forge.lthn.ai/core/go-log"
+	coreerr "forge.lthn.ai/core/go-log"
 )
 
 // Encrypt encrypts data with a passphrase using ChaCha20-Poly1305.
@@ -10,14 +10,14 @@ import (
 func Encrypt(plaintext, passphrase []byte) ([]byte, error) {
 	salt, err := generateSalt(argon2SaltLen)
 	if err != nil {
-		return nil, core.E("crypt.Encrypt", "failed to generate salt", err)
+		return nil, coreerr.E("crypt.Encrypt", "failed to generate salt", err)
 	}
 
 	key := DeriveKey(passphrase, salt, argon2KeyLen)
 
 	encrypted, err := ChaCha20Encrypt(plaintext, key)
 	if err != nil {
-		return nil, core.E("crypt.Encrypt", "failed to encrypt", err)
+		return nil, coreerr.E("crypt.Encrypt", "failed to encrypt", err)
 	}
 
 	// Prepend salt to the encrypted data (which already has nonce prepended)
@@ -31,7 +31,7 @@ func Encrypt(plaintext, passphrase []byte) ([]byte, error) {
 // Expects format: salt (16 bytes) + nonce (24 bytes) + ciphertext.
 func Decrypt(ciphertext, passphrase []byte) ([]byte, error) {
 	if len(ciphertext) < argon2SaltLen {
-		return nil, core.E("crypt.Decrypt", "ciphertext too short", nil)
+		return nil, coreerr.E("crypt.Decrypt", "ciphertext too short", nil)
 	}
 
 	salt := ciphertext[:argon2SaltLen]
@@ -41,7 +41,7 @@ func Decrypt(ciphertext, passphrase []byte) ([]byte, error) {
 
 	plaintext, err := ChaCha20Decrypt(encrypted, key)
 	if err != nil {
-		return nil, core.E("crypt.Decrypt", "failed to decrypt", err)
+		return nil, coreerr.E("crypt.Decrypt", "failed to decrypt", err)
 	}
 
 	return plaintext, nil
@@ -53,14 +53,14 @@ func Decrypt(ciphertext, passphrase []byte) ([]byte, error) {
 func EncryptAES(plaintext, passphrase []byte) ([]byte, error) {
 	salt, err := generateSalt(argon2SaltLen)
 	if err != nil {
-		return nil, core.E("crypt.EncryptAES", "failed to generate salt", err)
+		return nil, coreerr.E("crypt.EncryptAES", "failed to generate salt", err)
 	}
 
 	key := DeriveKey(passphrase, salt, argon2KeyLen)
 
 	encrypted, err := AESGCMEncrypt(plaintext, key)
 	if err != nil {
-		return nil, core.E("crypt.EncryptAES", "failed to encrypt", err)
+		return nil, coreerr.E("crypt.EncryptAES", "failed to encrypt", err)
 	}
 
 	result := make([]byte, 0, len(salt)+len(encrypted))
@@ -73,7 +73,7 @@ func EncryptAES(plaintext, passphrase []byte) ([]byte, error) {
 // Expects format: salt (16 bytes) + nonce (12 bytes) + ciphertext.
 func DecryptAES(ciphertext, passphrase []byte) ([]byte, error) {
 	if len(ciphertext) < argon2SaltLen {
-		return nil, core.E("crypt.DecryptAES", "ciphertext too short", nil)
+		return nil, coreerr.E("crypt.DecryptAES", "ciphertext too short", nil)
 	}
 
 	salt := ciphertext[:argon2SaltLen]
@@ -83,7 +83,7 @@ func DecryptAES(ciphertext, passphrase []byte) ([]byte, error) {
 
 	plaintext, err := AESGCMDecrypt(encrypted, key)
 	if err != nil {
-		return nil, core.E("crypt.DecryptAES", "failed to decrypt", err)
+		return nil, coreerr.E("crypt.DecryptAES", "failed to decrypt", err)
 	}
 
 	return plaintext, nil

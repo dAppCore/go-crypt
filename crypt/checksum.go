@@ -7,20 +7,20 @@ import (
 	"io"
 	"os"
 
-	core "forge.lthn.ai/core/go-log"
+	coreerr "forge.lthn.ai/core/go-log"
 )
 
 // SHA256File computes the SHA-256 checksum of a file and returns it as a hex string.
 func SHA256File(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return "", core.E("crypt.SHA256File", "failed to open file", err)
+		return "", coreerr.E("crypt.SHA256File", "failed to open file", err)
 	}
 	defer func() { _ = f.Close() }()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
-		return "", core.E("crypt.SHA256File", "failed to read file", err)
+		return "", coreerr.E("crypt.SHA256File", "failed to read file", err)
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil
@@ -30,13 +30,13 @@ func SHA256File(path string) (string, error) {
 func SHA512File(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return "", core.E("crypt.SHA512File", "failed to open file", err)
+		return "", coreerr.E("crypt.SHA512File", "failed to open file", err)
 	}
 	defer func() { _ = f.Close() }()
 
 	h := sha512.New()
 	if _, err := io.Copy(h, f); err != nil {
-		return "", core.E("crypt.SHA512File", "failed to read file", err)
+		return "", coreerr.E("crypt.SHA512File", "failed to read file", err)
 	}
 
 	return hex.EncodeToString(h.Sum(nil)), nil

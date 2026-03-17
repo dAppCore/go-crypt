@@ -7,7 +7,7 @@ import (
 	"crypto/sha256"
 	"io"
 
-	core "forge.lthn.ai/core/go-log"
+	coreerr "forge.lthn.ai/core/go-log"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/scrypt"
@@ -33,7 +33,7 @@ func DeriveKey(passphrase, salt []byte, keyLen uint32) []byte {
 func DeriveKeyScrypt(passphrase, salt []byte, keyLen int) ([]byte, error) {
 	key, err := scrypt.Key(passphrase, salt, 32768, 8, 1, keyLen)
 	if err != nil {
-		return nil, core.E("crypt.DeriveKeyScrypt", "failed to derive key", err)
+		return nil, coreerr.E("crypt.DeriveKeyScrypt", "failed to derive key", err)
 	}
 	return key, nil
 }
@@ -45,7 +45,7 @@ func HKDF(secret, salt, info []byte, keyLen int) ([]byte, error) {
 	reader := hkdf.New(sha256.New, secret, salt, info)
 	key := make([]byte, keyLen)
 	if _, err := io.ReadFull(reader, key); err != nil {
-		return nil, core.E("crypt.HKDF", "failed to derive key", err)
+		return nil, coreerr.E("crypt.HKDF", "failed to derive key", err)
 	}
 	return key, nil
 }
@@ -54,7 +54,7 @@ func HKDF(secret, salt, info []byte, keyLen int) ([]byte, error) {
 func generateSalt(length int) ([]byte, error) {
 	salt := make([]byte, length)
 	if _, err := rand.Read(salt); err != nil {
-		return nil, core.E("crypt.generateSalt", "failed to generate random salt", err)
+		return nil, coreerr.E("crypt.generateSalt", "failed to generate random salt", err)
 	}
 	return salt, nil
 }

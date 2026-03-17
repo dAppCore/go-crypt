@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	core "forge.lthn.ai/core/go-log"
+	coreerr "forge.lthn.ai/core/go-log"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -16,7 +16,7 @@ import (
 func HashPassword(password string) (string, error) {
 	salt, err := generateSalt(argon2SaltLen)
 	if err != nil {
-		return "", core.E("crypt.HashPassword", "failed to generate salt", err)
+		return "", coreerr.E("crypt.HashPassword", "failed to generate salt", err)
 	}
 
 	hash := argon2.IDKey([]byte(password), salt, argon2Time, argon2Memory, argon2Parallelism, argon2KeyLen)
@@ -36,29 +36,29 @@ func HashPassword(password string) (string, error) {
 func VerifyPassword(password, hash string) (bool, error) {
 	parts := strings.Split(hash, "$")
 	if len(parts) != 6 {
-		return false, core.E("crypt.VerifyPassword", "invalid hash format", nil)
+		return false, coreerr.E("crypt.VerifyPassword", "invalid hash format", nil)
 	}
 
 	var version int
 	if _, err := fmt.Sscanf(parts[2], "v=%d", &version); err != nil {
-		return false, core.E("crypt.VerifyPassword", "failed to parse version", err)
+		return false, coreerr.E("crypt.VerifyPassword", "failed to parse version", err)
 	}
 
 	var memory uint32
 	var time uint32
 	var parallelism uint8
 	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &memory, &time, &parallelism); err != nil {
-		return false, core.E("crypt.VerifyPassword", "failed to parse parameters", err)
+		return false, coreerr.E("crypt.VerifyPassword", "failed to parse parameters", err)
 	}
 
 	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
 	if err != nil {
-		return false, core.E("crypt.VerifyPassword", "failed to decode salt", err)
+		return false, coreerr.E("crypt.VerifyPassword", "failed to decode salt", err)
 	}
 
 	expectedHash, err := base64.RawStdEncoding.DecodeString(parts[5])
 	if err != nil {
-		return false, core.E("crypt.VerifyPassword", "failed to decode hash", err)
+		return false, coreerr.E("crypt.VerifyPassword", "failed to decode hash", err)
 	}
 
 	computedHash := argon2.IDKey([]byte(password), salt, time, memory, parallelism, uint32(len(expectedHash)))
@@ -71,7 +71,7 @@ func VerifyPassword(password, hash string) (bool, error) {
 func HashBcrypt(password string, cost int) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), cost)
 	if err != nil {
-		return "", core.E("crypt.HashBcrypt", "failed to hash password", err)
+		return "", coreerr.E("crypt.HashBcrypt", "failed to hash password", err)
 	}
 	return string(hash), nil
 }
@@ -83,7 +83,7 @@ func VerifyBcrypt(password, hash string) (bool, error) {
 		return false, nil
 	}
 	if err != nil {
-		return false, core.E("crypt.VerifyBcrypt", "failed to verify password", err)
+		return false, coreerr.E("crypt.VerifyBcrypt", "failed to verify password", err)
 	}
 	return true, nil
 }

@@ -59,8 +59,8 @@ No C toolchain or CGo required — all crypto uses pure Go implementations.
 - **Tests**: testify assert/require, `_Good`/`_Bad`/`_Ugly` naming convention
 - **Concurrency tests**: 10 goroutines via WaitGroup; must pass `-race`
 - **Imports**: stdlib → forge.lthn.ai → third-party, separated by blank lines
-- **Errors**: use `core.E("package.Function", "lowercase message", err)` (imported
-  from `forge.lthn.ai/core/go-log`); never include secrets in error strings
+- **Errors**: use `coreerr.E("package.Function", "lowercase message", err)` (imported
+  as `coreerr "forge.lthn.ai/core/go-log"`); never include secrets in error strings
 - **Randomness**: `crypto/rand` only; never `math/rand`
 - **Conventional commits**: `feat(auth):`, `fix(crypt):`, `refactor(trust):`
   Scopes match package names: `auth`, `crypt`, `trust`, `pgp`, `lthn`, `rsa`,
