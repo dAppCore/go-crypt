@@ -6,15 +6,18 @@ import (
 	goio "io"
 	"strings"
 
+	core "forge.lthn.ai/core/go-log"
+
+	framework "dappco.re/go/core"
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/armor"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 
 	coreerr "forge.lthn.ai/core/go-log"
-	framework "forge.lthn.ai/core/go/pkg/core"
+	framework "dappco.re/go/core"
 )
 
-// Service implements the framework.Crypt interface using OpenPGP.
+// Service provides OpenPGP cryptographic operations.
 type Service struct {
 	core *framework.Core
 }
@@ -59,19 +62,20 @@ func (s *Service) CreateKeyPair(name, passphrase string) (string, error) {
 		return "", coreerr.E("openpgp.CreateKeyPair", "failed to create armor encoder", err)
 	}
 
-	// Manual serialization to avoid panic from re-signing encrypted keys
-	err = s.serializeEntity(w, entity)
+	// Manual serialisation to avoid panic from re-signing encrypted keys
+	err = serializeEntity(w, entity)
 	if err != nil {
 		w.Close()
-		return "", coreerr.E("openpgp.CreateKeyPair", "failed to serialize private key", err)
+<<<<<<< HEAD
+		return "", coreerr.E("openpgp.CreateKeyPair", "failed to serialise private key", err)
 	}
 	w.Close()
 
 	return buf.String(), nil
 }
 
-// serializeEntity manually serializes an OpenPGP entity to avoid re-signing.
-func (s *Service) serializeEntity(w goio.Writer, e *openpgp.Entity) error {
+// serializeEntity manually serialises an OpenPGP entity to avoid re-signing.
+func serializeEntity(w goio.Writer, e *openpgp.Entity) error {
 	err := e.PrivateKey.Serialize(w)
 	if err != nil {
 		return err
@@ -188,6 +192,3 @@ func (s *Service) HandleIPCEvents(c *framework.Core, msg framework.Message) erro
 	}
 	return nil
 }
-
-// Ensure Service implements framework.Crypt.
-var _ framework.Crypt = (*Service)(nil)

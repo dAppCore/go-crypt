@@ -4,40 +4,40 @@ import (
 	"bytes"
 	"testing"
 
-	framework "forge.lthn.ai/core/go/pkg/core"
+	framework "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreateKeyPair(t *testing.T) {
-	c, _ := framework.New()
+	c := framework.New()
 	s := &Service{core: c}
 
 	privKey, err := s.CreateKeyPair("test user", "password123")
-	assert.NoError(t, err)
-	assert.NotEmpty(t, privKey)
+	require.NoError(t, err)
+	require.NotEmpty(t, privKey)
 	assert.Contains(t, privKey, "-----BEGIN PGP PRIVATE KEY BLOCK-----")
 }
 
 func TestEncryptDecrypt(t *testing.T) {
-	c, _ := framework.New()
+	c := framework.New()
 	s := &Service{core: c}
 
 	passphrase := "secret"
 	privKey, err := s.CreateKeyPair("test user", passphrase)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	// In this simple test, the public key is also in the armored private key string
-	// (openpgp.ReadArmoredKeyRing reads both)
+	// ReadArmoredKeyRing extracts public keys from armored private key blocks
 	publicKey := privKey
 
 	data := "hello openpgp"
 	var buf bytes.Buffer
 	armored, err := s.EncryptPGP(&buf, publicKey, data)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, armored)
 	assert.NotEmpty(t, buf.String())
 
 	decrypted, err := s.DecryptPGP(privKey, armored, passphrase)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, data, decrypted)
 }
