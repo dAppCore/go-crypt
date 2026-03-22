@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-You are a dedicated domain expert for `forge.lthn.ai/core/go-crypt`. Virgil (in
+You are a dedicated domain expert for `dappco.re/go/core/crypt`. Virgil (in
 core/go) orchestrates your work. Pick up tasks in phase order, mark `[x]` when
 done, commit and push.
 
@@ -39,16 +39,16 @@ go test -bench=. -benchmem ./crypt/... # Benchmarks
 
 ## Local Dependencies
 
-All `forge.lthn.ai/core/*` modules are resolved through the Go workspace
+All `dappco.re/go/core/*` and remaining `forge.lthn.ai/core/*` modules are resolved through the Go workspace
 (`~/Code/go.work`). Do not add replace directives to `go.mod` — use the
 workspace file instead.
 
 | Module | Local Path | Purpose |
 |--------|-----------|---------|
-| `forge.lthn.ai/core/go` | `../go` | Framework: `core.Crypt` interface, `io.Medium` |
+| `dappco.re/go/core` | `../go` | Framework: `core.Crypt` interface, `io.Medium` |
+| `dappco.re/go/core/log` | `../go-log` | `coreerr.E()` contextual error wrapping |
+| `dappco.re/go/core/io` | `../go-io` | `io.Medium` storage abstraction |
 | `forge.lthn.ai/core/go-store` | `../go-store` | SQLite KV store (session persistence) |
-| `forge.lthn.ai/core/go-io` | `../go-io` | `io.Medium` storage abstraction |
-| `forge.lthn.ai/core/go-log` | `../go-log` | `core.E()` contextual error wrapping |
 | `forge.lthn.ai/core/cli` | `../cli` | CLI framework for `cmd/crypt` commands |
 
 No C toolchain or CGo required — all crypto uses pure Go implementations.
@@ -58,9 +58,9 @@ No C toolchain or CGo required — all crypto uses pure Go implementations.
 - **UK English**: colour, organisation, centre, artefact, licence, serialise
 - **Tests**: testify assert/require, `_Good`/`_Bad`/`_Ugly` naming convention
 - **Concurrency tests**: 10 goroutines via WaitGroup; must pass `-race`
-- **Imports**: stdlib → forge.lthn.ai → third-party, separated by blank lines
+- **Imports**: stdlib → dappco.re/forge.lthn.ai → third-party, separated by blank lines
 - **Errors**: use `coreerr.E("package.Function", "lowercase message", err)` (imported
-  as `coreerr "forge.lthn.ai/core/go-log"`); never include secrets in error strings
+  as `coreerr "dappco.re/go/core/log"`); never include secrets in error strings
 - **Randomness**: `crypto/rand` only; never `math/rand`
 - **Conventional commits**: `feat(auth):`, `fix(crypt):`, `refactor(trust):`
   Scopes match package names: `auth`, `crypt`, `trust`, `pgp`, `lthn`, `rsa`,
@@ -70,6 +70,6 @@ No C toolchain or CGo required — all crypto uses pure Go implementations.
 
 ## Forge
 
-- **Repo**: `forge.lthn.ai/core/go-crypt`
+- **Repo**: `dappco.re/go/core/crypt`
 - **Push via SSH**: `git push forge main`
   (remote: `ssh://git@forge.lthn.ai:2223/core/go-crypt.git`)

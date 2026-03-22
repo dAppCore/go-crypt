@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	coreerr "forge.lthn.ai/core/go-log"
+	coreerr "dappco.re/go/core/log"
 )
 
 // SHA256File computes the SHA-256 checksum of a file and returns it as a hex string.

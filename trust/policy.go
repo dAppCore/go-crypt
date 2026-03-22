@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	coreerr "forge.lthn.ai/core/go-log"
+	coreerr "dappco.re/go/core/log"
 )
 
 // Policy defines the access rules for a given trust tier.
