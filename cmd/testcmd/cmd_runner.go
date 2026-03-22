@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"strings"
 
-	"forge.lthn.ai/core/go-i18n"
-	coreerr "forge.lthn.ai/core/go-log"
+	"dappco.re/go/core/i18n"
+	coreerr "dappco.re/go/core/log"
 )
 
 func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bool) error {

@@ -3,8 +3,9 @@ package crypt
 import (
 	"fmt"
 
+	"dappco.re/go/core/crypt/crypt"
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-crypt/crypt"
+
 	"golang.org/x/crypto/bcrypt"
 )
 

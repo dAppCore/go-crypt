@@ -35,12 +35,11 @@ import (
 	"sync"
 	"time"
 
-	coreerr "forge.lthn.ai/core/go-log"
-
-	"forge.lthn.ai/core/go-crypt/crypt"
-	"forge.lthn.ai/core/go-crypt/crypt/lthn"
-	"forge.lthn.ai/core/go-crypt/crypt/pgp"
-	"forge.lthn.ai/core/go-io"
+	"dappco.re/go/core/crypt/crypt"
+	"dappco.re/go/core/crypt/crypt/lthn"
+	"dappco.re/go/core/crypt/crypt/pgp"
+	"dappco.re/go/core/io"
+	coreerr "dappco.re/go/core/log"
 )
 
 // Default durations for challenge and session lifetimes.

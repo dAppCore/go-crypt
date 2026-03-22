@@ -4,8 +4,8 @@
 package testcmd
 
 import (
+	"dappco.re/go/core/i18n"
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-i18n"
 )
 
 // Style aliases from shared

@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"forge.lthn.ai/core/go-crypt/crypt/lthn"
-	"forge.lthn.ai/core/go-io"
+	"dappco.re/go/core/crypt/crypt/lthn"
+	"dappco.re/go/core/io"
 )
 
 // --- MemorySessionStore ---

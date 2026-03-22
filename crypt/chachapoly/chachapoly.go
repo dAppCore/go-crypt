@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	coreerr "forge.lthn.ai/core/go-log"
+	coreerr "dappco.re/go/core/log"
 
 	"golang.org/x/crypto/chacha20poly1305"
 )
