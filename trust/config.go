@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	coreerr "forge.lthn.ai/core/go-log"
+	coreerr "dappco.re/go/core/log"
 )
 
 // PolicyConfig is the JSON-serialisable representation of a trust policy.

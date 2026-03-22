@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	coreerr "forge.lthn.ai/core/go-log"
+	coreerr "dappco.re/go/core/log"
 )
 
 // Tier represents an agent's trust level in the system.

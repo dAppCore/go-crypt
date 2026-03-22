@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"dappco.re/go/core/crypt/crypt"
+	coreio "dappco.re/go/core/io"
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-crypt/crypt"
-	coreio "forge.lthn.ai/core/go-io"
 )
 
 // Encrypt command flags

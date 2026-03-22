@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"forge.lthn.ai/core/go-i18n"
+	"dappco.re/go/core/i18n"
 )
 
 type packageCoverage struct {
@@ -33,8 +33,8 @@ func parseTestOutput(output string) testResults {
 	results := testResults{}
 
 	// Regex patterns - handle both timed and cached test results
-	// Example: ok  	forge.lthn.ai/core/go-crypt/crypt	0.015s	coverage: 91.2% of statements
-	// Example: ok  	forge.lthn.ai/core/go-crypt/crypt	(cached)	coverage: 91.2% of statements
+	// Example: ok  	dappco.re/go/core/crypt/crypt	0.015s	coverage: 91.2% of statements
+	// Example: ok  	dappco.re/go/core/crypt/crypt	(cached)	coverage: 91.2% of statements
 	okPattern := regexp.MustCompile(`^ok\s+(\S+)\s+(?:[\d.]+s|\(cached\))(?:\s+coverage:\s+([\d.]+)%)?`)
 	failPattern := regexp.MustCompile(`^FAIL\s+(\S+)`)
 	skipPattern := regexp.MustCompile(`^\?\s+(\S+)\s+\[no test files\]`)
@@ -171,9 +171,9 @@ func formatCoverage(cov float64) string {
 }
 
 func shortenPackageName(name string) string {
-	const forgePrefix = "forge.lthn.ai/core/"
-	if strings.HasPrefix(name, forgePrefix) {
-		remainder := strings.TrimPrefix(name, forgePrefix)
+	const modulePrefix = "dappco.re/go/"
+	if strings.HasPrefix(name, modulePrefix) {
+		remainder := strings.TrimPrefix(name, modulePrefix)
 		// If there's a sub-path (e.g. "go/pkg/foo"), strip the module name
 		if idx := strings.Index(remainder, "/"); idx >= 0 {
 			return remainder[idx+1:]

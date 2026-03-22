@@ -1,7 +1,7 @@
 package crypt
 
 import (
-	coreerr "forge.lthn.ai/core/go-log"
+	coreerr "dappco.re/go/core/log"
 )
 
 // Encrypt encrypts data with a passphrase using ChaCha20-Poly1305.
