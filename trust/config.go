@@ -34,12 +34,21 @@ func LoadPoliciesFromFile(path string) ([]Policy, error) {
 
 // LoadPolicies reads JSON from a reader and returns parsed policies.
 func LoadPolicies(r io.Reader) ([]Policy, error) {
+	const op = "trust.LoadPolicies"
+
 	var cfg PoliciesConfig
 	dec := json.NewDecoder(r)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&cfg); err != nil {
-		return nil, coreerr.E("trust.LoadPolicies", "failed to decode JSON", err)
+		return nil, coreerr.E(op, "failed to decode JSON", err)
 	}
+
+	// Reject trailing data after the decoded value
+	var extra json.RawMessage
+	if err := dec.Decode(&extra); err != io.EOF {
+		return nil, coreerr.E(op, "unexpected trailing data in JSON", nil)
+	}
+
 	return convertPolicies(cfg)
 }
 
