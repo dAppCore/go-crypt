@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateKeyPair(t *testing.T) {
+func TestCreateKeyPair_Good(t *testing.T) {
 	c := framework.New()
 	s := &Service{core: c}
 
@@ -19,7 +19,7 @@ func TestCreateKeyPair(t *testing.T) {
 	assert.Contains(t, privKey, "-----BEGIN PGP PRIVATE KEY BLOCK-----")
 }
 
-func TestEncryptDecrypt(t *testing.T) {
+func TestEncryptDecrypt_Good(t *testing.T) {
 	c := framework.New()
 	s := &Service{core: c}
 

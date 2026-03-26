@@ -169,7 +169,7 @@ func TestRegistryListSeq_Good(t *testing.T) {
 
 // --- Agent ---
 
-func TestAgentTokenExpiry(t *testing.T) {
+func TestAgentTokenExpiry_Good(t *testing.T) {
 	agent := Agent{
 		Name:           "Test",
 		Tier:           TierVerified,

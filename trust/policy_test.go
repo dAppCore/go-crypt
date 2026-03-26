@@ -261,7 +261,7 @@ func TestEvaluate_Good_Tier3IgnoresRepoScope(t *testing.T) {
 
 // --- Default rate limits ---
 
-func TestDefaultRateLimit(t *testing.T) {
+func TestDefaultRateLimit_Good(t *testing.T) {
 	assert.Equal(t, 10, defaultRateLimit(TierUntrusted))
 	assert.Equal(t, 60, defaultRateLimit(TierVerified))
 	assert.Equal(t, 0, defaultRateLimit(TierFull))

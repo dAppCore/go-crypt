@@ -621,7 +621,8 @@ func TestConcurrentSessionCreation_Good(t *testing.T) {
 	}
 }
 
-// TestSessionTokenUniqueness_Good generates 1000 tokens and verifies no collisions.
+// TestSessionTokenUniqueness_Good generates 1000 session tokens and verifies
+// no collisions without paying the full login hash-verification cost each time.
 func TestSessionTokenUniqueness_Good(t *testing.T) {
 	a, _ := newTestAuth()
 
@@ -633,7 +634,7 @@ func TestSessionTokenUniqueness_Good(t *testing.T) {
 	tokens := make(map[string]bool, n)
 
 	for i := range n {
-		session, err := a.Login(userID, "pass")
+		session, err := a.createSession(userID)
 		require.NoError(t, err)
 		require.NotNil(t, session)
 

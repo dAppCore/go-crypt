@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
-	"forge.lthn.ai/core/go-store"
+	"dappco.re/go/core/store"
 )
 
 const sessionGroup = "sessions"
 
-// SQLiteSessionStore is a SessionStore backed by go-store (SQLite KV).
+// SQLiteSessionStore is a SessionStore backed by core/store (SQLite KV).
 // A mutex serialises all operations because SQLite is single-writer.
 type SQLiteSessionStore struct {
 	mu    sync.Mutex

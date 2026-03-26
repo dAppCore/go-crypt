@@ -7,14 +7,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHash(t *testing.T) {
+func TestHash_Good(t *testing.T) {
 	hash := Hash("hello")
 	assert.NotEmpty(t, hash)
 }
 
-func TestVerify(t *testing.T) {
+func TestVerify_Good(t *testing.T) {
 	hash := Hash("hello")
 	assert.True(t, Verify("hello", hash))
+}
+
+func TestVerify_Bad(t *testing.T) {
+	hash := Hash("hello")
 	assert.False(t, Verify("world", hash))
 }
 
@@ -50,7 +54,7 @@ func TestCreateSalt_Ugly(t *testing.T) {
 
 var testKeyMapMu sync.Mutex
 
-func TestSetKeyMap(t *testing.T) {
+func TestSetKeyMap_Good(t *testing.T) {
 	testKeyMapMu.Lock()
 	originalKeyMap := GetKeyMap()
 	t.Cleanup(func() {

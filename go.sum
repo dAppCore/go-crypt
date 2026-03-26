@@ -6,6 +6,8 @@ dappco.re/go/core/io v0.2.0 h1:zuudgIiTsQQ5ipVt97saWdGLROovbEB/zdVyy9/l+I4=
 dappco.re/go/core/io v0.2.0/go.mod h1:1QnQV6X9LNgFKfm8SkOtR9LLaj3bDcsOIeJOOyjbL5E=
 dappco.re/go/core/log v0.1.0 h1:pa71Vq2TD2aoEUQWFKwNcaJ3GBY8HbaNGqtE688Unyc=
 dappco.re/go/core/log v0.1.0/go.mod h1:Nkqb8gsXhZAO8VLpx7B8i1iAmohhzqA20b9Zr8VUcJs=
+dappco.re/go/core/store v0.2.0 h1:MH3R9m3mdr5T3lMWi37ryvTrXzF4xLBTYBGyNZF0p3I=
+dappco.re/go/core/store v0.2.0/go.mod h1:QQGJiruayjna3nywbf0N2gcO502q/oEkPoSpBpSKbLM=
 forge.lthn.ai/core/cli v0.3.7 h1:1GrbaGg0wDGHr6+klSbbGyN/9sSbHvFbdySJznymhwg=
 forge.lthn.ai/core/cli v0.3.7/go.mod h1:DBUppJkA9P45ZFGgI2B8VXw1rAZxamHoI/KG7fRvTNs=
 forge.lthn.ai/core/go v0.3.2 h1:VB9pW6ggqBhe438cjfE2iSI5Lg+62MmRbaOFglZM+nQ=
@@ -16,8 +18,6 @@ forge.lthn.ai/core/go-inference v0.1.7 h1:9Dy6v03jX5ZRH3n5iTzlYyGtucuBIgSe+S7GWv
 forge.lthn.ai/core/go-inference v0.1.7/go.mod h1:jfWz+IJX55wAH98+ic6FEqqGB6/P31CHlg7VY7pxREw=
 forge.lthn.ai/core/go-log v0.0.4 h1:KTuCEPgFmuM8KJfnyQ8vPOU1Jg654W74h8IJvfQMfv0=
 forge.lthn.ai/core/go-log v0.0.4/go.mod h1:r14MXKOD3LF/sI8XUJQhRk/SZHBE7jAFVuCfgkXoZPw=
-forge.lthn.ai/core/go-store v0.1.10 h1:JLyf8xMR3V6PfBAW1kv6SJeHsYY93LacEBpTFW657qE=
-forge.lthn.ai/core/go-store v0.1.10/go.mod h1:VNnHh94TMD3+L+sSgvxn0GHtDKhJR8FD6JiuIuRtjuk=
 github.com/ProtonMail/go-crypto v1.4.0 h1:Zq/pbM3F5DFgJiMouxEdSVY44MVoQNEKp5d5QxIQceQ=
 github.com/ProtonMail/go-crypto v1.4.0/go.mod h1:e1OaTyu5SYVrO9gKOEhTc+5UcXtTUa+P3uLudwcgPqo=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
