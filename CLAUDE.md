@@ -48,7 +48,7 @@ workspace file instead.
 | `dappco.re/go/core` | `../go` | Framework: `core.Crypt` interface, `io.Medium` |
 | `dappco.re/go/core/log` | `../go-log` | `coreerr.E()` contextual error wrapping |
 | `dappco.re/go/core/io` | `../go-io` | `io.Medium` storage abstraction |
-| `forge.lthn.ai/core/go-store` | `../go-store` | SQLite KV store (session persistence) |
+| `dappco.re/go/core/store` | `../go-store` | SQLite KV store (session persistence) |
 | `forge.lthn.ai/core/cli` | `../cli` | CLI framework for `cmd/crypt` commands |
 
 No C toolchain or CGo required — all crypto uses pure Go implementations.

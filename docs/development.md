@@ -9,8 +9,8 @@ description: How to build, test, and contribute to go-crypt.
 
 - **Go 1.26** or later (the module declares `go 1.26.0`).
 - A Go workspace (`go.work`) that resolves the local dependencies:
-  `forge.lthn.ai/core/go`, `forge.lthn.ai/core/go-store`,
-  `forge.lthn.ai/core/go-io`, `forge.lthn.ai/core/go-log`, and
+  `dappco.re/go/core`, `dappco.re/go/core/store`,
+  `dappco.re/go/core/io`, `dappco.re/go/core/log`, and
   `forge.lthn.ai/core/cli`. If you are working outside the full monorepo,
   create a `go.work` at the parent directory pointing to your local
   checkouts.
@@ -211,16 +211,17 @@ HTTPS authentication is not configured for this repository.
 
 ## Local Dependencies
 
-The `go.mod` depends on several `forge.lthn.ai/core/*` modules. These are
+The `go.mod` depends on several `dappco.re/go/core/*` modules plus the
+remaining `forge.lthn.ai/core/cli` dependency. These are
 resolved through the Go workspace (`~/Code/go.work`). Do not modify the
 replace directives in `go.mod` directly -- use the workspace file instead.
 
 | Module | Local Path | Purpose |
 |--------|-----------|---------|
-| `forge.lthn.ai/core/go` | `../go` | Framework: `core.Crypt` interface, `io.Medium` |
-| `forge.lthn.ai/core/go-store` | `../go-store` | SQLite KV store for session persistence |
-| `forge.lthn.ai/core/go-io` | `../go-io` | `io.Medium` storage abstraction |
-| `forge.lthn.ai/core/go-log` | `../go-log` | `core.E()` contextual error wrapping |
+| `dappco.re/go/core` | `../go` | Framework: `core.Crypt` interface, `io.Medium` |
+| `dappco.re/go/core/store` | `../go-store` | SQLite KV store for session persistence |
+| `dappco.re/go/core/io` | `../go-io` | `io.Medium` storage abstraction |
+| `dappco.re/go/core/log` | `../go-log` | `core.E()` contextual error wrapping |
 | `forge.lthn.ai/core/cli` | `../cli` | CLI framework for `cmd/crypt` commands |
 
 ## Known Limitations
