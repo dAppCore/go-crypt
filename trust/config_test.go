@@ -30,13 +30,13 @@ const validPolicyJSON = `{
 
 // --- LoadPolicies ---
 
-func TestLoadPolicies_Good(t *testing.T) {
+func TestConfig_LoadPolicies_Good(t *testing.T) {
 	policies, err := LoadPolicies(core.NewReader(validPolicyJSON))
 	require.NoError(t, err)
 	assert.Len(t, policies, 3)
 }
 
-func TestLoadPolicies_Good_FieldMapping(t *testing.T) {
+func TestConfig_LoadPolicies_Good_FieldMapping(t *testing.T) {
 	policies, err := LoadPolicies(core.NewReader(validPolicyJSON))
 	require.NoError(t, err)
 
@@ -60,33 +60,33 @@ func TestLoadPolicies_Good_FieldMapping(t *testing.T) {
 	assert.Len(t, policies[2].Denied, 2)
 }
 
-func TestLoadPolicies_Good_EmptyPolicies(t *testing.T) {
+func TestConfig_LoadPolicies_Good_EmptyPolicies(t *testing.T) {
 	input := `{"policies": []}`
 	policies, err := LoadPolicies(core.NewReader(input))
 	require.NoError(t, err)
 	assert.Empty(t, policies)
 }
 
-func TestLoadPolicies_Bad_InvalidJSON(t *testing.T) {
+func TestConfig_LoadPolicies_Bad_InvalidJSON(t *testing.T) {
 	_, err := LoadPolicies(core.NewReader(`{invalid`))
 	assert.Error(t, err)
 }
 
-func TestLoadPolicies_Bad_InvalidTier(t *testing.T) {
+func TestConfig_LoadPolicies_Bad_InvalidTier(t *testing.T) {
 	input := `{"policies": [{"tier": 0, "allowed": ["repo.push"]}]}`
 	_, err := LoadPolicies(core.NewReader(input))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid tier")
 }
 
-func TestLoadPolicies_Bad_TierTooHigh(t *testing.T) {
+func TestConfig_LoadPolicies_Bad_TierTooHigh(t *testing.T) {
 	input := `{"policies": [{"tier": 99, "allowed": ["repo.push"]}]}`
 	_, err := LoadPolicies(core.NewReader(input))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid tier")
 }
 
-func TestLoadPolicies_Bad_UnknownField(t *testing.T) {
+func TestConfig_LoadPolicies_Bad_UnknownField(t *testing.T) {
 	input := `{"policies": [{"tier": 1, "allowed": ["repo.push"], "bogus": true}]}`
 	_, err := LoadPolicies(core.NewReader(input))
 	assert.Error(t, err, "DisallowUnknownFields should reject unknown fields")
@@ -94,7 +94,7 @@ func TestLoadPolicies_Bad_UnknownField(t *testing.T) {
 
 // --- LoadPoliciesFromFile ---
 
-func TestLoadPoliciesFromFile_Good(t *testing.T) {
+func TestConfig_LoadPoliciesFromFile_Good(t *testing.T) {
 	dir := t.TempDir()
 	path := core.Path(dir, "policies.json")
 	writePolicyFile(t, path, validPolicyJSON)
@@ -104,14 +104,14 @@ func TestLoadPoliciesFromFile_Good(t *testing.T) {
 	assert.Len(t, policies, 3)
 }
 
-func TestLoadPoliciesFromFile_Bad_NotFound(t *testing.T) {
+func TestConfig_LoadPoliciesFromFile_Bad_NotFound(t *testing.T) {
 	_, err := LoadPoliciesFromFile("/nonexistent/path/policies.json")
 	assert.Error(t, err)
 }
 
 // --- ApplyPolicies ---
 
-func TestApplyPolicies_Good(t *testing.T) {
+func TestConfig_ApplyPolicies_Good(t *testing.T) {
 	r := NewRegistry()
 	require.NoError(t, r.Register(Agent{Name: "TestAgent", Tier: TierVerified}))
 	pe := NewPolicyEngine(r)
@@ -135,7 +135,7 @@ func TestApplyPolicies_Good(t *testing.T) {
 	assert.Equal(t, Allow, result.Decision)
 }
 
-func TestApplyPolicies_Bad_InvalidJSON(t *testing.T) {
+func TestConfig_ApplyPolicies_Bad_InvalidJSON(t *testing.T) {
 	r := NewRegistry()
 	pe := NewPolicyEngine(r)
 
@@ -143,7 +143,7 @@ func TestApplyPolicies_Bad_InvalidJSON(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestApplyPolicies_Bad_InvalidTier(t *testing.T) {
+func TestConfig_ApplyPolicies_Bad_InvalidTier(t *testing.T) {
 	r := NewRegistry()
 	pe := NewPolicyEngine(r)
 
@@ -154,7 +154,7 @@ func TestApplyPolicies_Bad_InvalidTier(t *testing.T) {
 
 // --- ApplyPoliciesFromFile ---
 
-func TestApplyPoliciesFromFile_Good(t *testing.T) {
+func TestConfig_ApplyPoliciesFromFile_Good(t *testing.T) {
 	dir := t.TempDir()
 	path := core.Path(dir, "policies.json")
 	writePolicyFile(t, path, validPolicyJSON)
@@ -172,7 +172,7 @@ func TestApplyPoliciesFromFile_Good(t *testing.T) {
 	assert.Len(t, p.Allowed, 3)
 }
 
-func TestApplyPoliciesFromFile_Bad_NotFound(t *testing.T) {
+func TestConfig_ApplyPoliciesFromFile_Bad_NotFound(t *testing.T) {
 	r := NewRegistry()
 	pe := NewPolicyEngine(r)
 	err := pe.ApplyPoliciesFromFile("/nonexistent/policies.json")
@@ -181,7 +181,7 @@ func TestApplyPoliciesFromFile_Bad_NotFound(t *testing.T) {
 
 // --- ExportPolicies ---
 
-func TestExportPolicies_Good(t *testing.T) {
+func TestConfig_ExportPolicies_Good(t *testing.T) {
 	r := NewRegistry()
 	pe := NewPolicyEngine(r) // loads defaults
 
@@ -196,7 +196,7 @@ func TestExportPolicies_Good(t *testing.T) {
 	assert.Len(t, cfg.Policies, 3)
 }
 
-func TestExportPolicies_Good_RoundTrip(t *testing.T) {
+func TestConfig_ExportPolicies_Good_RoundTrip(t *testing.T) {
 	r := NewRegistry()
 	require.NoError(t, r.Register(Agent{Name: "A", Tier: TierFull}))
 	pe := NewPolicyEngine(r)
@@ -232,26 +232,26 @@ func writePolicyFile(t *testing.T, path, content string) {
 
 // --- Helper conversion ---
 
-func TestToCapabilities_Good(t *testing.T) {
+func TestConfig_ToCapabilities_Good(t *testing.T) {
 	caps := toCapabilities([]string{"repo.push", "pr.merge"})
 	assert.Len(t, caps, 2)
 	assert.Equal(t, CapPushRepo, caps[0])
 	assert.Equal(t, CapMergePR, caps[1])
 }
 
-func TestToCapabilities_Good_Empty(t *testing.T) {
+func TestConfig_ToCapabilities_Good_Empty(t *testing.T) {
 	assert.Nil(t, toCapabilities(nil))
 	assert.Nil(t, toCapabilities([]string{}))
 }
 
-func TestFromCapabilities_Good(t *testing.T) {
+func TestConfig_FromCapabilities_Good(t *testing.T) {
 	ss := fromCapabilities([]Capability{CapPushRepo, CapMergePR})
 	assert.Len(t, ss, 2)
 	assert.Equal(t, "repo.push", ss[0])
 	assert.Equal(t, "pr.merge", ss[1])
 }
 
-func TestFromCapabilities_Good_Empty(t *testing.T) {
+func TestConfig_FromCapabilities_Good_Empty(t *testing.T) {
 	assert.Nil(t, fromCapabilities(nil))
 	assert.Nil(t, fromCapabilities([]Capability{}))
 }

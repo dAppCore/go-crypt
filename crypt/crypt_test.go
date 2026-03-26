@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEncryptDecrypt_Good(t *testing.T) {
+func TestCrypt_EncryptDecrypt_Good(t *testing.T) {
 	plaintext := []byte("hello, world!")
 	passphrase := []byte("correct-horse-battery-staple")
 
@@ -21,7 +21,7 @@ func TestEncryptDecrypt_Good(t *testing.T) {
 	assert.Equal(t, plaintext, decrypted)
 }
 
-func TestEncryptDecrypt_Bad(t *testing.T) {
+func TestCrypt_EncryptDecrypt_Bad(t *testing.T) {
 	plaintext := []byte("secret data")
 	passphrase := []byte("correct-passphrase")
 	wrongPassphrase := []byte("wrong-passphrase")
@@ -33,7 +33,7 @@ func TestEncryptDecrypt_Bad(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestEncryptDecryptAES_Good(t *testing.T) {
+func TestCrypt_EncryptDecryptAES_Good(t *testing.T) {
 	plaintext := []byte("hello, AES world!")
 	passphrase := []byte("my-secure-passphrase")
 
@@ -48,8 +48,8 @@ func TestEncryptDecryptAES_Good(t *testing.T) {
 
 // --- Phase 0 Additions ---
 
-// TestWrongPassphraseDecrypt_Bad verifies wrong passphrase returns error, not corrupt data.
-func TestWrongPassphraseDecrypt_Bad(t *testing.T) {
+// TestCrypt_WrongPassphraseDecrypt_Bad verifies wrong passphrase returns error, not corrupt data.
+func TestCrypt_WrongPassphraseDecrypt_Bad(t *testing.T) {
 	plaintext := []byte("sensitive payload")
 	passphrase := []byte("correct-passphrase")
 	wrongPassphrase := []byte("wrong-passphrase")
@@ -70,8 +70,8 @@ func TestWrongPassphraseDecrypt_Bad(t *testing.T) {
 	assert.Nil(t, decryptedAES, "wrong passphrase must not return partial data (AES)")
 }
 
-// TestEmptyPlaintextRoundTrip_Good verifies encrypt/decrypt of empty plaintext.
-func TestEmptyPlaintextRoundTrip_Good(t *testing.T) {
+// TestCrypt_EmptyPlaintextRoundTrip_Good verifies encrypt/decrypt of empty plaintext.
+func TestCrypt_EmptyPlaintextRoundTrip_Good(t *testing.T) {
 	passphrase := []byte("test-passphrase")
 
 	// ChaCha20
@@ -93,8 +93,8 @@ func TestEmptyPlaintextRoundTrip_Good(t *testing.T) {
 	assert.Empty(t, decryptedAES)
 }
 
-// TestLargePlaintextRoundTrip_Good verifies encrypt/decrypt of a 1MB payload.
-func TestLargePlaintextRoundTrip_Good(t *testing.T) {
+// TestCrypt_LargePlaintextRoundTrip_Good verifies encrypt/decrypt of a 1MB payload.
+func TestCrypt_LargePlaintextRoundTrip_Good(t *testing.T) {
 	passphrase := []byte("large-payload-passphrase")
 	plaintext := bytes.Repeat([]byte("X"), 1024*1024) // 1MB
 
@@ -116,8 +116,8 @@ func TestLargePlaintextRoundTrip_Good(t *testing.T) {
 	assert.Equal(t, plaintext, decryptedAES)
 }
 
-// TestDecryptCiphertextTooShort_Ugly verifies short ciphertext is rejected.
-func TestDecryptCiphertextTooShort_Ugly(t *testing.T) {
+// TestCrypt_DecryptCiphertextTooShort_Ugly verifies short ciphertext is rejected.
+func TestCrypt_DecryptCiphertextTooShort_Ugly(t *testing.T) {
 	_, err := Decrypt([]byte("short"), []byte("pass"))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "too short")

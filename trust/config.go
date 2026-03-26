@@ -8,6 +8,7 @@ import (
 )
 
 // PolicyConfig is the JSON-serialisable representation of a trust policy.
+// Usage: use PolicyConfig with the other exported helpers in this package.
 type PolicyConfig struct {
 	Tier             int      `json:"tier"`
 	Allowed          []string `json:"allowed"`
@@ -16,11 +17,13 @@ type PolicyConfig struct {
 }
 
 // PoliciesConfig is the top-level configuration containing all tier policies.
+// Usage: use PoliciesConfig with the other exported helpers in this package.
 type PoliciesConfig struct {
 	Policies []PolicyConfig `json:"policies"`
 }
 
 // LoadPoliciesFromFile reads a JSON file and returns parsed policies.
+// Usage: call LoadPoliciesFromFile(...) during the package's normal workflow.
 func LoadPoliciesFromFile(path string) ([]Policy, error) {
 	openResult := (&core.Fs{}).New("/").Open(path)
 	if !openResult.OK {
@@ -31,6 +34,7 @@ func LoadPoliciesFromFile(path string) ([]Policy, error) {
 }
 
 // LoadPolicies reads JSON from a reader and returns parsed policies.
+// Usage: call LoadPolicies(...) during the package's normal workflow.
 func LoadPolicies(r io.Reader) ([]Policy, error) {
 	readResult := core.ReadAll(r)
 	if !readResult.OK {
@@ -76,6 +80,7 @@ func convertPolicies(cfg PoliciesConfig) ([]Policy, error) {
 
 // ApplyPolicies loads policies from a reader and sets them on the engine,
 // replacing any existing policies for the same tiers.
+// Usage: call ApplyPolicies(...) during the package's normal workflow.
 func (pe *PolicyEngine) ApplyPolicies(r io.Reader) error {
 	policies, err := LoadPolicies(r)
 	if err != nil {
@@ -90,6 +95,7 @@ func (pe *PolicyEngine) ApplyPolicies(r io.Reader) error {
 }
 
 // ApplyPoliciesFromFile loads policies from a JSON file and sets them on the engine.
+// Usage: call ApplyPoliciesFromFile(...) during the package's normal workflow.
 func (pe *PolicyEngine) ApplyPoliciesFromFile(path string) error {
 	openResult := (&core.Fs{}).New("/").Open(path)
 	if !openResult.OK {
@@ -100,6 +106,7 @@ func (pe *PolicyEngine) ApplyPoliciesFromFile(path string) error {
 }
 
 // ExportPolicies serialises the current policies as JSON to the given writer.
+// Usage: call ExportPolicies(...) during the package's normal workflow.
 func (pe *PolicyEngine) ExportPolicies(w io.Writer) error {
 	var cfg PoliciesConfig
 	for _, tier := range []Tier{TierUntrusted, TierVerified, TierFull} {

@@ -12,7 +12,7 @@ import (
 
 // --- AuditLog basic ---
 
-func TestAuditRecord_Good(t *testing.T) {
+func TestAudit_AuditRecord_Good(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	result := EvalResult{
@@ -26,7 +26,7 @@ func TestAuditRecord_Good(t *testing.T) {
 	assert.Equal(t, 1, log.Len())
 }
 
-func TestAuditRecord_Good_EntryFields(t *testing.T) {
+func TestAudit_AuditRecord_Good_EntryFields(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	result := EvalResult{
@@ -50,7 +50,7 @@ func TestAuditRecord_Good_EntryFields(t *testing.T) {
 	assert.False(t, e.Timestamp.IsZero())
 }
 
-func TestAuditRecord_Good_NoRepo(t *testing.T) {
+func TestAudit_AuditRecord_Good_NoRepo(t *testing.T) {
 	log := NewAuditLog(nil)
 	result := EvalResult{
 		Decision: Allow,
@@ -66,7 +66,7 @@ func TestAuditRecord_Good_NoRepo(t *testing.T) {
 	assert.Empty(t, entries[0].Repo)
 }
 
-func TestAuditEntries_Good_Snapshot(t *testing.T) {
+func TestAudit_AuditEntries_Good_Snapshot(t *testing.T) {
 	log := NewAuditLog(nil)
 	log.Record(EvalResult{Agent: "A", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
 
@@ -78,12 +78,12 @@ func TestAuditEntries_Good_Snapshot(t *testing.T) {
 	assert.Equal(t, "A", log.Entries()[0].Agent)
 }
 
-func TestAuditEntries_Good_Empty(t *testing.T) {
+func TestAudit_AuditEntries_Good_Empty(t *testing.T) {
 	log := NewAuditLog(nil)
 	assert.Empty(t, log.Entries())
 }
 
-func TestAuditEntries_Good_AppendOnly(t *testing.T) {
+func TestAudit_AuditEntries_Good_AppendOnly(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	for i := range 5 {
@@ -99,7 +99,7 @@ func TestAuditEntries_Good_AppendOnly(t *testing.T) {
 
 // --- EntriesFor ---
 
-func TestAuditEntriesFor_Good(t *testing.T) {
+func TestAudit_AuditEntriesFor_Good(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	log.Record(EvalResult{Agent: "Athena", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
@@ -121,7 +121,7 @@ func TestAuditEntriesFor_Good(t *testing.T) {
 	assert.Equal(t, 2, count)
 }
 
-func TestAuditEntriesSeq_Good(t *testing.T) {
+func TestAudit_AuditEntriesSeq_Good(t *testing.T) {
 	log := NewAuditLog(nil)
 	log.Record(EvalResult{Agent: "Athena", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
 	log.Record(EvalResult{Agent: "Clotho", Cap: CapCreatePR, Decision: Allow, Reason: "ok"}, "")
@@ -133,7 +133,7 @@ func TestAuditEntriesSeq_Good(t *testing.T) {
 	assert.Equal(t, 2, count)
 }
 
-func TestAuditEntriesFor_Bad_NotFound(t *testing.T) {
+func TestAudit_AuditEntriesFor_Bad_NotFound(t *testing.T) {
 	log := NewAuditLog(nil)
 	log.Record(EvalResult{Agent: "Athena", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
 
@@ -142,7 +142,7 @@ func TestAuditEntriesFor_Bad_NotFound(t *testing.T) {
 
 // --- Writer output ---
 
-func TestAuditRecord_Good_WritesToWriter(t *testing.T) {
+func TestAudit_AuditRecord_Good_WritesToWriter(t *testing.T) {
 	buf := core.NewBuilder()
 	log := NewAuditLog(buf)
 
@@ -168,7 +168,7 @@ func TestAuditRecord_Good_WritesToWriter(t *testing.T) {
 	assert.Equal(t, "host-uk/core", entry.Repo)
 }
 
-func TestAuditRecord_Good_MultipleLines(t *testing.T) {
+func TestAudit_AuditRecord_Good_MultipleLines(t *testing.T) {
 	buf := core.NewBuilder()
 	log := NewAuditLog(buf)
 
@@ -192,7 +192,7 @@ func TestAuditRecord_Good_MultipleLines(t *testing.T) {
 	}
 }
 
-func TestAuditRecord_Bad_WriterError(t *testing.T) {
+func TestAudit_AuditRecord_Bad_WriterError(t *testing.T) {
 	log := NewAuditLog(&failWriter{})
 
 	result := EvalResult{
@@ -218,7 +218,7 @@ func (f *failWriter) Write(_ []byte) (int, error) {
 
 // --- Decision JSON marshalling ---
 
-func TestDecisionJSON_Good_RoundTrip(t *testing.T) {
+func TestAudit_DecisionJSON_Good_RoundTrip(t *testing.T) {
 	decisions := []Decision{Deny, Allow, NeedsApproval}
 	expected := []string{`"deny"`, `"allow"`, `"needs_approval"`}
 
@@ -234,7 +234,7 @@ func TestDecisionJSON_Good_RoundTrip(t *testing.T) {
 	}
 }
 
-func TestDecisionJSON_Bad_UnknownString(t *testing.T) {
+func TestAudit_DecisionJSON_Bad_UnknownString(t *testing.T) {
 	var d Decision
 	result := core.JSONUnmarshal([]byte(`"invalid"`), &d)
 	err, _ := result.Value.(error)
@@ -242,7 +242,7 @@ func TestDecisionJSON_Bad_UnknownString(t *testing.T) {
 	assert.Contains(t, err.Error(), "unknown decision")
 }
 
-func TestDecisionJSON_Bad_NonString(t *testing.T) {
+func TestAudit_DecisionJSON_Bad_NonString(t *testing.T) {
 	var d Decision
 	result := core.JSONUnmarshal([]byte(`42`), &d)
 	err, _ := result.Value.(error)
@@ -251,7 +251,7 @@ func TestDecisionJSON_Bad_NonString(t *testing.T) {
 
 // --- Concurrent audit logging ---
 
-func TestAuditConcurrent_Good(t *testing.T) {
+func TestAudit_AuditConcurrent_Good(t *testing.T) {
 	buf := core.NewBuilder()
 	log := NewAuditLog(buf)
 
@@ -277,7 +277,7 @@ func TestAuditConcurrent_Good(t *testing.T) {
 
 // --- Integration: PolicyEngine + AuditLog ---
 
-func TestAuditPolicyIntegration_Good(t *testing.T) {
+func TestAudit_AuditPolicyIntegration_Good(t *testing.T) {
 	buf := core.NewBuilder()
 	log := NewAuditLog(buf)
 	pe := newTestEngine(t)

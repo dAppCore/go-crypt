@@ -11,6 +11,7 @@ import (
 )
 
 // SHA256File computes the SHA-256 checksum of a file and returns it as a hex string.
+// Usage: call SHA256File(...) during the package's normal workflow.
 func SHA256File(path string) (string, error) {
 	openResult := (&core.Fs{}).New("/").Open(path)
 	if !openResult.OK {
@@ -29,6 +30,7 @@ func SHA256File(path string) (string, error) {
 }
 
 // SHA512File computes the SHA-512 checksum of a file and returns it as a hex string.
+// Usage: call SHA512File(...) during the package's normal workflow.
 func SHA512File(path string) (string, error) {
 	openResult := (&core.Fs{}).New("/").Open(path)
 	if !openResult.OK {
@@ -47,12 +49,14 @@ func SHA512File(path string) (string, error) {
 }
 
 // SHA256Sum computes the SHA-256 checksum of data and returns it as a hex string.
+// Usage: call SHA256Sum(...) during the package's normal workflow.
 func SHA256Sum(data []byte) string {
 	h := sha256.Sum256(data)
 	return hex.EncodeToString(h[:])
 }
 
 // SHA512Sum computes the SHA-512 checksum of data and returns it as a hex string.
+// Usage: call SHA512Sum(...) during the package's normal workflow.
 func SHA512Sum(data []byte) string {
 	h := sha512.Sum512(data)
 	return hex.EncodeToString(h[:])

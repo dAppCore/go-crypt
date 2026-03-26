@@ -19,7 +19,7 @@ func (r *mockReader) Read(p []byte) (n int, err error) {
 	return 0, core.NewError("read error")
 }
 
-func TestRSA_Good(t *testing.T) {
+func TestRSA_RSA_Good(t *testing.T) {
 	s := NewService()
 
 	// Generate a new key pair
@@ -37,7 +37,7 @@ func TestRSA_Good(t *testing.T) {
 	assert.Equal(t, message, plaintext)
 }
 
-func TestRSA_Bad(t *testing.T) {
+func TestRSA_RSA_Bad(t *testing.T) {
 	s := NewService()
 
 	// Decrypt with wrong key
@@ -56,7 +56,7 @@ func TestRSA_Bad(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestRSA_Ugly(t *testing.T) {
+func TestRSA_RSA_Ugly(t *testing.T) {
 	s := NewService()
 
 	// Malformed keys and messages

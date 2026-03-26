@@ -15,7 +15,7 @@ func (r *mockReader) Read(p []byte) (n int, err error) {
 	return 0, core.NewError("read error")
 }
 
-func TestEncryptDecrypt_Good(t *testing.T) {
+func TestChachapoly_EncryptDecrypt_Good(t *testing.T) {
 	key := make([]byte, 32)
 	for i := range key {
 		key[i] = 1
@@ -31,14 +31,14 @@ func TestEncryptDecrypt_Good(t *testing.T) {
 	assert.Equal(t, plaintext, decrypted)
 }
 
-func TestEncrypt_Bad_InvalidKeySize(t *testing.T) {
+func TestChachapoly_Encrypt_Bad_InvalidKeySize(t *testing.T) {
 	key := make([]byte, 16) // Wrong size
 	plaintext := []byte("test")
 	_, err := Encrypt(plaintext, key)
 	assert.Error(t, err)
 }
 
-func TestDecrypt_Bad_WrongKey(t *testing.T) {
+func TestChachapoly_Decrypt_Bad_WrongKey(t *testing.T) {
 	key1 := make([]byte, 32)
 	key2 := make([]byte, 32)
 	key2[0] = 1 // Different key
@@ -51,7 +51,7 @@ func TestDecrypt_Bad_WrongKey(t *testing.T) {
 	assert.Error(t, err) // Should fail authentication
 }
 
-func TestDecrypt_Bad_TamperedCiphertext(t *testing.T) {
+func TestChachapoly_Decrypt_Bad_TamperedCiphertext(t *testing.T) {
 	key := make([]byte, 32)
 	plaintext := []byte("secret")
 	ciphertext, err := Encrypt(plaintext, key)
@@ -64,7 +64,7 @@ func TestDecrypt_Bad_TamperedCiphertext(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestEncrypt_Good_EmptyPlaintext(t *testing.T) {
+func TestChachapoly_Encrypt_Good_EmptyPlaintext(t *testing.T) {
 	key := make([]byte, 32)
 	plaintext := []byte("")
 	ciphertext, err := Encrypt(plaintext, key)
@@ -76,7 +76,7 @@ func TestEncrypt_Good_EmptyPlaintext(t *testing.T) {
 	assert.Equal(t, plaintext, decrypted)
 }
 
-func TestDecrypt_Bad_ShortCiphertext(t *testing.T) {
+func TestChachapoly_Decrypt_Bad_ShortCiphertext(t *testing.T) {
 	key := make([]byte, 32)
 	shortCiphertext := []byte("short")
 
@@ -85,7 +85,7 @@ func TestDecrypt_Bad_ShortCiphertext(t *testing.T) {
 	assert.Contains(t, err.Error(), "too short")
 }
 
-func TestCiphertextDiffersFromPlaintext_Good(t *testing.T) {
+func TestChachapoly_CiphertextDiffersFromPlaintext_Good(t *testing.T) {
 	key := make([]byte, 32)
 	plaintext := []byte("Hello, world!")
 	ciphertext, err := Encrypt(plaintext, key)
@@ -93,7 +93,7 @@ func TestCiphertextDiffersFromPlaintext_Good(t *testing.T) {
 	assert.NotEqual(t, plaintext, ciphertext)
 }
 
-func TestEncrypt_Bad_NonceError(t *testing.T) {
+func TestChachapoly_Encrypt_Bad_NonceError(t *testing.T) {
 	key := make([]byte, 32)
 	plaintext := []byte("test")
 
@@ -106,7 +106,7 @@ func TestEncrypt_Bad_NonceError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestDecrypt_Bad_InvalidKeySize(t *testing.T) {
+func TestChachapoly_Decrypt_Bad_InvalidKeySize(t *testing.T) {
 	key := make([]byte, 16) // Wrong size
 	ciphertext := []byte("test")
 	_, err := Decrypt(ciphertext, key)

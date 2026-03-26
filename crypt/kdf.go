@@ -25,12 +25,14 @@ const (
 
 // DeriveKey derives a key from a passphrase using Argon2id with default parameters.
 // The salt must be argon2SaltLen bytes. keyLen specifies the desired key length.
+// Usage: call DeriveKey(...) during the package's normal workflow.
 func DeriveKey(passphrase, salt []byte, keyLen uint32) []byte {
 	return argon2.IDKey(passphrase, salt, argon2Time, argon2Memory, argon2Parallelism, keyLen)
 }
 
 // DeriveKeyScrypt derives a key from a passphrase using scrypt.
 // Uses recommended parameters: N=32768, r=8, p=1.
+// Usage: call DeriveKeyScrypt(...) during the package's normal workflow.
 func DeriveKeyScrypt(passphrase, salt []byte, keyLen int) ([]byte, error) {
 	key, err := scrypt.Key(passphrase, salt, 32768, 8, 1, keyLen)
 	if err != nil {
@@ -42,6 +44,7 @@ func DeriveKeyScrypt(passphrase, salt []byte, keyLen int) ([]byte, error) {
 // HKDF derives a key using HKDF-SHA256.
 // secret is the input keying material, salt is optional (can be nil),
 // info is optional context, and keyLen is the desired output length.
+// Usage: call HKDF(...) during the package's normal workflow.
 func HKDF(secret, salt, info []byte, keyLen int) ([]byte, error) {
 	reader := hkdf.New(sha256.New, secret, salt, info)
 	key := make([]byte, keyLen)

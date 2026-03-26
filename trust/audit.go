@@ -11,6 +11,7 @@ import (
 )
 
 // AuditEntry records a single policy evaluation for compliance.
+// Usage: use AuditEntry with the other exported helpers in this package.
 type AuditEntry struct {
 	// Timestamp is when the evaluation occurred.
 	Timestamp time.Time `json:"timestamp"`
@@ -27,6 +28,7 @@ type AuditEntry struct {
 }
 
 // MarshalJSON implements custom JSON encoding for Decision.
+// Usage: call MarshalJSON(...) during the package's normal workflow.
 func (d Decision) MarshalJSON() ([]byte, error) {
 	result := core.JSONMarshal(d.String())
 	if !result.OK {
@@ -37,6 +39,7 @@ func (d Decision) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements custom JSON decoding for Decision.
+// Usage: call UnmarshalJSON(...) during the package's normal workflow.
 func (d *Decision) UnmarshalJSON(data []byte) error {
 	var s string
 	result := core.JSONUnmarshal(data, &s)
@@ -58,6 +61,7 @@ func (d *Decision) UnmarshalJSON(data []byte) error {
 }
 
 // AuditLog is an append-only log of policy evaluations.
+// Usage: use AuditLog with the other exported helpers in this package.
 type AuditLog struct {
 	mu      sync.Mutex
 	entries []AuditEntry
@@ -66,6 +70,7 @@ type AuditLog struct {
 
 // NewAuditLog creates an in-memory audit log. If a writer is provided,
 // each entry is also written as a JSON line to that writer (append-only).
+// Usage: call NewAuditLog(...) to create a ready-to-use value.
 func NewAuditLog(w io.Writer) *AuditLog {
 	return &AuditLog{
 		writer: w,
@@ -73,6 +78,7 @@ func NewAuditLog(w io.Writer) *AuditLog {
 }
 
 // Record appends an evaluation result to the audit log.
+// Usage: call Record(...) during the package's normal workflow.
 func (l *AuditLog) Record(result EvalResult, repo string) error {
 	entry := AuditEntry{
 		Timestamp: time.Now(),
@@ -104,6 +110,7 @@ func (l *AuditLog) Record(result EvalResult, repo string) error {
 }
 
 // Entries returns a snapshot of all audit entries.
+// Usage: call Entries(...) during the package's normal workflow.
 func (l *AuditLog) Entries() []AuditEntry {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -114,6 +121,7 @@ func (l *AuditLog) Entries() []AuditEntry {
 }
 
 // EntriesSeq returns an iterator over all audit entries.
+// Usage: call EntriesSeq(...) during the package's normal workflow.
 func (l *AuditLog) EntriesSeq() iter.Seq[AuditEntry] {
 	return func(yield func(AuditEntry) bool) {
 		l.mu.Lock()
@@ -128,6 +136,7 @@ func (l *AuditLog) EntriesSeq() iter.Seq[AuditEntry] {
 }
 
 // Len returns the number of entries in the log.
+// Usage: call Len(...) during the package's normal workflow.
 func (l *AuditLog) Len() int {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -135,6 +144,7 @@ func (l *AuditLog) Len() int {
 }
 
 // EntriesFor returns all audit entries for a specific agent.
+// Usage: call EntriesFor(...) during the package's normal workflow.
 func (l *AuditLog) EntriesFor(agent string) []AuditEntry {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -149,6 +159,7 @@ func (l *AuditLog) EntriesFor(agent string) []AuditEntry {
 }
 
 // EntriesForSeq returns an iterator over audit entries for a specific agent.
+// Usage: call EntriesForSeq(...) during the package's normal workflow.
 func (l *AuditLog) EntriesForSeq(agent string) iter.Seq[AuditEntry] {
 	return func(yield func(AuditEntry) bool) {
 		l.mu.Lock()

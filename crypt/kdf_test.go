@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDeriveKey_Good(t *testing.T) {
+func TestKDF_DeriveKey_Good(t *testing.T) {
 	passphrase := []byte("test-passphrase")
 	salt := []byte("1234567890123456") // 16 bytes
 
@@ -21,7 +21,7 @@ func TestDeriveKey_Good(t *testing.T) {
 	assert.NotEqual(t, key1, key3)
 }
 
-func TestDeriveKeyScrypt_Good(t *testing.T) {
+func TestKDF_DeriveKeyScrypt_Good(t *testing.T) {
 	passphrase := []byte("test-passphrase")
 	salt := []byte("1234567890123456")
 
@@ -35,7 +35,7 @@ func TestDeriveKeyScrypt_Good(t *testing.T) {
 	assert.Equal(t, key, key2)
 }
 
-func TestHKDF_Good(t *testing.T) {
+func TestKDF_HKDF_Good(t *testing.T) {
 	secret := []byte("input-keying-material")
 	salt := []byte("optional-salt")
 	info := []byte("context-info")
@@ -57,8 +57,8 @@ func TestHKDF_Good(t *testing.T) {
 
 // --- Phase 0 Additions ---
 
-// TestKeyDerivationDeterminism_Good verifies same passphrase + salt always yields same key.
-func TestKeyDerivationDeterminism_Good(t *testing.T) {
+// TestKDF_KeyDerivationDeterminism_Good verifies same passphrase + salt always yields same key.
+func TestKDF_KeyDerivationDeterminism_Good(t *testing.T) {
 	passphrase := []byte("determinism-test-passphrase")
 	salt := []byte("1234567890123456") // 16 bytes
 
@@ -82,8 +82,8 @@ func TestKeyDerivationDeterminism_Good(t *testing.T) {
 	assert.Equal(t, scryptKey1, scryptKey2, "scrypt must also be deterministic")
 }
 
-// TestHKDFDifferentInfoStrings_Good verifies different info strings produce different keys.
-func TestHKDFDifferentInfoStrings_Good(t *testing.T) {
+// TestKDF_HKDFDifferentInfoStrings_Good verifies different info strings produce different keys.
+func TestKDF_HKDFDifferentInfoStrings_Good(t *testing.T) {
 	secret := []byte("shared-secret-material")
 	salt := []byte("common-salt")
 
@@ -114,8 +114,8 @@ func TestHKDFDifferentInfoStrings_Good(t *testing.T) {
 	}
 }
 
-// TestHKDFNilSalt_Good verifies HKDF works with nil salt.
-func TestHKDFNilSalt_Good(t *testing.T) {
+// TestKDF_HKDFNilSalt_Good verifies HKDF works with nil salt.
+func TestKDF_HKDFNilSalt_Good(t *testing.T) {
 	secret := []byte("input-keying-material")
 	info := []byte("context")
 

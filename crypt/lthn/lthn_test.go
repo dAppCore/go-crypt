@@ -7,36 +7,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHash_Good(t *testing.T) {
+func TestLTHN_Hash_Good(t *testing.T) {
 	hash := Hash("hello")
 	assert.NotEmpty(t, hash)
 }
 
-func TestVerify_Good(t *testing.T) {
+func TestLTHN_Verify_Good(t *testing.T) {
 	hash := Hash("hello")
 	assert.True(t, Verify("hello", hash))
 }
 
-func TestVerify_Bad(t *testing.T) {
+func TestLTHN_Verify_Bad(t *testing.T) {
 	hash := Hash("hello")
 	assert.False(t, Verify("world", hash))
 }
 
-func TestCreateSalt_Good(t *testing.T) {
+func TestLTHN_CreateSalt_Good(t *testing.T) {
 	// "hello" reversed: "olleh" -> "0113h"
 	expected := "0113h"
 	actual := createSalt("hello")
 	assert.Equal(t, expected, actual, "Salt should be correctly created for 'hello'")
 }
 
-func TestCreateSalt_Bad(t *testing.T) {
+func TestLTHN_CreateSalt_Bad(t *testing.T) {
 	// Test with an empty string
 	expected := ""
 	actual := createSalt("")
 	assert.Equal(t, expected, actual, "Salt for an empty string should be empty")
 }
 
-func TestCreateSalt_Ugly(t *testing.T) {
+func TestLTHN_CreateSalt_Ugly(t *testing.T) {
 	// Test with characters not in the keyMap
 	input := "world123"
 	// "world123" reversed: "321dlrow" -> "e2ld1r0w"
@@ -54,7 +54,7 @@ func TestCreateSalt_Ugly(t *testing.T) {
 
 var testKeyMapMu sync.Mutex
 
-func TestSetKeyMap_Good(t *testing.T) {
+func TestLTHN_SetKeyMap_Good(t *testing.T) {
 	testKeyMapMu.Lock()
 	originalKeyMap := GetKeyMap()
 	t.Cleanup(func() {

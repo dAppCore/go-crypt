@@ -14,17 +14,20 @@ import (
 )
 
 // Service provides OpenPGP cryptographic operations.
+// Usage: use Service with the other exported helpers in this package.
 type Service struct {
 	core *framework.Core
 }
 
 // New creates a new OpenPGP service instance.
+// Usage: call New(...) to create a ready-to-use value.
 func New(c *framework.Core) (any, error) {
 	return &Service{core: c}, nil
 }
 
 // CreateKeyPair generates a new RSA-4096 PGP keypair.
 // Returns the armored private key string.
+// Usage: call CreateKeyPair(...) during the package's normal workflow.
 func (s *Service) CreateKeyPair(name, passphrase string) (string, error) {
 	config := &packet.Config{
 		Algorithm:     packet.PubKeyAlgoRSA,
@@ -100,6 +103,7 @@ func serializeEntity(w goio.Writer, e *openpgp.Entity) error {
 
 // EncryptPGP encrypts data for a recipient identified by their public key (armored string in recipientPath).
 // The encrypted data is written to the provided writer and also returned as an armored string.
+// Usage: call EncryptPGP(...) during the package's normal workflow.
 func (s *Service) EncryptPGP(writer goio.Writer, recipientPath, data string, opts ...any) (string, error) {
 	entityList, err := openpgp.ReadArmoredKeyRing(framework.NewReader(recipientPath))
 	if err != nil {
@@ -135,6 +139,7 @@ func (s *Service) EncryptPGP(writer goio.Writer, recipientPath, data string, opt
 }
 
 // DecryptPGP decrypts a PGP message using the provided armored private key and passphrase.
+// Usage: call DecryptPGP(...) during the package's normal workflow.
 func (s *Service) DecryptPGP(privateKey, message, passphrase string, opts ...any) (string, error) {
 	entityList, err := openpgp.ReadArmoredKeyRing(framework.NewReader(privateKey))
 	if err != nil {
@@ -173,6 +178,7 @@ func (s *Service) DecryptPGP(privateKey, message, passphrase string, opts ...any
 }
 
 // HandleIPCEvents handles PGP-related IPC messages.
+// Usage: call HandleIPCEvents(...) during the package's normal workflow.
 func (s *Service) HandleIPCEvents(c *framework.Core, msg framework.Message) error {
 	switch m := msg.(type) {
 	case map[string]any:

@@ -14,6 +14,7 @@ import (
 
 // HashPassword hashes a password using Argon2id with default parameters.
 // Returns a string in the format: $argon2id$v=19$m=65536,t=3,p=4$<base64salt>$<base64hash>
+// Usage: call HashPassword(...) during the package's normal workflow.
 func HashPassword(password string) (string, error) {
 	salt, err := generateSalt(argon2SaltLen)
 	if err != nil {
@@ -34,6 +35,7 @@ func HashPassword(password string) (string, error) {
 
 // VerifyPassword verifies a password against an Argon2id hash string.
 // The hash must be in the format produced by HashPassword.
+// Usage: call VerifyPassword(...) during the package's normal workflow.
 func VerifyPassword(password, hash string) (bool, error) {
 	parts := core.Split(hash, "$")
 	if len(parts) != 6 {
@@ -116,6 +118,7 @@ func parsePrefixedUint32(input, prefix string) (uint32, error) {
 
 // HashBcrypt hashes a password using bcrypt with the given cost.
 // Cost must be between bcrypt.MinCost and bcrypt.MaxCost.
+// Usage: call HashBcrypt(...) during the package's normal workflow.
 func HashBcrypt(password string, cost int) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), cost)
 	if err != nil {
@@ -125,6 +128,7 @@ func HashBcrypt(password string, cost int) (string, error) {
 }
 
 // VerifyBcrypt verifies a password against a bcrypt hash.
+// Usage: call VerifyBcrypt(...) during the package's normal workflow.
 func VerifyBcrypt(password, hash string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {

@@ -8,6 +8,7 @@ import (
 )
 
 // Policy defines the access rules for a given trust tier.
+// Usage: use Policy with the other exported helpers in this package.
 type Policy struct {
 	// Tier is the trust level this policy applies to.
 	Tier Tier
@@ -20,24 +21,30 @@ type Policy struct {
 }
 
 // PolicyEngine evaluates capability requests against registered policies.
+// Usage: use PolicyEngine with the other exported helpers in this package.
 type PolicyEngine struct {
 	registry *Registry
 	policies map[Tier]*Policy
 }
 
 // Decision is the result of a policy evaluation.
+// Usage: use Decision with the other exported helpers in this package.
 type Decision int
 
 const (
 	// Deny means the action is not permitted.
+	// Usage: compare or pass Deny when using the related package APIs.
 	Deny Decision = iota
 	// Allow means the action is permitted.
+	// Usage: compare or pass Allow when using the related package APIs.
 	Allow
 	// NeedsApproval means the action requires human or higher-tier approval.
+	// Usage: compare or pass NeedsApproval when using the related package APIs.
 	NeedsApproval
 )
 
 // String returns the human-readable name of the decision.
+// Usage: call String(...) during the package's normal workflow.
 func (d Decision) String() string {
 	switch d {
 	case Deny:
@@ -52,6 +59,7 @@ func (d Decision) String() string {
 }
 
 // EvalResult contains the outcome of a capability evaluation.
+// Usage: use EvalResult with the other exported helpers in this package.
 type EvalResult struct {
 	Decision Decision
 	Agent    string
@@ -60,6 +68,7 @@ type EvalResult struct {
 }
 
 // NewPolicyEngine creates a policy engine with the given registry and default policies.
+// Usage: call NewPolicyEngine(...) to create a ready-to-use value.
 func NewPolicyEngine(registry *Registry) *PolicyEngine {
 	pe := &PolicyEngine{
 		registry: registry,
@@ -72,6 +81,7 @@ func NewPolicyEngine(registry *Registry) *PolicyEngine {
 // Evaluate checks whether the named agent can perform the given capability.
 // If the agent has scoped repos and the capability is repo-scoped, the repo
 // parameter is checked against the agent's allowed repos.
+// Usage: call Evaluate(...) during the package's normal workflow.
 func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) EvalResult {
 	agent := pe.registry.Get(agentName)
 	if agent == nil {
@@ -145,6 +155,7 @@ func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) 
 }
 
 // SetPolicy replaces the policy for a given tier.
+// Usage: call SetPolicy(...) during the package's normal workflow.
 func (pe *PolicyEngine) SetPolicy(p Policy) error {
 	if !p.Tier.Valid() {
 		return coreerr.E("trust.SetPolicy", core.Sprintf("invalid tier %d", p.Tier), nil)
@@ -154,6 +165,7 @@ func (pe *PolicyEngine) SetPolicy(p Policy) error {
 }
 
 // GetPolicy returns the policy for a tier, or nil if none is set.
+// Usage: call GetPolicy(...) during the package's normal workflow.
 func (pe *PolicyEngine) GetPolicy(t Tier) *Policy {
 	return pe.policies[t]
 }

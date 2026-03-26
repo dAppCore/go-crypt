@@ -56,6 +56,7 @@ func initTestFlags() {
 }
 
 // AddTestCommands registers the 'test' command and all subcommands.
+// Usage: call AddTestCommands(...) during the package's normal workflow.
 func AddTestCommands(root *cli.Command) {
 	initTestFlags()
 	root.AddCommand(testCmd)

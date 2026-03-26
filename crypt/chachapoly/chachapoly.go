@@ -11,6 +11,7 @@ import (
 )
 
 // Encrypt encrypts data using ChaCha20-Poly1305.
+// Usage: call Encrypt(...) during the package's normal workflow.
 func Encrypt(plaintext []byte, key []byte) ([]byte, error) {
 	aead, err := chacha20poly1305.NewX(key)
 	if err != nil {
@@ -26,6 +27,7 @@ func Encrypt(plaintext []byte, key []byte) ([]byte, error) {
 }
 
 // Decrypt decrypts data using ChaCha20-Poly1305.
+// Usage: call Decrypt(...) during the package's normal workflow.
 func Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 	aead, err := chacha20poly1305.NewX(key)
 	if err != nil {

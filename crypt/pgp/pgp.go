@@ -16,6 +16,7 @@ import (
 )
 
 // KeyPair holds armored PGP public and private keys.
+// Usage: use KeyPair with the other exported helpers in this package.
 type KeyPair struct {
 	PublicKey  string
 	PrivateKey string
@@ -24,6 +25,7 @@ type KeyPair struct {
 // CreateKeyPair generates a new PGP key pair for the given identity.
 // If password is non-empty, the private key is encrypted with it.
 // Returns a KeyPair with armored public and private keys.
+// Usage: call CreateKeyPair(...) during the package's normal workflow.
 func CreateKeyPair(name, email, password string) (*KeyPair, error) {
 	const op = "pgp.CreateKeyPair"
 
@@ -116,6 +118,7 @@ func serializeEncryptedEntity(w io.Writer, e *openpgp.Entity) error {
 
 // Encrypt encrypts data for the recipient identified by their armored public key.
 // Returns the encrypted data as armored PGP output.
+// Usage: call Encrypt(...) during the package's normal workflow.
 func Encrypt(data []byte, publicKeyArmor string) ([]byte, error) {
 	const op = "pgp.Encrypt"
 
@@ -149,6 +152,7 @@ func Encrypt(data []byte, publicKeyArmor string) ([]byte, error) {
 
 // Decrypt decrypts armored PGP data using the given armored private key.
 // If the private key is encrypted, the password is used to decrypt it first.
+// Usage: call Decrypt(...) during the package's normal workflow.
 func Decrypt(data []byte, privateKeyArmor, password string) ([]byte, error) {
 	const op = "pgp.Decrypt"
 
@@ -193,6 +197,7 @@ func Decrypt(data []byte, privateKeyArmor, password string) ([]byte, error) {
 // Sign creates an armored detached signature for the given data using
 // the armored private key. If the key is encrypted, the password is used
 // to decrypt it first.
+// Usage: call Sign(...) during the package's normal workflow.
 func Sign(data []byte, privateKeyArmor, password string) ([]byte, error) {
 	const op = "pgp.Sign"
 
@@ -224,6 +229,7 @@ func Sign(data []byte, privateKeyArmor, password string) ([]byte, error) {
 
 // Verify verifies an armored detached signature against the given data
 // and armored public key. Returns nil if the signature is valid.
+// Usage: call Verify(...) during the package's normal workflow.
 func Verify(data, signature []byte, publicKeyArmor string) error {
 	const op = "pgp.Verify"
 
