@@ -6,9 +6,9 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"testing"
 
+	core "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +16,7 @@ import (
 type mockReader struct{}
 
 func (r *mockReader) Read(p []byte) (n int, err error) {
-	return 0, errors.New("read error")
+	return 0, core.NewError("read error")
 }
 
 func TestRSA_Good(t *testing.T) {

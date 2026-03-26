@@ -1,13 +1,11 @@
 package auth
 
 import (
-	"encoding/json"
-	"fmt"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	core "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -46,7 +44,7 @@ func TestRegister_Good(t *testing.T) {
 	assert.NotEmpty(t, user.PublicKey)
 	assert.Equal(t, userID, user.KeyID)
 	assert.NotEmpty(t, user.Fingerprint)
-	assert.True(t, strings.HasPrefix(user.PasswordHash, "$argon2id$"), "password hash should be Argon2id format")
+	assert.True(t, core.HasPrefix(user.PasswordHash, "$argon2id$"), "password hash should be Argon2id format")
 	assert.False(t, user.Created.IsZero())
 }
 
@@ -414,8 +412,8 @@ func TestAirGappedFlow_Good(t *testing.T) {
 	require.NoError(t, err)
 
 	var challenge Challenge
-	err = json.Unmarshal([]byte(challengeData), &challenge)
-	require.NoError(t, err)
+	result := core.JSONUnmarshal([]byte(challengeData), &challenge)
+	require.Truef(t, result.OK, "failed to unmarshal challenge: %v", result.Value)
 
 	// Client-side: decrypt nonce and sign it
 	privKey, err := m.Read(userPath(userID, ".key"))
@@ -590,7 +588,7 @@ func TestConcurrentSessionCreation_Good(t *testing.T) {
 	const n = 10
 	userIDs := make([]string, n)
 	for i := range n {
-		username := fmt.Sprintf("concurrent-user-%d", i)
+		username := core.Sprintf("concurrent-user-%d", i)
 		_, err := a.Register(username, "pass")
 		require.NoError(t, err)
 		userIDs[i] = lthn.Hash(username)
@@ -736,7 +734,11 @@ func TestEmptyPasswordRegistration_Good(t *testing.T) {
 func TestVeryLongUsername_Ugly(t *testing.T) {
 	a, _ := newTestAuth()
 
-	longUsername := strings.Repeat("a", 10000)
+	longName := core.NewBuilder()
+	for range 10000 {
+		longName.WriteString("a")
+	}
+	longUsername := longName.String()
 	user, err := a.Register(longUsername, "pass")
 	require.NoError(t, err)
 	require.NotNil(t, user)
@@ -795,8 +797,8 @@ func TestAirGappedRoundTrip_Good(t *testing.T) {
 	require.NoError(t, err)
 
 	var challenge Challenge
-	err = json.Unmarshal([]byte(challengeData), &challenge)
-	require.NoError(t, err)
+	result := core.JSONUnmarshal([]byte(challengeData), &challenge)
+	require.Truef(t, result.OK, "failed to unmarshal challenge: %v", result.Value)
 	assert.NotEmpty(t, challenge.Encrypted)
 	assert.True(t, challenge.ExpiresAt.After(time.Now()))
 
@@ -870,13 +872,13 @@ func TestRegisterArgon2id_Good(t *testing.T) {
 	assert.True(t, m.IsFile(userPath(userID, ".hash")))
 	hashContent, err := m.Read(userPath(userID, ".hash"))
 	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(hashContent, "$argon2id$"), "stored hash should be Argon2id")
+	assert.True(t, core.HasPrefix(hashContent, "$argon2id$"), "stored hash should be Argon2id")
 
 	// .lthn file should NOT exist for new registrations
 	assert.False(t, m.IsFile(userPath(userID, ".lthn")))
 
 	// User struct should have Argon2id hash
-	assert.True(t, strings.HasPrefix(user.PasswordHash, "$argon2id$"))
+	assert.True(t, core.HasPrefix(user.PasswordHash, "$argon2id$"))
 }
 
 // TestLoginArgon2id_Good verifies login works with Argon2id hashed password.
@@ -940,7 +942,7 @@ func TestLegacyLTHNMigration_Good(t *testing.T) {
 	assert.True(t, m.IsFile(userPath(userID, ".hash")), "migration should create .hash file")
 	newHash, err := m.Read(userPath(userID, ".hash"))
 	require.NoError(t, err)
-	assert.True(t, strings.HasPrefix(newHash, "$argon2id$"), "migrated hash should be Argon2id")
+	assert.True(t, core.HasPrefix(newHash, "$argon2id$"), "migrated hash should be Argon2id")
 
 	// Subsequent login should use the new Argon2id hash (not LTHN)
 	session2, err := a.Login(userID, "legacy-pass")
@@ -1024,10 +1026,10 @@ func TestRotateKeyPair_Good(t *testing.T) {
 	require.NoError(t, err)
 
 	var meta User
-	err = json.Unmarshal(decrypted, &meta)
-	require.NoError(t, err)
+	result := core.JSONUnmarshal(decrypted, &meta)
+	require.Truef(t, result.OK, "failed to unmarshal metadata: %v", result.Value)
 	assert.Equal(t, userID, meta.KeyID)
-	assert.True(t, strings.HasPrefix(meta.PasswordHash, "$argon2id$"))
+	assert.True(t, core.HasPrefix(meta.PasswordHash, "$argon2id$"))
 }
 
 // TestRotateKeyPair_Bad verifies that rotation fails with wrong old password.
@@ -1108,8 +1110,8 @@ func TestRevokeKey_Good(t *testing.T) {
 	assert.NotEqual(t, "REVOCATION_PLACEHOLDER", revContent)
 
 	var rev Revocation
-	err = json.Unmarshal([]byte(revContent), &rev)
-	require.NoError(t, err)
+	result := core.JSONUnmarshal([]byte(revContent), &rev)
+	require.Truef(t, result.OK, "failed to unmarshal revocation: %v", result.Value)
 	assert.Equal(t, userID, rev.UserID)
 	assert.Equal(t, "compromised key material", rev.Reason)
 	assert.False(t, rev.RevokedAt.IsZero())

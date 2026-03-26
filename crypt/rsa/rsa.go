@@ -6,8 +6,8 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 
+	core "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
 )
 
@@ -24,7 +24,7 @@ func (s *Service) GenerateKeyPair(bits int) (publicKey, privateKey []byte, err e
 	const op = "rsa.GenerateKeyPair"
 
 	if bits < 2048 {
-		return nil, nil, coreerr.E(op, fmt.Sprintf("key size too small: %d (minimum 2048)", bits), nil)
+		return nil, nil, coreerr.E(op, core.Sprintf("key size too small: %d (minimum 2048)", bits), nil)
 	}
 	privKey, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {

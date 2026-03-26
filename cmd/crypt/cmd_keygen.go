@@ -4,8 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
-	"fmt"
 
+	core "dappco.re/go/core"
 	"forge.lthn.ai/core/cli/pkg/cli"
 )
 
@@ -43,12 +43,12 @@ func runKeygen() error {
 
 	switch {
 	case keygenHex:
-		fmt.Println(hex.EncodeToString(key))
+		core.Println(hex.EncodeToString(key))
 	case keygenBase64:
-		fmt.Println(base64.StdEncoding.EncodeToString(key))
+		core.Println(base64.StdEncoding.EncodeToString(key))
 	default:
 		// Default to hex output
-		fmt.Println(hex.EncodeToString(key))
+		core.Println(hex.EncodeToString(key))
 	}
 
 	return nil

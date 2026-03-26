@@ -3,10 +3,11 @@ module dappco.re/go/core/crypt
 go 1.26.0
 
 require (
-	dappco.re/go/core v0.5.0
+	dappco.re/go/core v0.8.0-alpha.1
 	dappco.re/go/core/i18n v0.2.0
 	dappco.re/go/core/io v0.2.0
 	dappco.re/go/core/log v0.1.0
+	dappco.re/go/core/process v0.3.0
 	dappco.re/go/core/store v0.2.0
 	forge.lthn.ai/core/cli v0.3.7
 	github.com/ProtonMail/go-crypto v1.4.0
@@ -48,7 +49,6 @@ require (
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	golang.org/x/mod v0.34.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/term v0.41.0 // indirect
 	golang.org/x/text v0.35.0 // indirect

@@ -1,10 +1,9 @@
 package crypt
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
+	core "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,9 +29,9 @@ func TestSHA512Sum_Good(t *testing.T) {
 // TestSHA256FileEmpty_Good verifies checksum of an empty file.
 func TestSHA256FileEmpty_Good(t *testing.T) {
 	tmpDir := t.TempDir()
-	emptyFile := filepath.Join(tmpDir, "empty.bin")
-	err := os.WriteFile(emptyFile, []byte{}, 0o644)
-	require.NoError(t, err)
+	emptyFile := core.Path(tmpDir, "empty.bin")
+	writeResult := (&core.Fs{}).New("/").WriteMode(emptyFile, "", 0o644)
+	require.Truef(t, writeResult.OK, "failed to write empty test file: %v", writeResult.Value)
 
 	hash, err := SHA256File(emptyFile)
 	require.NoError(t, err)
@@ -43,9 +42,9 @@ func TestSHA256FileEmpty_Good(t *testing.T) {
 // TestSHA512FileEmpty_Good verifies SHA-512 checksum of an empty file.
 func TestSHA512FileEmpty_Good(t *testing.T) {
 	tmpDir := t.TempDir()
-	emptyFile := filepath.Join(tmpDir, "empty.bin")
-	err := os.WriteFile(emptyFile, []byte{}, 0o644)
-	require.NoError(t, err)
+	emptyFile := core.Path(tmpDir, "empty.bin")
+	writeResult := (&core.Fs{}).New("/").WriteMode(emptyFile, "", 0o644)
+	require.Truef(t, writeResult.OK, "failed to write empty test file: %v", writeResult.Value)
 
 	hash, err := SHA512File(emptyFile)
 	require.NoError(t, err)
@@ -69,9 +68,9 @@ func TestSHA512FileNonExistent_Bad(t *testing.T) {
 // TestSHA256FileWithContent_Good verifies checksum of a file with known content.
 func TestSHA256FileWithContent_Good(t *testing.T) {
 	tmpDir := t.TempDir()
-	testFile := filepath.Join(tmpDir, "test.txt")
-	err := os.WriteFile(testFile, []byte("hello"), 0o644)
-	require.NoError(t, err)
+	testFile := core.Path(tmpDir, "test.txt")
+	writeResult := (&core.Fs{}).New("/").WriteMode(testFile, "hello", 0o644)
+	require.Truef(t, writeResult.OK, "failed to write checksum fixture: %v", writeResult.Value)
 
 	hash, err := SHA256File(testFile)
 	require.NoError(t, err)

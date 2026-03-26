@@ -11,11 +11,11 @@
 package trust
 
 import (
-	"fmt"
 	"iter"
 	"sync"
 	"time"
 
+	core "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
 )
 
@@ -41,7 +41,7 @@ func (t Tier) String() string {
 	case TierFull:
 		return "full"
 	default:
-		return fmt.Sprintf("unknown(%d)", int(t))
+		return core.Sprintf("unknown(%d)", int(t))
 	}
 }
 
@@ -102,7 +102,7 @@ func (r *Registry) Register(agent Agent) error {
 		return coreerr.E("trust.Register", "agent name is required", nil)
 	}
 	if !agent.Tier.Valid() {
-		return coreerr.E("trust.Register", fmt.Sprintf("invalid tier %d for agent %q", agent.Tier, agent.Name), nil)
+		return coreerr.E("trust.Register", core.Sprintf("invalid tier %d for agent %q", agent.Tier, agent.Name), nil)
 	}
 	if agent.CreatedAt.IsZero() {
 		agent.CreatedAt = time.Now()

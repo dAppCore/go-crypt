@@ -1,10 +1,10 @@
 package trust
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 
+	core "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -234,7 +234,7 @@ func TestApprovalConcurrent_Good(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			id, err := q.Submit(
-				fmt.Sprintf("agent-%d", idx),
+				core.Sprintf("agent-%d", idx),
 				CapMergePR,
 				"host-uk/core",
 			)

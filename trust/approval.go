@@ -1,11 +1,11 @@
 package trust
 
 import (
-	"fmt"
 	"iter"
 	"sync"
 	"time"
 
+	core "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
 )
 
@@ -31,7 +31,7 @@ func (s ApprovalStatus) String() string {
 	case ApprovalDenied:
 		return "denied"
 	default:
-		return fmt.Sprintf("unknown(%d)", int(s))
+		return core.Sprintf("unknown(%d)", int(s))
 	}
 }
 
@@ -85,7 +85,7 @@ func (q *ApprovalQueue) Submit(agent string, cap Capability, repo string) (strin
 	defer q.mu.Unlock()
 
 	q.nextID++
-	id := fmt.Sprintf("approval-%d", q.nextID)
+	id := core.Sprintf("approval-%d", q.nextID)
 
 	q.requests[id] = &ApprovalRequest{
 		ID:          id,
@@ -107,10 +107,10 @@ func (q *ApprovalQueue) Approve(id string, reviewedBy string, reason string) err
 
 	req, ok := q.requests[id]
 	if !ok {
-		return coreerr.E("trust.ApprovalQueue.Approve", fmt.Sprintf("request %q not found", id), nil)
+		return coreerr.E("trust.ApprovalQueue.Approve", core.Sprintf("request %q not found", id), nil)
 	}
 	if req.Status != ApprovalPending {
-		return coreerr.E("trust.ApprovalQueue.Approve", fmt.Sprintf("request %q is already %s", id, req.Status), nil)
+		return coreerr.E("trust.ApprovalQueue.Approve", core.Sprintf("request %q is already %s", id, req.Status), nil)
 	}
 
 	req.Status = ApprovalApproved
@@ -128,10 +128,10 @@ func (q *ApprovalQueue) Deny(id string, reviewedBy string, reason string) error 
 
 	req, ok := q.requests[id]
 	if !ok {
-		return coreerr.E("trust.ApprovalQueue.Deny", fmt.Sprintf("request %q not found", id), nil)
+		return coreerr.E("trust.ApprovalQueue.Deny", core.Sprintf("request %q not found", id), nil)
 	}
 	if req.Status != ApprovalPending {
-		return coreerr.E("trust.ApprovalQueue.Deny", fmt.Sprintf("request %q is already %s", id, req.Status), nil)
+		return coreerr.E("trust.ApprovalQueue.Deny", core.Sprintf("request %q is already %s", id, req.Status), nil)
 	}
 
 	req.Status = ApprovalDenied

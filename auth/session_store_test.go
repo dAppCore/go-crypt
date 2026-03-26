@@ -2,13 +2,11 @@ package auth
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
+	core "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -66,7 +64,7 @@ func TestMemorySessionStore_DeleteByUser_Good(t *testing.T) {
 	// Create sessions for two users
 	for i := range 3 {
 		err := store.Set(&Session{
-			Token:     fmt.Sprintf("user-a-token-%d", i),
+			Token:     core.Sprintf("user-a-token-%d", i),
 			UserID:    "user-a",
 			ExpiresAt: time.Now().Add(1 * time.Hour),
 		})
@@ -86,7 +84,7 @@ func TestMemorySessionStore_DeleteByUser_Good(t *testing.T) {
 
 	// user-a sessions should be gone
 	for i := range 3 {
-		_, err := store.Get(fmt.Sprintf("user-a-token-%d", i))
+		_, err := store.Get(core.Sprintf("user-a-token-%d", i))
 		assert.ErrorIs(t, err, ErrSessionNotFound)
 	}
 
@@ -146,11 +144,11 @@ func TestMemorySessionStore_Concurrent_Good(t *testing.T) {
 	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
-			token := fmt.Sprintf("concurrent-token-%d", idx)
+			token := core.Sprintf("concurrent-token-%d", idx)
 
 			err := store.Set(&Session{
 				Token:     token,
-				UserID:    fmt.Sprintf("user-%d", idx%5),
+				UserID:    core.Sprintf("user-%d", idx%5),
 				ExpiresAt: time.Now().Add(1 * time.Hour),
 			})
 			assert.NoError(t, err)
@@ -222,7 +220,7 @@ func TestSQLiteSessionStore_DeleteByUser_Good(t *testing.T) {
 	// Create sessions for two users
 	for i := range 3 {
 		err := store.Set(&Session{
-			Token:     fmt.Sprintf("sqlite-user-a-%d", i),
+			Token:     core.Sprintf("sqlite-user-a-%d", i),
 			UserID:    "user-a",
 			ExpiresAt: time.Now().Add(1 * time.Hour),
 		})
@@ -242,7 +240,7 @@ func TestSQLiteSessionStore_DeleteByUser_Good(t *testing.T) {
 
 	// user-a sessions should be gone
 	for i := range 3 {
-		_, err := store.Get(fmt.Sprintf("sqlite-user-a-%d", i))
+		_, err := store.Get(core.Sprintf("sqlite-user-a-%d", i))
 		assert.ErrorIs(t, err, ErrSessionNotFound)
 	}
 
@@ -296,7 +294,7 @@ func TestSQLiteSessionStore_Cleanup_Good(t *testing.T) {
 
 func TestSQLiteSessionStore_Persistence_Good(t *testing.T) {
 	dir := t.TempDir()
-	dbPath := filepath.Join(dir, "sessions.db")
+	dbPath := core.Path(dir, "sessions.db")
 
 	// Write a session
 	store1, err := NewSQLiteSessionStore(dbPath)
@@ -327,7 +325,7 @@ func TestSQLiteSessionStore_Persistence_Good(t *testing.T) {
 
 func TestSQLiteSessionStore_Concurrent_Good(t *testing.T) {
 	// Use a temp file — :memory: SQLite has concurrency limitations
-	dbPath := filepath.Join(t.TempDir(), "concurrent.db")
+	dbPath := core.Path(t.TempDir(), "concurrent.db")
 	store, err := NewSQLiteSessionStore(dbPath)
 	require.NoError(t, err)
 	defer store.Close()
@@ -339,11 +337,11 @@ func TestSQLiteSessionStore_Concurrent_Good(t *testing.T) {
 	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
-			token := fmt.Sprintf("sqlite-concurrent-%d", idx)
+			token := core.Sprintf("sqlite-concurrent-%d", idx)
 
 			err := store.Set(&Session{
 				Token:     token,
-				UserID:    fmt.Sprintf("user-%d", idx%5),
+				UserID:    core.Sprintf("user-%d", idx%5),
 				ExpiresAt: time.Now().Add(1 * time.Hour),
 			})
 			assert.NoError(t, err)
@@ -480,8 +478,7 @@ func TestSQLiteSessionStore_UpdateExisting_Good(t *testing.T) {
 
 func TestSQLiteSessionStore_TempFile_Good(t *testing.T) {
 	// Verify we can use a real temp file (not :memory:)
-	tmpFile := filepath.Join(os.TempDir(), "go-crypt-test-session-store.db")
-	defer os.Remove(tmpFile)
+	tmpFile := core.Path(t.TempDir(), "go-crypt-test-session-store.db")
 
 	store, err := NewSQLiteSessionStore(tmpFile)
 	require.NoError(t, err)

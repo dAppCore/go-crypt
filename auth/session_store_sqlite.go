@@ -1,11 +1,10 @@
 package auth
 
 import (
-	"encoding/json"
-	"errors"
 	"sync"
 	"time"
 
+	core "dappco.re/go/core"
 	"dappco.re/go/core/store"
 )
 
@@ -35,14 +34,16 @@ func (s *SQLiteSessionStore) Get(token string) (*Session, error) {
 
 	val, err := s.store.Get(sessionGroup, token)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
+		if core.Is(err, store.ErrNotFound) {
 			return nil, ErrSessionNotFound
 		}
 		return nil, err
 	}
 
 	var session Session
-	if err := json.Unmarshal([]byte(val), &session); err != nil {
+	result := core.JSONUnmarshal([]byte(val), &session)
+	if !result.OK {
+		err, _ := result.Value.(error)
 		return nil, err
 	}
 	return &session, nil
@@ -53,11 +54,12 @@ func (s *SQLiteSessionStore) Set(session *Session) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	data, err := json.Marshal(session)
-	if err != nil {
+	result := core.JSONMarshal(session)
+	if !result.OK {
+		err, _ := result.Value.(error)
 		return err
 	}
-	return s.store.Set(sessionGroup, session.Token, string(data))
+	return s.store.Set(sessionGroup, session.Token, string(result.Value.([]byte)))
 }
 
 // Delete removes a session by token from SQLite.
@@ -68,7 +70,7 @@ func (s *SQLiteSessionStore) Delete(token string) error {
 	// Check existence first to return ErrSessionNotFound
 	_, err := s.store.Get(sessionGroup, token)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
+		if core.Is(err, store.ErrNotFound) {
 			return ErrSessionNotFound
 		}
 		return err
@@ -88,7 +90,8 @@ func (s *SQLiteSessionStore) DeleteByUser(userID string) error {
 
 	for token, val := range all {
 		var session Session
-		if err := json.Unmarshal([]byte(val), &session); err != nil {
+		result := core.JSONUnmarshal([]byte(val), &session)
+		if !result.OK {
 			continue // Skip malformed entries
 		}
 		if session.UserID == userID {
@@ -114,7 +117,8 @@ func (s *SQLiteSessionStore) Cleanup() (int, error) {
 	count := 0
 	for token, val := range all {
 		var session Session
-		if err := json.Unmarshal([]byte(val), &session); err != nil {
+		result := core.JSONUnmarshal([]byte(val), &session)
+		if !result.OK {
 			continue // Skip malformed entries
 		}
 		if now.After(session.ExpiresAt) {

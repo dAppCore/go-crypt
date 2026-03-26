@@ -1,12 +1,12 @@
 package trust
 
 import (
-	"encoding/json"
 	"io"
 	"iter"
 	"sync"
 	"time"
 
+	core "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
 )
 
@@ -28,13 +28,20 @@ type AuditEntry struct {
 
 // MarshalJSON implements custom JSON encoding for Decision.
 func (d Decision) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.String())
+	result := core.JSONMarshal(d.String())
+	if !result.OK {
+		err, _ := result.Value.(error)
+		return nil, err
+	}
+	return result.Value.([]byte), nil
 }
 
 // UnmarshalJSON implements custom JSON decoding for Decision.
 func (d *Decision) UnmarshalJSON(data []byte) error {
 	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
+	result := core.JSONUnmarshal(data, &s)
+	if !result.OK {
+		err, _ := result.Value.(error)
 		return err
 	}
 	switch s {
@@ -82,11 +89,12 @@ func (l *AuditLog) Record(result EvalResult, repo string) error {
 	l.entries = append(l.entries, entry)
 
 	if l.writer != nil {
-		data, err := json.Marshal(entry)
-		if err != nil {
+		dataResult := core.JSONMarshal(entry)
+		if !dataResult.OK {
+			err, _ := dataResult.Value.(error)
 			return coreerr.E("trust.AuditLog.Record", "marshal failed", err)
 		}
-		data = append(data, '\n')
+		data := append(dataResult.Value.([]byte), '\n')
 		if _, err := l.writer.Write(data); err != nil {
 			return coreerr.E("trust.AuditLog.Record", "write failed", err)
 		}

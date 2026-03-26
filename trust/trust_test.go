@@ -1,11 +1,11 @@
 package trust
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 	"time"
 
+	core "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -196,7 +196,7 @@ func TestConcurrentRegistryOperations_Good(t *testing.T) {
 	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
-			name := fmt.Sprintf("agent-%d", idx)
+			name := core.Sprintf("agent-%d", idx)
 			err := r.Register(Agent{Name: name, Tier: TierVerified})
 			assert.NoError(t, err)
 		}(i)
@@ -206,7 +206,7 @@ func TestConcurrentRegistryOperations_Good(t *testing.T) {
 	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
-			name := fmt.Sprintf("agent-%d", idx)
+			name := core.Sprintf("agent-%d", idx)
 			_ = r.Get(name) // Just exercise the read path
 		}(i)
 	}
@@ -215,7 +215,7 @@ func TestConcurrentRegistryOperations_Good(t *testing.T) {
 	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
-			name := fmt.Sprintf("agent-%d", idx)
+			name := core.Sprintf("agent-%d", idx)
 			_ = r.Remove(name)
 		}(i)
 	}
@@ -281,7 +281,7 @@ func TestConcurrentListDuringMutations_Good(t *testing.T) {
 	// Pre-populate
 	for i := range 5 {
 		require.NoError(t, r.Register(Agent{
-			Name: fmt.Sprintf("base-%d", i),
+			Name: core.Sprintf("base-%d", i),
 			Tier: TierFull,
 		}))
 	}
@@ -302,7 +302,7 @@ func TestConcurrentListDuringMutations_Good(t *testing.T) {
 	for i := range 10 {
 		go func(idx int) {
 			defer wg.Done()
-			name := fmt.Sprintf("concurrent-%d", idx)
+			name := core.Sprintf("concurrent-%d", idx)
 			_ = r.Register(Agent{Name: name, Tier: TierUntrusted})
 		}(i)
 	}

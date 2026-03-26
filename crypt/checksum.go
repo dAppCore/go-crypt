@@ -5,17 +5,19 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"io"
-	"os"
 
+	core "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
 )
 
 // SHA256File computes the SHA-256 checksum of a file and returns it as a hex string.
 func SHA256File(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
+	openResult := (&core.Fs{}).New("/").Open(path)
+	if !openResult.OK {
+		err, _ := openResult.Value.(error)
 		return "", coreerr.E("crypt.SHA256File", "failed to open file", err)
 	}
+	f := openResult.Value.(io.ReadCloser)
 	defer func() { _ = f.Close() }()
 
 	h := sha256.New()
@@ -28,10 +30,12 @@ func SHA256File(path string) (string, error) {
 
 // SHA512File computes the SHA-512 checksum of a file and returns it as a hex string.
 func SHA512File(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
+	openResult := (&core.Fs{}).New("/").Open(path)
+	if !openResult.OK {
+		err, _ := openResult.Value.(error)
 		return "", coreerr.E("crypt.SHA512File", "failed to open file", err)
 	}
+	f := openResult.Value.(io.ReadCloser)
 	defer func() { _ = f.Close() }()
 
 	h := sha512.New()

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto"
 	goio "io"
-	"strings"
 
 	framework "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
@@ -102,7 +101,7 @@ func serializeEntity(w goio.Writer, e *openpgp.Entity) error {
 // EncryptPGP encrypts data for a recipient identified by their public key (armored string in recipientPath).
 // The encrypted data is written to the provided writer and also returned as an armored string.
 func (s *Service) EncryptPGP(writer goio.Writer, recipientPath, data string, opts ...any) (string, error) {
-	entityList, err := openpgp.ReadArmoredKeyRing(strings.NewReader(recipientPath))
+	entityList, err := openpgp.ReadArmoredKeyRing(framework.NewReader(recipientPath))
 	if err != nil {
 		return "", coreerr.E("openpgp.EncryptPGP", "failed to read recipient key", err)
 	}
@@ -137,7 +136,7 @@ func (s *Service) EncryptPGP(writer goio.Writer, recipientPath, data string, opt
 
 // DecryptPGP decrypts a PGP message using the provided armored private key and passphrase.
 func (s *Service) DecryptPGP(privateKey, message, passphrase string, opts ...any) (string, error) {
-	entityList, err := openpgp.ReadArmoredKeyRing(strings.NewReader(privateKey))
+	entityList, err := openpgp.ReadArmoredKeyRing(framework.NewReader(privateKey))
 	if err != nil {
 		return "", coreerr.E("openpgp.DecryptPGP", "failed to read private key", err)
 	}
@@ -154,7 +153,7 @@ func (s *Service) DecryptPGP(privateKey, message, passphrase string, opts ...any
 	}
 
 	// Decrypt armored message
-	block, err := armor.Decode(strings.NewReader(message))
+	block, err := armor.Decode(framework.NewReader(message))
 	if err != nil {
 		return "", coreerr.E("openpgp.DecryptPGP", "failed to decode armored message", err)
 	}

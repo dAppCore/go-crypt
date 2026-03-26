@@ -1,13 +1,9 @@
 package trust
 
 import (
-	"bytes"
-	"encoding/json"
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 
+	core "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,13 +31,13 @@ const validPolicyJSON = `{
 // --- LoadPolicies ---
 
 func TestLoadPolicies_Good(t *testing.T) {
-	policies, err := LoadPolicies(strings.NewReader(validPolicyJSON))
+	policies, err := LoadPolicies(core.NewReader(validPolicyJSON))
 	require.NoError(t, err)
 	assert.Len(t, policies, 3)
 }
 
 func TestLoadPolicies_Good_FieldMapping(t *testing.T) {
-	policies, err := LoadPolicies(strings.NewReader(validPolicyJSON))
+	policies, err := LoadPolicies(core.NewReader(validPolicyJSON))
 	require.NoError(t, err)
 
 	// Tier 3
@@ -66,33 +62,33 @@ func TestLoadPolicies_Good_FieldMapping(t *testing.T) {
 
 func TestLoadPolicies_Good_EmptyPolicies(t *testing.T) {
 	input := `{"policies": []}`
-	policies, err := LoadPolicies(strings.NewReader(input))
+	policies, err := LoadPolicies(core.NewReader(input))
 	require.NoError(t, err)
 	assert.Empty(t, policies)
 }
 
 func TestLoadPolicies_Bad_InvalidJSON(t *testing.T) {
-	_, err := LoadPolicies(strings.NewReader(`{invalid`))
+	_, err := LoadPolicies(core.NewReader(`{invalid`))
 	assert.Error(t, err)
 }
 
 func TestLoadPolicies_Bad_InvalidTier(t *testing.T) {
 	input := `{"policies": [{"tier": 0, "allowed": ["repo.push"]}]}`
-	_, err := LoadPolicies(strings.NewReader(input))
+	_, err := LoadPolicies(core.NewReader(input))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid tier")
 }
 
 func TestLoadPolicies_Bad_TierTooHigh(t *testing.T) {
 	input := `{"policies": [{"tier": 99, "allowed": ["repo.push"]}]}`
-	_, err := LoadPolicies(strings.NewReader(input))
+	_, err := LoadPolicies(core.NewReader(input))
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid tier")
 }
 
 func TestLoadPolicies_Bad_UnknownField(t *testing.T) {
 	input := `{"policies": [{"tier": 1, "allowed": ["repo.push"], "bogus": true}]}`
-	_, err := LoadPolicies(strings.NewReader(input))
+	_, err := LoadPolicies(core.NewReader(input))
 	assert.Error(t, err, "DisallowUnknownFields should reject unknown fields")
 }
 
@@ -100,9 +96,8 @@ func TestLoadPolicies_Bad_UnknownField(t *testing.T) {
 
 func TestLoadPoliciesFromFile_Good(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "policies.json")
-	err := os.WriteFile(path, []byte(validPolicyJSON), 0644)
-	require.NoError(t, err)
+	path := core.Path(dir, "policies.json")
+	writePolicyFile(t, path, validPolicyJSON)
 
 	policies, err := LoadPoliciesFromFile(path)
 	require.NoError(t, err)
@@ -122,7 +117,7 @@ func TestApplyPolicies_Good(t *testing.T) {
 	pe := NewPolicyEngine(r)
 
 	// Apply custom policies from JSON
-	err := pe.ApplyPolicies(strings.NewReader(validPolicyJSON))
+	err := pe.ApplyPolicies(core.NewReader(validPolicyJSON))
 	require.NoError(t, err)
 
 	// Verify the Tier 2 policy was replaced
@@ -144,7 +139,7 @@ func TestApplyPolicies_Bad_InvalidJSON(t *testing.T) {
 	r := NewRegistry()
 	pe := NewPolicyEngine(r)
 
-	err := pe.ApplyPolicies(strings.NewReader(`{invalid`))
+	err := pe.ApplyPolicies(core.NewReader(`{invalid`))
 	assert.Error(t, err)
 }
 
@@ -153,7 +148,7 @@ func TestApplyPolicies_Bad_InvalidTier(t *testing.T) {
 	pe := NewPolicyEngine(r)
 
 	input := `{"policies": [{"tier": 0, "allowed": ["repo.push"]}]}`
-	err := pe.ApplyPolicies(strings.NewReader(input))
+	err := pe.ApplyPolicies(core.NewReader(input))
 	assert.Error(t, err)
 }
 
@@ -161,15 +156,14 @@ func TestApplyPolicies_Bad_InvalidTier(t *testing.T) {
 
 func TestApplyPoliciesFromFile_Good(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "policies.json")
-	err := os.WriteFile(path, []byte(validPolicyJSON), 0644)
-	require.NoError(t, err)
+	path := core.Path(dir, "policies.json")
+	writePolicyFile(t, path, validPolicyJSON)
 
 	r := NewRegistry()
 	require.NoError(t, r.Register(Agent{Name: "A", Tier: TierFull}))
 	pe := NewPolicyEngine(r)
 
-	err = pe.ApplyPoliciesFromFile(path)
+	err := pe.ApplyPoliciesFromFile(path)
 	require.NoError(t, err)
 
 	// Verify Tier 3 was replaced — only 3 allowed caps now
@@ -191,14 +185,14 @@ func TestExportPolicies_Good(t *testing.T) {
 	r := NewRegistry()
 	pe := NewPolicyEngine(r) // loads defaults
 
-	var buf bytes.Buffer
-	err := pe.ExportPolicies(&buf)
+	buf := core.NewBuilder()
+	err := pe.ExportPolicies(buf)
 	require.NoError(t, err)
 
 	// Output should be valid JSON
 	var cfg PoliciesConfig
-	err = json.Unmarshal(buf.Bytes(), &cfg)
-	require.NoError(t, err)
+	result := core.JSONUnmarshalString(buf.String(), &cfg)
+	require.Truef(t, result.OK, "failed to unmarshal exported policies: %v", result.Value)
 	assert.Len(t, cfg.Policies, 3)
 }
 
@@ -208,15 +202,15 @@ func TestExportPolicies_Good_RoundTrip(t *testing.T) {
 	pe := NewPolicyEngine(r)
 
 	// Export
-	var buf bytes.Buffer
-	err := pe.ExportPolicies(&buf)
+	buf := core.NewBuilder()
+	err := pe.ExportPolicies(buf)
 	require.NoError(t, err)
 
 	// Create a new engine and apply the exported policies
 	r2 := NewRegistry()
 	require.NoError(t, r2.Register(Agent{Name: "A", Tier: TierFull}))
 	pe2 := NewPolicyEngine(r2)
-	err = pe2.ApplyPolicies(strings.NewReader(buf.String()))
+	err = pe2.ApplyPolicies(core.NewReader(buf.String()))
 	require.NoError(t, err)
 
 	// Evaluations should produce the same results
@@ -227,6 +221,13 @@ func TestExportPolicies_Good_RoundTrip(t *testing.T) {
 		assert.Equal(t, r1.Decision, r2.Decision,
 			"decision mismatch for %s: original=%s, round-tripped=%s", cap, r1.Decision, r2.Decision)
 	}
+}
+
+func writePolicyFile(t *testing.T, path, content string) {
+	t.Helper()
+
+	result := (&core.Fs{}).New("/").WriteMode(path, content, 0o644)
+	require.Truef(t, result.OK, "failed to write %s: %v", path, result.Value)
 }
 
 // --- Helper conversion ---

@@ -29,12 +29,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"strings"
 	"sync"
 	"time"
 
+	core "dappco.re/go/core"
 	"dappco.re/go/core/crypt/crypt"
 	"dappco.re/go/core/crypt/crypt/lthn"
 	"dappco.re/go/core/crypt/crypt/pgp"
@@ -218,12 +216,13 @@ func (a *Authenticator) Register(username, password string) (*User, error) {
 	}
 
 	// Encrypt metadata with the user's public key and store
-	metaJSON, err := json.Marshal(user)
-	if err != nil {
+	metaJSONResult := core.JSONMarshal(user)
+	if !metaJSONResult.OK {
+		err, _ := metaJSONResult.Value.(error)
 		return nil, coreerr.E(op, "failed to marshal user metadata", err)
 	}
 
-	encMeta, err := pgp.Encrypt(metaJSON, kp.PublicKey)
+	encMeta, err := pgp.Encrypt(metaJSONResult.Value.([]byte), kp.PublicKey)
 	if err != nil {
 		return nil, coreerr.E(op, "failed to encrypt user metadata", err)
 	}
@@ -419,7 +418,7 @@ func (a *Authenticator) Login(userID, password string) (*Session, error) {
 			return nil, coreerr.E(op, "failed to read password hash", err)
 		}
 
-		if strings.HasPrefix(storedHash, "$argon2id$") {
+		if core.HasPrefix(storedHash, "$argon2id$") {
 			valid, err := crypt.VerifyPassword(password, storedHash)
 			if err != nil {
 				return nil, coreerr.E(op, "failed to verify password", err)
@@ -482,7 +481,9 @@ func (a *Authenticator) RotateKeyPair(userID, oldPassword, newPassword string) (
 	}
 
 	var user User
-	if err := json.Unmarshal(metaJSON, &user); err != nil {
+	metaResult := core.JSONUnmarshal(metaJSON, &user)
+	if !metaResult.OK {
+		err, _ := metaResult.Value.(error)
 		return nil, coreerr.E(op, "failed to unmarshal user metadata", err)
 	}
 
@@ -504,12 +505,13 @@ func (a *Authenticator) RotateKeyPair(userID, oldPassword, newPassword string) (
 	user.PasswordHash = newHash
 
 	// Re-encrypt metadata with new public key
-	updatedMeta, err := json.Marshal(&user)
-	if err != nil {
+	updatedMetaResult := core.JSONMarshal(&user)
+	if !updatedMetaResult.OK {
+		err, _ := updatedMetaResult.Value.(error)
 		return nil, coreerr.E(op, "failed to marshal updated metadata", err)
 	}
 
-	encUpdatedMeta, err := pgp.Encrypt(updatedMeta, newKP.PublicKey)
+	encUpdatedMeta, err := pgp.Encrypt(updatedMetaResult.Value.([]byte), newKP.PublicKey)
 	if err != nil {
 		return nil, coreerr.E(op, "failed to encrypt metadata with new key", err)
 	}
@@ -556,11 +558,12 @@ func (a *Authenticator) RevokeKey(userID, password, reason string) error {
 		Reason:    reason,
 		RevokedAt: time.Now(),
 	}
-	revJSON, err := json.Marshal(&rev)
-	if err != nil {
+	revJSONResult := core.JSONMarshal(&rev)
+	if !revJSONResult.OK {
+		err, _ := revJSONResult.Value.(error)
 		return coreerr.E(op, "failed to marshal revocation record", err)
 	}
-	if err := a.medium.Write(userPath(userID, ".rev"), string(revJSON)); err != nil {
+	if err := a.medium.Write(userPath(userID, ".rev"), string(revJSONResult.Value.([]byte))); err != nil {
 		return coreerr.E(op, "failed to write revocation record", err)
 	}
 
@@ -586,7 +589,8 @@ func (a *Authenticator) IsRevoked(userID string) bool {
 
 	// Attempt to parse as JSON revocation record
 	var rev Revocation
-	if err := json.Unmarshal([]byte(content), &rev); err != nil {
+	revResult := core.JSONUnmarshal([]byte(content), &rev)
+	if !revResult.OK {
 		return false
 	}
 
@@ -605,12 +609,13 @@ func (a *Authenticator) WriteChallengeFile(userID, path string) error {
 		return coreerr.E(op, "failed to create challenge", err)
 	}
 
-	data, err := json.Marshal(challenge)
-	if err != nil {
+	challengeResult := core.JSONMarshal(challenge)
+	if !challengeResult.OK {
+		err, _ := challengeResult.Value.(error)
 		return coreerr.E(op, "failed to marshal challenge", err)
 	}
 
-	if err := a.medium.Write(path, string(data)); err != nil {
+	if err := a.medium.Write(path, string(challengeResult.Value.([]byte))); err != nil {
 		return coreerr.E(op, "failed to write challenge file", err)
 	}
 
@@ -645,7 +650,7 @@ func (a *Authenticator) verifyPassword(userID, password string) error {
 	// Try Argon2id hash first (.hash file)
 	if a.medium.IsFile(userPath(userID, ".hash")) {
 		storedHash, err := a.medium.Read(userPath(userID, ".hash"))
-		if err == nil && strings.HasPrefix(storedHash, "$argon2id$") {
+		if err == nil && core.HasPrefix(storedHash, "$argon2id$") {
 			valid, verr := crypt.VerifyPassword(password, storedHash)
 			if verr != nil {
 				return coreerr.E(op, "failed to verify password", nil)
@@ -705,11 +710,11 @@ func (a *Authenticator) StartCleanup(ctx context.Context, interval time.Duration
 			case <-ticker.C:
 				count, err := a.store.Cleanup()
 				if err != nil {
-					fmt.Printf("auth: session cleanup error: %v\n", err)
+					core.Print(nil, "auth: session cleanup error: %v", err)
 					continue
 				}
 				if count > 0 {
-					fmt.Printf("auth: cleaned up %d expired session(s)\n", count)
+					core.Print(nil, "auth: cleaned up %d expired session(s)", count)
 				}
 			}
 		}
