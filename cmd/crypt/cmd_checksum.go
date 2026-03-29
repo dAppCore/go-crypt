@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"dappco.re/go/core/crypt/crypt"
 	"forge.lthn.ai/core/cli/pkg/cli"
-	"forge.lthn.ai/core/go-crypt/crypt"
 )
 
 // Checksum command flags

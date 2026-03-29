@@ -6,15 +6,12 @@ import (
 	goio "io"
 	"strings"
 
-	core "forge.lthn.ai/core/go-log"
-
 	framework "dappco.re/go/core"
+	coreerr "dappco.re/go/core/log"
+
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/armor"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
-
-	coreerr "forge.lthn.ai/core/go-log"
-	framework "dappco.re/go/core"
 )
 
 // Service provides OpenPGP cryptographic operations.
@@ -66,7 +63,6 @@ func (s *Service) CreateKeyPair(name, passphrase string) (string, error) {
 	err = serializeEntity(w, entity)
 	if err != nil {
 		w.Close()
-<<<<<<< HEAD
 		return "", coreerr.E("openpgp.CreateKeyPair", "failed to serialise private key", err)
 	}
 	w.Close()
@@ -153,7 +149,9 @@ func (s *Service) DecryptPGP(privateKey, message, passphrase string, opts ...any
 			return "", coreerr.E("openpgp.DecryptPGP", "failed to decrypt private key", err)
 		}
 		for _, subkey := range entity.Subkeys {
-			_ = subkey.PrivateKey.Decrypt([]byte(passphrase))
+			if err := subkey.PrivateKey.Decrypt([]byte(passphrase)); err != nil {
+				return "", coreerr.E("openpgp.DecryptPGP", "failed to decrypt subkey", err)
+			}
 		}
 	}
 

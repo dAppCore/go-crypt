@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	coreerr "forge.lthn.ai/core/go-log"
+	coreerr "dappco.re/go/core/log"
 )
 
 // ErrSessionNotFound is returned when a session token is not found.
