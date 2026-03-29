@@ -149,7 +149,9 @@ func (s *Service) DecryptPGP(privateKey, message, passphrase string, opts ...any
 			return "", coreerr.E("openpgp.DecryptPGP", "failed to decrypt private key", err)
 		}
 		for _, subkey := range entity.Subkeys {
-			_ = subkey.PrivateKey.Decrypt([]byte(passphrase))
+			if err := subkey.PrivateKey.Decrypt([]byte(passphrase)); err != nil {
+				return "", coreerr.E("openpgp.DecryptPGP", "failed to decrypt subkey", err)
+			}
 		}
 	}
 

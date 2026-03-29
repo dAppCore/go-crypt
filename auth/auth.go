@@ -323,7 +323,9 @@ func (a *Authenticator) ValidateSession(token string) (*Session, error) {
 	}
 
 	if time.Now().After(session.ExpiresAt) {
-		_ = a.store.Delete(token)
+		if err := a.store.Delete(token); err != nil {
+			return nil, coreerr.E(op, "session expired", err)
+		}
 		return nil, coreerr.E(op, "session expired", nil)
 	}
 
@@ -340,7 +342,9 @@ func (a *Authenticator) RefreshSession(token string) (*Session, error) {
 	}
 
 	if time.Now().After(session.ExpiresAt) {
-		_ = a.store.Delete(token)
+		if err := a.store.Delete(token); err != nil {
+			return nil, coreerr.E(op, "session expired", err)
+		}
 		return nil, coreerr.E(op, "session expired", nil)
 	}
 
@@ -389,7 +393,9 @@ func (a *Authenticator) DeleteUser(userID string) error {
 	}
 
 	// Revoke any active sessions for this user
-	_ = a.store.DeleteByUser(userID)
+	if err := a.store.DeleteByUser(userID); err != nil {
+		return coreerr.E(op, "failed to delete user sessions", err)
+	}
 
 	return nil
 }
@@ -565,7 +571,9 @@ func (a *Authenticator) RevokeKey(userID, password, reason string) error {
 	}
 
 	// Invalidate all sessions
-	_ = a.store.DeleteByUser(userID)
+	if err := a.store.DeleteByUser(userID); err != nil {
+		return coreerr.E(op, "failed to delete user sessions", err)
+	}
 
 	return nil
 }

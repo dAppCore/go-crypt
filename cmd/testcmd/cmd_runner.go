@@ -49,7 +49,11 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 
 	// Create command
 	cmd := exec.Command("go", args...)
-	cmd.Dir, _ = os.Getwd()
+	cwd, err := os.Getwd()
+	if err != nil {
+		return coreerr.E("cmd.test", "failed to determine working directory", err)
+	}
+	cmd.Dir = cwd
 
 	// Set environment to suppress macOS linker warnings
 	cmd.Env = append(os.Environ(), getMacOSDeploymentTarget())
@@ -76,7 +80,7 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 		cmd.Stderr = &stderr
 	}
 
-	err := cmd.Run()
+	err = cmd.Run()
 	exitCode := 0
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {

@@ -151,8 +151,8 @@ func (q *ApprovalQueue) Get(id string) *ApprovalRequest {
 		return nil
 	}
 	// Return a copy to prevent mutation.
-	copy := *req
-	return &copy
+	snapshot := *req
+	return &snapshot
 }
 
 // Pending returns all requests with ApprovalPending status.

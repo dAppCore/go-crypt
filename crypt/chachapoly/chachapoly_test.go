@@ -2,8 +2,9 @@ package chachapoly
 
 import (
 	"crypto/rand"
-	"errors"
 	"testing"
+
+	coreerr "dappco.re/go/core/log"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -12,7 +13,7 @@ import (
 type mockReader struct{}
 
 func (r *mockReader) Read(p []byte) (n int, err error) {
-	return 0, errors.New("read error")
+	return 0, coreerr.E("chachapoly.mockReader.Read", "read error", nil)
 }
 
 func TestEncryptDecrypt(t *testing.T) {
