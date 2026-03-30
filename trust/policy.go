@@ -117,9 +117,9 @@ func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) 
 	// Check if capability is allowed.
 	for _, allowed := range policy.Allowed {
 		if allowed == cap {
-			// For repo-scoped capabilities, verify repo access.
-			if isRepoScoped(cap) && len(agent.ScopedRepos) > 0 {
-				if !repoAllowed(agent.ScopedRepos, repo) {
+			// For repo-scoped capabilities, verify repo access for restricted tiers.
+			if isRepoScoped(cap) && agent.Tier != TierFull {
+				if len(agent.ScopedRepos) == 0 || !repoAllowed(agent.ScopedRepos, repo) {
 					return EvalResult{
 						Decision: Deny,
 						Agent:    agentName,
@@ -244,6 +244,11 @@ func repoAllowed(scoped []string, repo string) bool {
 func matchScope(pattern, repo string) bool {
 	// Exact match — fast path.
 	if pattern == repo {
+		return true
+	}
+
+	// Star means unrestricted access for all repos.
+	if pattern == "*" {
 		return true
 	}
 

@@ -270,34 +270,49 @@ func TestDefaultRateLimit(t *testing.T) {
 
 // --- Phase 0 Additions ---
 
-// TestEvaluate_Good_Tier2EmptyScopedReposAllowsAll verifies that a Tier 2
-// agent with empty ScopedRepos is treated as "unrestricted" for repo-scoped
-// capabilities. NOTE: This is a potential security concern documented in
-// FINDINGS.md — empty ScopedRepos bypasses the repo scope check entirely.
-func TestEvaluate_Good_Tier2EmptyScopedReposAllowsAll(t *testing.T) {
+// TestEvaluate_Bad_Tier2EmptyScopedReposDeniesAll verifies that an empty
+// scoped-repo list blocks repo-scoped capabilities by default.
+func TestEvaluate_Bad_Tier2EmptyScopedReposDeniesAll(t *testing.T) {
 	r := NewRegistry()
 	require.NoError(t, r.Register(Agent{
 		Name:        "Hypnos",
 		Tier:        TierVerified,
-		ScopedRepos: []string{}, // empty — currently means "unrestricted"
+		ScopedRepos: []string{},
 	}))
 	pe := NewPolicyEngine(r)
 
-	// Current behaviour: empty ScopedRepos skips scope check (len == 0)
 	result := pe.Evaluate("Hypnos", CapPushRepo, "host-uk/core")
-	assert.Equal(t, Allow, result.Decision,
-		"empty ScopedRepos currently allows all repos (potential security finding)")
+	assert.Equal(t, Deny, result.Decision,
+		"empty ScopedRepos should deny repo-scoped operations by default")
 
 	result = pe.Evaluate("Hypnos", CapReadSecrets, "host-uk/core")
-	assert.Equal(t, Allow, result.Decision)
+	assert.Equal(t, Deny, result.Decision)
 
 	result = pe.Evaluate("Hypnos", CapCreatePR, "host-uk/core")
 	assert.Equal(t, Allow, result.Decision)
 
-	// Non-repo-scoped capabilities should still work
 	result = pe.Evaluate("Hypnos", CapCreateIssue, "")
 	assert.Equal(t, Allow, result.Decision)
-	result = pe.Evaluate("Hypnos", CapCommentIssue, "")
+}
+
+func TestEvaluate_Good_Tier2WildcardAllowsAll(t *testing.T) {
+	r := NewRegistry()
+	require.NoError(t, r.Register(Agent{
+		Name:        "Hydrus",
+		Tier:        TierVerified,
+		ScopedRepos: []string{"*"},
+	}))
+	pe := NewPolicyEngine(r)
+
+	result := pe.Evaluate("Hydrus", CapPushRepo, "host-uk/core")
+	assert.Equal(t, Allow, result.Decision)
+
+	result = pe.Evaluate("Hydrus", CapReadSecrets, "host-uk/any")
+	assert.Equal(t, Allow, result.Decision)
+
+	result = pe.Evaluate("Hydrus", CapCreateIssue, "")
+	assert.Equal(t, Allow, result.Decision)
+	result = pe.Evaluate("Hydrus", CapCommentIssue, "")
 	assert.Equal(t, Allow, result.Decision)
 }
 

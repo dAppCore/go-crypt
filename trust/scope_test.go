@@ -13,6 +13,11 @@ func TestMatchScope_Good_ExactMatch(t *testing.T) {
 	assert.True(t, matchScope("host-uk/core", "host-uk/core"))
 }
 
+func TestMatchScope_Good_StarWildcard(t *testing.T) {
+	assert.True(t, matchScope("*", "host-uk/core"))
+	assert.True(t, matchScope("*", "core/php/sub"))
+}
+
 func TestMatchScope_Good_SingleWildcard(t *testing.T) {
 	assert.True(t, matchScope("core/*", "core/php"))
 	assert.True(t, matchScope("core/*", "core/go-crypt"))

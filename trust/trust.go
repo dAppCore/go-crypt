@@ -71,7 +71,9 @@ type Agent struct {
 	Name string
 	// Tier is the agent's trust level.
 	Tier Tier
-	// ScopedRepos limits repo access for Tier 2 agents. Empty means no repo access.
+	// ScopedRepos limits repo access for Tier 2 agents.
+	// Empty means no repo access.
+	// Use ["*"] for unrestricted repo scope.
 	// Tier 3 agents ignore this field (they have access to all repos).
 	ScopedRepos []string
 	// RateLimit is the maximum requests per minute. 0 means unlimited.

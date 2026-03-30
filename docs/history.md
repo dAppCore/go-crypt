@@ -161,17 +161,17 @@ Severity is low: an attacker with read access to process memory already has full
 access to the process. The Go runtime does not guarantee memory zeroing and
 GC-managed runtimes inherently have this limitation.
 
-### Finding F3: Empty ScopedRepos Bypasses Scope Check on Tier 2 (Medium) — Open
+### Finding F3: Empty ScopedRepos Bypasses Scope Check on Tier 2 (Medium) — RESOLVED
 
-In `policy.go`, the repo scope check is conditioned on `len(agent.ScopedRepos) > 0`.
-A Tier 2 agent with empty `ScopedRepos` (nil or `[]string{}`) is treated as
-unrestricted rather than as having no access. If an admin registers a Tier 2
-agent without explicitly setting `ScopedRepos`, it gets access to all repositories
-for repo-scoped capabilities (`repo.push`, `pr.create`, `pr.merge`, `secrets.read`).
+In `policy.go`, repo-scoped capability access previously skipped checks when
+`len(agent.ScopedRepos) == 0`.
+A Tier 2 agent with empty `ScopedRepos` (nil or `[]string{}`) was previously treated as
+unrestricted rather than as having no access.
 
-Potential remediation: treat empty `ScopedRepos` as no access for Tier 2 agents,
-requiring explicit `["*"]` or `["org/**"]` for unrestricted access. This is a
-design decision with backward-compatibility implications.
+Resolved by requiring an explicit scope for repo-scoped capabilities:
+- `[]string{}` / `nil` now denies all repo-scoped access by default.
+- `[]string{"*"}` grants unrestricted repo access.
+- Pattern matching with `host-uk/*` and `host-uk/**` still applies as before.
 
 ### Finding F4: `go vet` Clean — Passed
 
@@ -224,8 +224,6 @@ callers that need structured logs should wrap or replace the cleanup goroutine.
   `crypt/chachapoly` into a single implementation.
 - **Hardware key backends**: implement `HardwareKey` for PKCS#11 (via
   `miekg/pkcs11` or `ThalesIgnite/crypto11`) and YubiKey (via `go-piv`).
-- **Resolve Finding F3**: require explicit wildcard for unrestricted Tier 2
-  access; treat empty `ScopedRepos` as no-access.
 - **Structured logging**: replace `fmt.Printf` in `StartCleanup` with an
   `slog.Logger` option on `Authenticator`.
 - **Rate limiting enforcement**: the `Agent.RateLimit` field is stored in the
