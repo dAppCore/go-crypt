@@ -3,13 +3,11 @@ package testcmd
 import (
 	"bufio"
 	"cmp"
-	"fmt"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strconv"
-	"strings"
 
+	core "dappco.re/go/core"
 	"dappco.re/go/core/i18n"
 )
 
@@ -40,7 +38,7 @@ func parseTestOutput(output string) testResults {
 	skipPattern := regexp.MustCompile(`^\?\s+(\S+)\s+\[no test files\]`)
 	coverPattern := regexp.MustCompile(`coverage:\s+([\d.]+)%`)
 
-	scanner := bufio.NewScanner(strings.NewReader(output))
+	scanner := bufio.NewScanner(core.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -85,21 +83,32 @@ func printTestSummary(results testResults, showCoverage bool) {
 	// Print pass/fail summary
 	total := results.passed + results.failed
 	if total > 0 {
-		fmt.Printf("  %s %s", testPassStyle.Render("✓"), i18n.T("i18n.count.passed", results.passed))
+		line := core.NewBuilder()
+		line.WriteString("  ")
+		line.WriteString(testPassStyle.Render("✓"))
+		line.WriteString(" ")
+		line.WriteString(i18n.T("i18n.count.passed", results.passed))
 		if results.failed > 0 {
-			fmt.Printf("  %s %s", testFailStyle.Render("✗"), i18n.T("i18n.count.failed", results.failed))
+			line.WriteString("  ")
+			line.WriteString(testFailStyle.Render("✗"))
+			line.WriteString(" ")
+			line.WriteString(i18n.T("i18n.count.failed", results.failed))
 		}
 		if results.skipped > 0 {
-			fmt.Printf("  %s %s", testSkipStyle.Render("○"), i18n.T("i18n.count.skipped", results.skipped))
+			line.WriteString("  ")
+			line.WriteString(testSkipStyle.Render("○"))
+			line.WriteString(" ")
+			line.WriteString(i18n.T("i18n.count.skipped", results.skipped))
 		}
-		fmt.Println()
+		core.Println(line.String())
 	}
 
 	// Print failed packages
 	if len(results.failedPkgs) > 0 {
-		fmt.Printf("\n  %s\n", i18n.T("cmd.test.failed_packages"))
+		core.Println()
+		core.Println("  " + i18n.T("cmd.test.failed_packages"))
 		for _, pkg := range results.failedPkgs {
-			fmt.Printf("    %s %s\n", testFailStyle.Render("✗"), pkg)
+			core.Println(core.Sprintf("    %s %s", testFailStyle.Render("✗"), pkg))
 		}
 	}
 
@@ -108,7 +117,8 @@ func printTestSummary(results testResults, showCoverage bool) {
 		printCoverageSummary(results)
 	} else if results.covCount > 0 {
 		avgCov := results.totalCov / float64(results.covCount)
-		fmt.Printf("\n  %s %s\n", i18n.Label("coverage"), formatCoverage(avgCov))
+		core.Println()
+		core.Println(core.Sprintf("  %s %s", i18n.Label("coverage"), formatCoverage(avgCov)))
 	}
 }
 
@@ -117,7 +127,8 @@ func printCoverageSummary(results testResults) {
 		return
 	}
 
-	fmt.Printf("\n  %s\n", testHeaderStyle.Render(i18n.T("cmd.test.coverage_by_package")))
+	core.Println()
+	core.Println("  " + testHeaderStyle.Render(i18n.T("cmd.test.coverage_by_package")))
 
 	// Sort packages by name
 	slices.SortFunc(results.packages, func(a, b packageCoverage) int {
@@ -143,8 +154,8 @@ func printCoverageSummary(results testResults) {
 		if padLen < 0 {
 			padLen = 2
 		}
-		padding := strings.Repeat(" ", padLen)
-		fmt.Printf("    %s%s%s\n", name, padding, formatCoverage(pkg.coverage))
+		padding := repeatString(" ", padLen)
+		core.Println(core.Sprintf("    %s%s%s", name, padding, formatCoverage(pkg.coverage)))
 	}
 
 	// Print average
@@ -155,13 +166,14 @@ func printCoverageSummary(results testResults) {
 		if padLen < 0 {
 			padLen = 2
 		}
-		padding := strings.Repeat(" ", padLen)
-		fmt.Printf("\n    %s%s%s\n", testHeaderStyle.Render(avgLabel), padding, formatCoverage(avgCov))
+		padding := repeatString(" ", padLen)
+		core.Println()
+		core.Println(core.Sprintf("    %s%s%s", testHeaderStyle.Render(avgLabel), padding, formatCoverage(avgCov)))
 	}
 }
 
 func formatCoverage(cov float64) string {
-	s := fmt.Sprintf("%.1f%%", cov)
+	s := core.Sprintf("%.1f%%", cov)
 	if cov >= 80 {
 		return testCovHighStyle.Render(s)
 	} else if cov >= 50 {
@@ -172,41 +184,47 @@ func formatCoverage(cov float64) string {
 
 func shortenPackageName(name string) string {
 	const modulePrefix = "dappco.re/go/"
-	if strings.HasPrefix(name, modulePrefix) {
-		remainder := strings.TrimPrefix(name, modulePrefix)
-		// If there's a sub-path (e.g. "go/pkg/foo"), strip the module name
-		if idx := strings.Index(remainder, "/"); idx >= 0 {
-			return remainder[idx+1:]
+	if core.HasPrefix(name, modulePrefix) {
+		remainder := core.TrimPrefix(name, modulePrefix)
+		parts := core.SplitN(remainder, "/", 2)
+		if len(parts) == 2 {
+			return parts[1]
 		}
 		// Module root (e.g. "cli-php") — return as-is
 		return remainder
 	}
-	return filepath.Base(name)
+	return core.PathBase(name)
 }
 
 func printJSONResults(results testResults, exitCode int) {
-	// Simple JSON output for agents
-	fmt.Printf("{\n")
-	fmt.Printf("  \"passed\": %d,\n", results.passed)
-	fmt.Printf("  \"failed\": %d,\n", results.failed)
-	fmt.Printf("  \"skipped\": %d,\n", results.skipped)
+	payload := struct {
+		Passed         int      `json:"passed"`
+		Failed         int      `json:"failed"`
+		Skipped        int      `json:"skipped"`
+		Coverage       float64  `json:"coverage,omitempty"`
+		ExitCode       int      `json:"exit_code"`
+		FailedPackages []string `json:"failed_packages"`
+	}{
+		Passed:         results.passed,
+		Failed:         results.failed,
+		Skipped:        results.skipped,
+		ExitCode:       exitCode,
+		FailedPackages: results.failedPkgs,
+	}
 	if results.covCount > 0 {
-		avgCov := results.totalCov / float64(results.covCount)
-		fmt.Printf("  \"coverage\": %.1f,\n", avgCov)
+		payload.Coverage = results.totalCov / float64(results.covCount)
 	}
-	fmt.Printf("  \"exit_code\": %d,\n", exitCode)
-	if len(results.failedPkgs) > 0 {
-		fmt.Printf("  \"failed_packages\": [\n")
-		for i, pkg := range results.failedPkgs {
-			comma := ","
-			if i == len(results.failedPkgs)-1 {
-				comma = ""
-			}
-			fmt.Printf("    %q%s\n", pkg, comma)
-		}
-		fmt.Printf("  ]\n")
-	} else {
-		fmt.Printf("  \"failed_packages\": []\n")
+	core.Println(core.JSONMarshalString(payload))
+}
+
+func repeatString(part string, count int) string {
+	if count <= 0 {
+		return ""
 	}
-	fmt.Printf("}\n")
+
+	builder := core.NewBuilder()
+	for range count {
+		builder.WriteString(part)
+	}
+	return builder.String()
 }

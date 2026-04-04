@@ -6,25 +6,28 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 
+	core "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
 )
 
 // Service provides RSA functionality.
+// Usage: use Service with the other exported helpers in this package.
 type Service struct{}
 
 // NewService creates and returns a new Service instance for performing RSA-related operations.
+// Usage: call NewService(...) to create a ready-to-use value.
 func NewService() *Service {
 	return &Service{}
 }
 
 // GenerateKeyPair creates a new RSA key pair.
+// Usage: call GenerateKeyPair(...) during the package's normal workflow.
 func (s *Service) GenerateKeyPair(bits int) (publicKey, privateKey []byte, err error) {
 	const op = "rsa.GenerateKeyPair"
 
 	if bits < 2048 {
-		return nil, nil, coreerr.E(op, fmt.Sprintf("key size too small: %d (minimum 2048)", bits), nil)
+		return nil, nil, coreerr.E(op, core.Sprintf("key size too small: %d (minimum 2048)", bits), nil)
 	}
 	privKey, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {
@@ -50,6 +53,7 @@ func (s *Service) GenerateKeyPair(bits int) (publicKey, privateKey []byte, err e
 }
 
 // Encrypt encrypts data with a public key.
+// Usage: call Encrypt(...) during the package's normal workflow.
 func (s *Service) Encrypt(publicKey, data, label []byte) ([]byte, error) {
 	const op = "rsa.Encrypt"
 
@@ -77,6 +81,7 @@ func (s *Service) Encrypt(publicKey, data, label []byte) ([]byte, error) {
 }
 
 // Decrypt decrypts data with a private key.
+// Usage: call Decrypt(...) during the package's normal workflow.
 func (s *Service) Decrypt(privateKey, ciphertext, label []byte) ([]byte, error) {
 	const op = "rsa.Decrypt"
 

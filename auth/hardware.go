@@ -17,6 +17,7 @@ package auth
 // similar tamper-resistant devices.
 //
 // All methods must be safe for concurrent use.
+// Usage: implement HardwareKey and pass it to WithHardwareKey(...) to wire hardware-backed auth into New(...).
 type HardwareKey interface {
 	// Sign produces a cryptographic signature over the given data using the
 	// hardware-stored private key. The signature format depends on the
@@ -44,6 +45,7 @@ type HardwareKey interface {
 //
 // This is a forward-looking option — integration points are documented in
 // auth.go but not yet wired up.
+// Usage: pass WithHardwareKey(...) into New(...) to enable a HardwareKey implementation.
 func WithHardwareKey(hk HardwareKey) Option {
 	return func(a *Authenticator) {
 		a.hardwareKey = hk

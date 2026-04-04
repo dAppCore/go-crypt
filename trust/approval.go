@@ -1,27 +1,32 @@
 package trust
 
 import (
-	"fmt"
 	"iter"
 	"sync"
 	"time"
 
+	core "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
 )
 
 // ApprovalStatus represents the state of an approval request.
+// Usage: use ApprovalStatus with the other exported helpers in this package.
 type ApprovalStatus int
 
 const (
 	// ApprovalPending means the request is awaiting review.
+	// Usage: compare or pass ApprovalPending when using the related package APIs.
 	ApprovalPending ApprovalStatus = iota
 	// ApprovalApproved means the request was approved.
+	// Usage: compare or pass ApprovalApproved when using the related package APIs.
 	ApprovalApproved
 	// ApprovalDenied means the request was denied.
+	// Usage: compare or pass ApprovalDenied when using the related package APIs.
 	ApprovalDenied
 )
 
 // String returns the human-readable name of the approval status.
+// Usage: call String(...) during the package's normal workflow.
 func (s ApprovalStatus) String() string {
 	switch s {
 	case ApprovalPending:
@@ -31,11 +36,12 @@ func (s ApprovalStatus) String() string {
 	case ApprovalDenied:
 		return "denied"
 	default:
-		return fmt.Sprintf("unknown(%d)", int(s))
+		return core.Sprintf("unknown(%d)", int(s))
 	}
 }
 
 // ApprovalRequest represents a queued capability approval request.
+// Usage: use ApprovalRequest with the other exported helpers in this package.
 type ApprovalRequest struct {
 	// ID is the unique identifier for this request.
 	ID string
@@ -58,6 +64,7 @@ type ApprovalRequest struct {
 }
 
 // ApprovalQueue manages pending approval requests for NeedsApproval decisions.
+// Usage: use ApprovalQueue with the other exported helpers in this package.
 type ApprovalQueue struct {
 	mu       sync.RWMutex
 	requests map[string]*ApprovalRequest
@@ -65,6 +72,7 @@ type ApprovalQueue struct {
 }
 
 // NewApprovalQueue creates an empty approval queue.
+// Usage: call NewApprovalQueue(...) to create a ready-to-use value.
 func NewApprovalQueue() *ApprovalQueue {
 	return &ApprovalQueue{
 		requests: make(map[string]*ApprovalRequest),
@@ -73,6 +81,7 @@ func NewApprovalQueue() *ApprovalQueue {
 
 // Submit creates a new approval request and returns its ID.
 // Returns an error if the agent name or capability is empty.
+// Usage: call Submit(...) during the package's normal workflow.
 func (q *ApprovalQueue) Submit(agent string, cap Capability, repo string) (string, error) {
 	if agent == "" {
 		return "", coreerr.E("trust.ApprovalQueue.Submit", "agent name is required", nil)
@@ -85,7 +94,7 @@ func (q *ApprovalQueue) Submit(agent string, cap Capability, repo string) (strin
 	defer q.mu.Unlock()
 
 	q.nextID++
-	id := fmt.Sprintf("approval-%d", q.nextID)
+	id := core.Sprintf("approval-%d", q.nextID)
 
 	q.requests[id] = &ApprovalRequest{
 		ID:          id,
@@ -101,16 +110,17 @@ func (q *ApprovalQueue) Submit(agent string, cap Capability, repo string) (strin
 
 // Approve marks a pending request as approved. Returns an error if the
 // request is not found or is not in pending status.
+// Usage: call Approve(...) during the package's normal workflow.
 func (q *ApprovalQueue) Approve(id string, reviewedBy string, reason string) error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	req, ok := q.requests[id]
 	if !ok {
-		return coreerr.E("trust.ApprovalQueue.Approve", fmt.Sprintf("request %q not found", id), nil)
+		return coreerr.E("trust.ApprovalQueue.Approve", core.Sprintf("request %q not found", id), nil)
 	}
 	if req.Status != ApprovalPending {
-		return coreerr.E("trust.ApprovalQueue.Approve", fmt.Sprintf("request %q is already %s", id, req.Status), nil)
+		return coreerr.E("trust.ApprovalQueue.Approve", core.Sprintf("request %q is already %s", id, req.Status), nil)
 	}
 
 	req.Status = ApprovalApproved
@@ -122,16 +132,17 @@ func (q *ApprovalQueue) Approve(id string, reviewedBy string, reason string) err
 
 // Deny marks a pending request as denied. Returns an error if the
 // request is not found or is not in pending status.
+// Usage: call Deny(...) during the package's normal workflow.
 func (q *ApprovalQueue) Deny(id string, reviewedBy string, reason string) error {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	req, ok := q.requests[id]
 	if !ok {
-		return coreerr.E("trust.ApprovalQueue.Deny", fmt.Sprintf("request %q not found", id), nil)
+		return coreerr.E("trust.ApprovalQueue.Deny", core.Sprintf("request %q not found", id), nil)
 	}
 	if req.Status != ApprovalPending {
-		return coreerr.E("trust.ApprovalQueue.Deny", fmt.Sprintf("request %q is already %s", id, req.Status), nil)
+		return coreerr.E("trust.ApprovalQueue.Deny", core.Sprintf("request %q is already %s", id, req.Status), nil)
 	}
 
 	req.Status = ApprovalDenied
@@ -142,6 +153,7 @@ func (q *ApprovalQueue) Deny(id string, reviewedBy string, reason string) error 
 }
 
 // Get returns the approval request with the given ID, or nil if not found.
+// Usage: call Get(...) during the package's normal workflow.
 func (q *ApprovalQueue) Get(id string) *ApprovalRequest {
 	q.mu.RLock()
 	defer q.mu.RUnlock()
@@ -156,6 +168,7 @@ func (q *ApprovalQueue) Get(id string) *ApprovalRequest {
 }
 
 // Pending returns all requests with ApprovalPending status.
+// Usage: call Pending(...) during the package's normal workflow.
 func (q *ApprovalQueue) Pending() []ApprovalRequest {
 	q.mu.RLock()
 	defer q.mu.RUnlock()
@@ -170,6 +183,7 @@ func (q *ApprovalQueue) Pending() []ApprovalRequest {
 }
 
 // PendingSeq returns an iterator over all requests with ApprovalPending status.
+// Usage: call PendingSeq(...) during the package's normal workflow.
 func (q *ApprovalQueue) PendingSeq() iter.Seq[ApprovalRequest] {
 	return func(yield func(ApprovalRequest) bool) {
 		q.mu.RLock()
@@ -186,6 +200,7 @@ func (q *ApprovalQueue) PendingSeq() iter.Seq[ApprovalRequest] {
 }
 
 // Len returns the total number of requests in the queue.
+// Usage: call Len(...) during the package's normal workflow.
 func (q *ApprovalQueue) Len() int {
 	q.mu.RLock()
 	defer q.mu.RUnlock()

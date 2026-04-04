@@ -1,9 +1,7 @@
 package crypt
 
 import (
-	"fmt"
-	"strings"
-
+	core "dappco.re/go/core"
 	"dappco.re/go/core/crypt/crypt"
 	coreio "dappco.re/go/core/io"
 	"forge.lthn.ai/core/cli/pkg/cli"
@@ -74,7 +72,7 @@ func runEncrypt(path string) error {
 		return cli.Wrap(err, "failed to write encrypted file")
 	}
 
-	cli.Success(fmt.Sprintf("Encrypted %s -> %s", path, outPath))
+	cli.Success(core.Sprintf("Encrypted %s -> %s", path, outPath))
 	return nil
 }
 
@@ -103,7 +101,7 @@ func runDecrypt(path string) error {
 		return cli.Wrap(err, "failed to decrypt")
 	}
 
-	outPath := strings.TrimSuffix(path, ".enc")
+	outPath := core.TrimSuffix(path, ".enc")
 	if outPath == path {
 		outPath = path + ".dec"
 	}
@@ -112,6 +110,6 @@ func runDecrypt(path string) error {
 		return cli.Wrap(err, "failed to write decrypted file")
 	}
 
-	cli.Success(fmt.Sprintf("Decrypted %s -> %s", path, outPath))
+	cli.Success(core.Sprintf("Decrypted %s -> %s", path, outPath))
 	return nil
 }

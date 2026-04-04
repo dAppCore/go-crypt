@@ -1,21 +1,18 @@
 package trust
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"io"
-	"strings"
 	"sync"
 	"testing"
 
+	core "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // --- AuditLog basic ---
 
-func TestAuditRecord_Good(t *testing.T) {
+func TestAudit_AuditRecord_Good(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	result := EvalResult{
@@ -29,7 +26,7 @@ func TestAuditRecord_Good(t *testing.T) {
 	assert.Equal(t, 1, log.Len())
 }
 
-func TestAuditRecord_Good_EntryFields(t *testing.T) {
+func TestAudit_AuditRecord_Good_EntryFields(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	result := EvalResult{
@@ -53,7 +50,7 @@ func TestAuditRecord_Good_EntryFields(t *testing.T) {
 	assert.False(t, e.Timestamp.IsZero())
 }
 
-func TestAuditRecord_Good_NoRepo(t *testing.T) {
+func TestAudit_AuditRecord_Good_NoRepo(t *testing.T) {
 	log := NewAuditLog(nil)
 	result := EvalResult{
 		Decision: Allow,
@@ -69,7 +66,7 @@ func TestAuditRecord_Good_NoRepo(t *testing.T) {
 	assert.Empty(t, entries[0].Repo)
 }
 
-func TestAuditEntries_Good_Snapshot(t *testing.T) {
+func TestAudit_AuditEntries_Good_Snapshot(t *testing.T) {
 	log := NewAuditLog(nil)
 	log.Record(EvalResult{Agent: "A", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
 
@@ -81,17 +78,17 @@ func TestAuditEntries_Good_Snapshot(t *testing.T) {
 	assert.Equal(t, "A", log.Entries()[0].Agent)
 }
 
-func TestAuditEntries_Good_Empty(t *testing.T) {
+func TestAudit_AuditEntries_Good_Empty(t *testing.T) {
 	log := NewAuditLog(nil)
 	assert.Empty(t, log.Entries())
 }
 
-func TestAuditEntries_Good_AppendOnly(t *testing.T) {
+func TestAudit_AuditEntries_Good_AppendOnly(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	for i := range 5 {
 		log.Record(EvalResult{
-			Agent:    fmt.Sprintf("agent-%d", i),
+			Agent:    core.Sprintf("agent-%d", i),
 			Cap:      CapPushRepo,
 			Decision: Allow,
 			Reason:   "ok",
@@ -102,7 +99,7 @@ func TestAuditEntries_Good_AppendOnly(t *testing.T) {
 
 // --- EntriesFor ---
 
-func TestAuditEntriesFor_Good(t *testing.T) {
+func TestAudit_AuditEntriesFor_Good(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	log.Record(EvalResult{Agent: "Athena", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
@@ -124,7 +121,7 @@ func TestAuditEntriesFor_Good(t *testing.T) {
 	assert.Equal(t, 2, count)
 }
 
-func TestAuditEntriesSeq_Good(t *testing.T) {
+func TestAudit_AuditEntriesSeq_Good(t *testing.T) {
 	log := NewAuditLog(nil)
 	log.Record(EvalResult{Agent: "Athena", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
 	log.Record(EvalResult{Agent: "Clotho", Cap: CapCreatePR, Decision: Allow, Reason: "ok"}, "")
@@ -136,7 +133,7 @@ func TestAuditEntriesSeq_Good(t *testing.T) {
 	assert.Equal(t, 2, count)
 }
 
-func TestAuditEntriesFor_Bad_NotFound(t *testing.T) {
+func TestAudit_AuditEntriesFor_Bad_NotFound(t *testing.T) {
 	log := NewAuditLog(nil)
 	log.Record(EvalResult{Agent: "Athena", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
 
@@ -145,9 +142,9 @@ func TestAuditEntriesFor_Bad_NotFound(t *testing.T) {
 
 // --- Writer output ---
 
-func TestAuditRecord_Good_WritesToWriter(t *testing.T) {
-	var buf bytes.Buffer
-	log := NewAuditLog(&buf)
+func TestAudit_AuditRecord_Good_WritesToWriter(t *testing.T) {
+	buf := core.NewBuilder()
+	log := NewAuditLog(buf)
 
 	result := EvalResult{
 		Decision: Allow,
@@ -160,42 +157,42 @@ func TestAuditRecord_Good_WritesToWriter(t *testing.T) {
 
 	// Should have written a JSON line.
 	output := buf.String()
-	assert.True(t, strings.HasSuffix(output, "\n"))
+	assert.True(t, core.HasSuffix(output, "\n"))
 
 	var entry AuditEntry
-	err = json.Unmarshal([]byte(output), &entry)
-	require.NoError(t, err)
+	decodeResult := core.JSONUnmarshal([]byte(output), &entry)
+	require.Truef(t, decodeResult.OK, "failed to unmarshal audit entry: %v", decodeResult.Value)
 	assert.Equal(t, "Athena", entry.Agent)
 	assert.Equal(t, CapPushRepo, entry.Cap)
 	assert.Equal(t, Allow, entry.Decision)
 	assert.Equal(t, "host-uk/core", entry.Repo)
 }
 
-func TestAuditRecord_Good_MultipleLines(t *testing.T) {
-	var buf bytes.Buffer
-	log := NewAuditLog(&buf)
+func TestAudit_AuditRecord_Good_MultipleLines(t *testing.T) {
+	buf := core.NewBuilder()
+	log := NewAuditLog(buf)
 
 	for i := range 3 {
 		log.Record(EvalResult{
-			Agent:    fmt.Sprintf("agent-%d", i),
+			Agent:    core.Sprintf("agent-%d", i),
 			Cap:      CapPushRepo,
 			Decision: Allow,
 			Reason:   "ok",
 		}, "")
 	}
 
-	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	lines := core.Split(core.Trim(buf.String()), "\n")
 	assert.Len(t, lines, 3)
 
 	// Each line should be valid JSON.
 	for _, line := range lines {
 		var entry AuditEntry
-		err := json.Unmarshal([]byte(line), &entry)
-		assert.NoError(t, err)
+		result := core.JSONUnmarshal([]byte(line), &entry)
+		assert.Truef(t, result.OK, "failed to unmarshal audit line: %v", result.Value)
 	}
 }
 
-func TestAuditRecord_Bad_WriterError(t *testing.T) {
+func TestAudit_AuditRecord_Bad_WriterError(t *testing.T) {
 	log := NewAuditLog(&failWriter{})
 
 	result := EvalResult{
@@ -221,40 +218,42 @@ func (f *failWriter) Write(_ []byte) (int, error) {
 
 // --- Decision JSON marshalling ---
 
-func TestDecisionJSON_Good_RoundTrip(t *testing.T) {
+func TestAudit_DecisionJSON_Good_RoundTrip(t *testing.T) {
 	decisions := []Decision{Deny, Allow, NeedsApproval}
 	expected := []string{`"deny"`, `"allow"`, `"needs_approval"`}
 
 	for i, d := range decisions {
-		data, err := json.Marshal(d)
-		require.NoError(t, err)
-		assert.Equal(t, expected[i], string(data))
+		result := core.JSONMarshal(d)
+		require.Truef(t, result.OK, "failed to marshal decision: %v", result.Value)
+		assert.Equal(t, expected[i], string(result.Value.([]byte)))
 
 		var decoded Decision
-		err = json.Unmarshal(data, &decoded)
-		require.NoError(t, err)
+		decodeResult := core.JSONUnmarshal(result.Value.([]byte), &decoded)
+		require.Truef(t, decodeResult.OK, "failed to unmarshal decision: %v", decodeResult.Value)
 		assert.Equal(t, d, decoded)
 	}
 }
 
-func TestDecisionJSON_Bad_UnknownString(t *testing.T) {
+func TestAudit_DecisionJSON_Bad_UnknownString(t *testing.T) {
 	var d Decision
-	err := json.Unmarshal([]byte(`"invalid"`), &d)
+	result := core.JSONUnmarshal([]byte(`"invalid"`), &d)
+	err, _ := result.Value.(error)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unknown decision")
 }
 
-func TestDecisionJSON_Bad_NonString(t *testing.T) {
+func TestAudit_DecisionJSON_Bad_NonString(t *testing.T) {
 	var d Decision
-	err := json.Unmarshal([]byte(`42`), &d)
+	result := core.JSONUnmarshal([]byte(`42`), &d)
+	err, _ := result.Value.(error)
 	assert.Error(t, err)
 }
 
 // --- Concurrent audit logging ---
 
-func TestAuditConcurrent_Good(t *testing.T) {
-	var buf bytes.Buffer
-	log := NewAuditLog(&buf)
+func TestAudit_AuditConcurrent_Good(t *testing.T) {
+	buf := core.NewBuilder()
+	log := NewAuditLog(buf)
 
 	const n = 10
 	var wg sync.WaitGroup
@@ -264,7 +263,7 @@ func TestAuditConcurrent_Good(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			log.Record(EvalResult{
-				Agent:    fmt.Sprintf("agent-%d", idx),
+				Agent:    core.Sprintf("agent-%d", idx),
 				Cap:      CapPushRepo,
 				Decision: Allow,
 				Reason:   "ok",
@@ -278,9 +277,9 @@ func TestAuditConcurrent_Good(t *testing.T) {
 
 // --- Integration: PolicyEngine + AuditLog ---
 
-func TestAuditPolicyIntegration_Good(t *testing.T) {
-	var buf bytes.Buffer
-	log := NewAuditLog(&buf)
+func TestAudit_AuditPolicyIntegration_Good(t *testing.T) {
+	buf := core.NewBuilder()
+	log := NewAuditLog(buf)
 	pe := newTestEngine(t)
 
 	// Evaluate and record

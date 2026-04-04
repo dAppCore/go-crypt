@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestChaCha20_Good(t *testing.T) {
+func TestSymmetric_ChaCha20_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	assert.NoError(t, err)
@@ -23,7 +23,7 @@ func TestChaCha20_Good(t *testing.T) {
 	assert.Equal(t, plaintext, decrypted)
 }
 
-func TestChaCha20_Bad(t *testing.T) {
+func TestSymmetric_ChaCha20_Bad(t *testing.T) {
 	key := make([]byte, 32)
 	wrongKey := make([]byte, 32)
 	_, _ = rand.Read(key)
@@ -38,7 +38,7 @@ func TestChaCha20_Bad(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestAESGCM_Good(t *testing.T) {
+func TestSymmetric_AESGCM_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	assert.NoError(t, err)
@@ -56,8 +56,8 @@ func TestAESGCM_Good(t *testing.T) {
 
 // --- Phase 0 Additions ---
 
-// TestAESGCM_Bad_WrongKey verifies wrong key returns error, not corrupt data.
-func TestAESGCM_Bad_WrongKey(t *testing.T) {
+// TestSymmetric_AESGCM_Bad_WrongKey verifies wrong key returns error, not corrupt data.
+func TestSymmetric_AESGCM_Bad_WrongKey(t *testing.T) {
 	key := make([]byte, 32)
 	wrongKey := make([]byte, 32)
 	_, _ = rand.Read(key)
@@ -72,8 +72,8 @@ func TestAESGCM_Bad_WrongKey(t *testing.T) {
 	assert.Nil(t, decrypted, "wrong key must not return partial data")
 }
 
-// TestChaCha20EmptyPlaintext_Good verifies empty plaintext round-trip at low level.
-func TestChaCha20EmptyPlaintext_Good(t *testing.T) {
+// TestSymmetric_ChaCha20EmptyPlaintext_Good verifies empty plaintext round-trip at low level.
+func TestSymmetric_ChaCha20EmptyPlaintext_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	assert.NoError(t, err)
@@ -87,8 +87,8 @@ func TestChaCha20EmptyPlaintext_Good(t *testing.T) {
 	assert.Empty(t, decrypted)
 }
 
-// TestAESGCMEmptyPlaintext_Good verifies empty plaintext round-trip at low level.
-func TestAESGCMEmptyPlaintext_Good(t *testing.T) {
+// TestSymmetric_AESGCMEmptyPlaintext_Good verifies empty plaintext round-trip at low level.
+func TestSymmetric_AESGCMEmptyPlaintext_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	assert.NoError(t, err)
@@ -102,8 +102,8 @@ func TestAESGCMEmptyPlaintext_Good(t *testing.T) {
 	assert.Empty(t, decrypted)
 }
 
-// TestChaCha20LargePayload_Good verifies 1MB encrypt/decrypt round-trip.
-func TestChaCha20LargePayload_Good(t *testing.T) {
+// TestSymmetric_ChaCha20LargePayload_Good verifies 1MB encrypt/decrypt round-trip.
+func TestSymmetric_ChaCha20LargePayload_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, _ = rand.Read(key)
 
@@ -120,8 +120,8 @@ func TestChaCha20LargePayload_Good(t *testing.T) {
 	assert.Equal(t, plaintext, decrypted)
 }
 
-// TestAESGCMLargePayload_Good verifies 1MB encrypt/decrypt round-trip.
-func TestAESGCMLargePayload_Good(t *testing.T) {
+// TestSymmetric_AESGCMLargePayload_Good verifies 1MB encrypt/decrypt round-trip.
+func TestSymmetric_AESGCMLargePayload_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, _ = rand.Read(key)
 

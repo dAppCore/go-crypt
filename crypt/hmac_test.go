@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHMACSHA256_Good(t *testing.T) {
+func TestHMAC_HMACSHA256_Good(t *testing.T) {
 	// RFC 4231 Test Case 2
 	key := []byte("Jefe")
 	message := []byte("what do ya want for nothing?")
@@ -18,7 +18,7 @@ func TestHMACSHA256_Good(t *testing.T) {
 	assert.Equal(t, expected, hex.EncodeToString(mac))
 }
 
-func TestVerifyHMAC_Good(t *testing.T) {
+func TestHMAC_VerifyHMAC_Good(t *testing.T) {
 	key := []byte("secret-key")
 	message := []byte("test message")
 
@@ -28,7 +28,7 @@ func TestVerifyHMAC_Good(t *testing.T) {
 	assert.True(t, valid)
 }
 
-func TestVerifyHMAC_Bad(t *testing.T) {
+func TestHMAC_VerifyHMAC_Bad(t *testing.T) {
 	key := []byte("secret-key")
 	message := []byte("test message")
 	tampered := []byte("tampered message")

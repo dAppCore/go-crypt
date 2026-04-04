@@ -8,6 +8,7 @@ import (
 )
 
 // HMACSHA256 computes the HMAC-SHA256 of a message using the given key.
+// Usage: call HMACSHA256(...) during the package's normal workflow.
 func HMACSHA256(message, key []byte) []byte {
 	mac := hmac.New(sha256.New, key)
 	mac.Write(message)
@@ -15,6 +16,7 @@ func HMACSHA256(message, key []byte) []byte {
 }
 
 // HMACSHA512 computes the HMAC-SHA512 of a message using the given key.
+// Usage: call HMACSHA512(...) during the package's normal workflow.
 func HMACSHA512(message, key []byte) []byte {
 	mac := hmac.New(sha512.New, key)
 	mac.Write(message)
@@ -23,6 +25,7 @@ func HMACSHA512(message, key []byte) []byte {
 
 // VerifyHMAC verifies an HMAC using constant-time comparison.
 // hashFunc should be sha256.New, sha512.New, etc.
+// Usage: call VerifyHMAC(...) during the package's normal workflow.
 func VerifyHMAC(message, key, mac []byte, hashFunc func() hash.Hash) bool {
 	expected := hmac.New(hashFunc, key)
 	expected.Write(message)

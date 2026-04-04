@@ -2,20 +2,31 @@ package testcmd
 
 import (
 	"bufio"
-	"fmt"
-	"io"
-	"os"
-	"os/exec"
+	"context"
 	"runtime"
-	"strings"
+	"sync"
 
+	core "dappco.re/go/core"
 	"dappco.re/go/core/i18n"
 	coreerr "dappco.re/go/core/log"
+	"dappco.re/go/core/process"
+)
+
+var (
+	processInitOnce sync.Once
+	processInitErr  error
 )
 
 func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bool) error {
+	processInitOnce.Do(func() {
+		processInitErr = process.Init(core.New())
+	})
+	if processInitErr != nil {
+		return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), processInitErr)
+	}
+
 	// Detect if we're in a Go project
-	if _, err := os.Stat("go.mod"); os.IsNotExist(err) {
+	if !(&core.Fs{}).New("/").Exists("go.mod") {
 		return coreerr.E("cmd.test", i18n.T("cmd.test.error.no_go_mod"), nil)
 	}
 
@@ -47,45 +58,32 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 	// Add package pattern
 	args = append(args, pkg)
 
-	// Create command
-	cmd := exec.Command("go", args...)
-	cmd.Dir, _ = os.Getwd()
-
-	// Set environment to suppress macOS linker warnings
-	cmd.Env = append(os.Environ(), getMacOSDeploymentTarget())
-
 	if !jsonOutput {
-		fmt.Printf("%s %s\n", testHeaderStyle.Render(i18n.Label("test")), i18n.ProgressSubject("run", "tests"))
-		fmt.Printf("  %s %s\n", i18n.Label("package"), testDimStyle.Render(pkg))
+		core.Println(core.Sprintf("%s %s", testHeaderStyle.Render(i18n.Label("test")), i18n.ProgressSubject("run", "tests")))
+		core.Println(core.Sprintf("  %s %s", i18n.Label("package"), testDimStyle.Render(pkg)))
 		if run != "" {
-			fmt.Printf("  %s  %s\n", i18n.Label("filter"), testDimStyle.Render(run))
+			core.Println(core.Sprintf("  %s  %s", i18n.Label("filter"), testDimStyle.Render(run)))
 		}
-		fmt.Println()
+		core.Println()
 	}
 
-	// Capture output for parsing
-	var stdout, stderr strings.Builder
-
-	if verbose && !jsonOutput {
-		// Stream output in verbose mode, but also capture for parsing
-		cmd.Stdout = io.MultiWriter(os.Stdout, &stdout)
-		cmd.Stderr = io.MultiWriter(os.Stderr, &stderr)
-	} else {
-		// Capture output for parsing
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
+	options := process.RunOptions{
+		Command: "go",
+		Args:    args,
+		Dir:     core.Env("DIR_CWD"),
+	}
+	if target := getMacOSDeploymentTarget(); target != "" {
+		options.Env = []string{target}
 	}
 
-	err := cmd.Run()
-	exitCode := 0
+	proc, err := process.StartWithOptions(context.Background(), options)
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			exitCode = exitErr.ExitCode()
-		}
+		return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), err)
 	}
 
-	// Combine stdout and stderr for parsing, filtering linker warnings
-	combined := filterLinkerWarnings(stdout.String() + "\n" + stderr.String())
+	waitErr := proc.Wait()
+	exitCode := proc.ExitCode
+	combined := filterLinkerWarnings(proc.Output())
 
 	// Parse results
 	results := parseTestOutput(combined)
@@ -104,16 +102,23 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 		printTestSummary(results, coverage)
 	} else if coverage {
 		// In verbose mode, still show coverage summary at end
-		fmt.Println()
+		if combined != "" {
+			core.Println(combined)
+		}
+		core.Println()
 		printCoverageSummary(results)
+	} else if combined != "" {
+		core.Println(combined)
 	}
 
 	if exitCode != 0 {
-		fmt.Printf("\n%s %s\n", testFailStyle.Render(i18n.T("cli.fail")), i18n.T("cmd.test.tests_failed"))
-		return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), nil)
+		core.Println()
+		core.Println(core.Sprintf("%s %s", testFailStyle.Render(i18n.T("cli.fail")), i18n.T("cmd.test.tests_failed")))
+		return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), waitErr)
 	}
 
-	fmt.Printf("\n%s %s\n", testPassStyle.Render(i18n.T("cli.pass")), i18n.T("common.result.all_passed"))
+	core.Println()
+	core.Println(core.Sprintf("%s %s", testPassStyle.Render(i18n.T("cli.pass")), i18n.T("common.result.all_passed")))
 	return nil
 }
 
@@ -128,18 +133,18 @@ func getMacOSDeploymentTarget() string {
 func filterLinkerWarnings(output string) string {
 	// Filter out ld: warning lines that pollute the output
 	var filtered []string
-	scanner := bufio.NewScanner(strings.NewReader(output))
+	scanner := bufio.NewScanner(core.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
 		// Skip linker warnings
-		if strings.HasPrefix(line, "ld: warning:") {
+		if core.HasPrefix(line, "ld: warning:") {
 			continue
 		}
 		// Skip test binary build comments
-		if strings.HasPrefix(line, "# ") && strings.HasSuffix(line, ".test") {
+		if core.HasPrefix(line, "# ") && core.HasSuffix(line, ".test") {
 			continue
 		}
 		filtered = append(filtered, line)
 	}
-	return strings.Join(filtered, "\n")
+	return core.Join("\n", filtered...)
 }

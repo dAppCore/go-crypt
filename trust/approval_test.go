@@ -1,29 +1,29 @@
 package trust
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 
+	core "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // --- ApprovalStatus ---
 
-func TestApprovalStatusString_Good(t *testing.T) {
+func TestApproval_ApprovalStatusString_Good(t *testing.T) {
 	assert.Equal(t, "pending", ApprovalPending.String())
 	assert.Equal(t, "approved", ApprovalApproved.String())
 	assert.Equal(t, "denied", ApprovalDenied.String())
 }
 
-func TestApprovalStatusString_Bad_Unknown(t *testing.T) {
+func TestApproval_ApprovalStatusString_Bad_Unknown(t *testing.T) {
 	assert.Contains(t, ApprovalStatus(99).String(), "unknown")
 }
 
 // --- Submit ---
 
-func TestApprovalSubmit_Good(t *testing.T) {
+func TestApproval_ApprovalSubmit_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	id, err := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	require.NoError(t, err)
@@ -31,7 +31,7 @@ func TestApprovalSubmit_Good(t *testing.T) {
 	assert.Equal(t, 1, q.Len())
 }
 
-func TestApprovalSubmit_Good_MultipleRequests(t *testing.T) {
+func TestApproval_ApprovalSubmit_Good_MultipleRequests(t *testing.T) {
 	q := NewApprovalQueue()
 	id1, err := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	require.NoError(t, err)
@@ -42,7 +42,7 @@ func TestApprovalSubmit_Good_MultipleRequests(t *testing.T) {
 	assert.Equal(t, 2, q.Len())
 }
 
-func TestApprovalSubmit_Good_EmptyRepo(t *testing.T) {
+func TestApproval_ApprovalSubmit_Good_EmptyRepo(t *testing.T) {
 	q := NewApprovalQueue()
 	id, err := q.Submit("Clotho", CapMergePR, "")
 	require.NoError(t, err)
@@ -53,14 +53,14 @@ func TestApprovalSubmit_Good_EmptyRepo(t *testing.T) {
 	assert.Empty(t, req.Repo)
 }
 
-func TestApprovalSubmit_Bad_EmptyAgent(t *testing.T) {
+func TestApproval_ApprovalSubmit_Bad_EmptyAgent(t *testing.T) {
 	q := NewApprovalQueue()
 	_, err := q.Submit("", CapMergePR, "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "agent name is required")
 }
 
-func TestApprovalSubmit_Bad_EmptyCapability(t *testing.T) {
+func TestApproval_ApprovalSubmit_Bad_EmptyCapability(t *testing.T) {
 	q := NewApprovalQueue()
 	_, err := q.Submit("Clotho", "", "")
 	assert.Error(t, err)
@@ -69,7 +69,7 @@ func TestApprovalSubmit_Bad_EmptyCapability(t *testing.T) {
 
 // --- Get ---
 
-func TestApprovalGet_Good(t *testing.T) {
+func TestApproval_ApprovalGet_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	id, err := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestApprovalGet_Good(t *testing.T) {
 	assert.True(t, req.ReviewedAt.IsZero())
 }
 
-func TestApprovalGet_Good_ReturnsSnapshot(t *testing.T) {
+func TestApproval_ApprovalGet_Good_ReturnsSnapshot(t *testing.T) {
 	q := NewApprovalQueue()
 	id, err := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	require.NoError(t, err)
@@ -99,14 +99,14 @@ func TestApprovalGet_Good_ReturnsSnapshot(t *testing.T) {
 	assert.Equal(t, ApprovalPending, original.Status)
 }
 
-func TestApprovalGet_Bad_NotFound(t *testing.T) {
+func TestApproval_ApprovalGet_Bad_NotFound(t *testing.T) {
 	q := NewApprovalQueue()
 	assert.Nil(t, q.Get("nonexistent"))
 }
 
 // --- Approve ---
 
-func TestApprovalApprove_Good(t *testing.T) {
+func TestApproval_ApprovalApprove_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	id, _ := q.Submit("Clotho", CapMergePR, "host-uk/core")
 
@@ -121,14 +121,14 @@ func TestApprovalApprove_Good(t *testing.T) {
 	assert.False(t, req.ReviewedAt.IsZero())
 }
 
-func TestApprovalApprove_Bad_NotFound(t *testing.T) {
+func TestApproval_ApprovalApprove_Bad_NotFound(t *testing.T) {
 	q := NewApprovalQueue()
 	err := q.Approve("nonexistent", "admin", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
 }
 
-func TestApprovalApprove_Bad_AlreadyApproved(t *testing.T) {
+func TestApproval_ApprovalApprove_Bad_AlreadyApproved(t *testing.T) {
 	q := NewApprovalQueue()
 	id, _ := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	require.NoError(t, q.Approve(id, "admin", ""))
@@ -138,7 +138,7 @@ func TestApprovalApprove_Bad_AlreadyApproved(t *testing.T) {
 	assert.Contains(t, err.Error(), "already approved")
 }
 
-func TestApprovalApprove_Bad_AlreadyDenied(t *testing.T) {
+func TestApproval_ApprovalApprove_Bad_AlreadyDenied(t *testing.T) {
 	q := NewApprovalQueue()
 	id, _ := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	require.NoError(t, q.Deny(id, "admin", "nope"))
@@ -150,7 +150,7 @@ func TestApprovalApprove_Bad_AlreadyDenied(t *testing.T) {
 
 // --- Deny ---
 
-func TestApprovalDeny_Good(t *testing.T) {
+func TestApproval_ApprovalDeny_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	id, _ := q.Submit("Clotho", CapMergePR, "host-uk/core")
 
@@ -165,14 +165,14 @@ func TestApprovalDeny_Good(t *testing.T) {
 	assert.False(t, req.ReviewedAt.IsZero())
 }
 
-func TestApprovalDeny_Bad_NotFound(t *testing.T) {
+func TestApproval_ApprovalDeny_Bad_NotFound(t *testing.T) {
 	q := NewApprovalQueue()
 	err := q.Deny("nonexistent", "admin", "")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
 }
 
-func TestApprovalDeny_Bad_AlreadyDenied(t *testing.T) {
+func TestApproval_ApprovalDeny_Bad_AlreadyDenied(t *testing.T) {
 	q := NewApprovalQueue()
 	id, _ := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	require.NoError(t, q.Deny(id, "admin", ""))
@@ -184,7 +184,7 @@ func TestApprovalDeny_Bad_AlreadyDenied(t *testing.T) {
 
 // --- Pending ---
 
-func TestApprovalPending_Good(t *testing.T) {
+func TestApproval_ApprovalPending_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	q.Submit("Clotho", CapMergePR, "host-uk/core")
 	q.Submit("Hypnos", CapMergePR, "host-uk/docs")
@@ -196,12 +196,12 @@ func TestApprovalPending_Good(t *testing.T) {
 	assert.Len(t, pending, 2)
 }
 
-func TestApprovalPending_Good_Empty(t *testing.T) {
+func TestApproval_ApprovalPending_Good_Empty(t *testing.T) {
 	q := NewApprovalQueue()
 	assert.Empty(t, q.Pending())
 }
 
-func TestApprovalPendingSeq_Good(t *testing.T) {
+func TestApproval_ApprovalPendingSeq_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	q.Submit("Clotho", CapMergePR, "host-uk/core")
 	q.Submit("Hypnos", CapMergePR, "host-uk/docs")
@@ -219,7 +219,7 @@ func TestApprovalPendingSeq_Good(t *testing.T) {
 
 // --- Concurrent operations ---
 
-func TestApprovalConcurrent_Good(t *testing.T) {
+func TestApproval_ApprovalConcurrent_Good(t *testing.T) {
 	q := NewApprovalQueue()
 
 	const n = 10
@@ -234,7 +234,7 @@ func TestApprovalConcurrent_Good(t *testing.T) {
 		go func(idx int) {
 			defer wg.Done()
 			id, err := q.Submit(
-				fmt.Sprintf("agent-%d", idx),
+				core.Sprintf("agent-%d", idx),
 				CapMergePR,
 				"host-uk/core",
 			)
@@ -270,7 +270,7 @@ func TestApprovalConcurrent_Good(t *testing.T) {
 
 // --- Integration: PolicyEngine + ApprovalQueue ---
 
-func TestApprovalWorkflow_Good_EndToEnd(t *testing.T) {
+func TestApproval_ApprovalWorkflow_Good_EndToEnd(t *testing.T) {
 	pe := newTestEngine(t)
 	q := NewApprovalQueue()
 
@@ -293,7 +293,7 @@ func TestApprovalWorkflow_Good_EndToEnd(t *testing.T) {
 	assert.Equal(t, "Virgil", req.ReviewedBy)
 }
 
-func TestApprovalWorkflow_Good_DenyEndToEnd(t *testing.T) {
+func TestApproval_ApprovalWorkflow_Good_DenyEndToEnd(t *testing.T) {
 	pe := newTestEngine(t)
 	q := NewApprovalQueue()
 

@@ -1,8 +1,7 @@
 package crypt
 
 import (
-	"fmt"
-
+	core "dappco.re/go/core"
 	"dappco.re/go/core/crypt/crypt"
 	"forge.lthn.ai/core/cli/pkg/cli"
 
@@ -39,7 +38,7 @@ func runHash(input string) error {
 		if err != nil {
 			return cli.Wrap(err, "failed to hash password")
 		}
-		fmt.Println(hash)
+		core.Println(hash)
 		return nil
 	}
 
@@ -47,7 +46,7 @@ func runHash(input string) error {
 	if err != nil {
 		return cli.Wrap(err, "failed to hash password")
 	}
-	fmt.Println(hash)
+	core.Println(hash)
 	return nil
 }
 

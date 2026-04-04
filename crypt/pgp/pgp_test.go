@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateKeyPair_Good(t *testing.T) {
+func TestPGP_CreateKeyPair_Good(t *testing.T) {
 	kp, err := CreateKeyPair("Test User", "test@example.com", "")
 	require.NoError(t, err)
 	require.NotNil(t, kp)
@@ -15,7 +15,7 @@ func TestCreateKeyPair_Good(t *testing.T) {
 	assert.Contains(t, kp.PrivateKey, "-----BEGIN PGP PRIVATE KEY BLOCK-----")
 }
 
-func TestCreateKeyPair_Bad(t *testing.T) {
+func TestPGP_CreateKeyPair_Bad(t *testing.T) {
 	// Empty name still works (openpgp allows it), but test with password
 	kp, err := CreateKeyPair("Secure User", "secure@example.com", "strong-password")
 	require.NoError(t, err)
@@ -24,14 +24,14 @@ func TestCreateKeyPair_Bad(t *testing.T) {
 	assert.Contains(t, kp.PrivateKey, "-----BEGIN PGP PRIVATE KEY BLOCK-----")
 }
 
-func TestCreateKeyPair_Ugly(t *testing.T) {
+func TestPGP_CreateKeyPair_Ugly(t *testing.T) {
 	// Minimal identity
 	kp, err := CreateKeyPair("", "", "")
 	require.NoError(t, err)
 	require.NotNil(t, kp)
 }
 
-func TestEncryptDecrypt_Good(t *testing.T) {
+func TestPGP_EncryptDecrypt_Good(t *testing.T) {
 	kp, err := CreateKeyPair("Test User", "test@example.com", "")
 	require.NoError(t, err)
 
@@ -46,7 +46,7 @@ func TestEncryptDecrypt_Good(t *testing.T) {
 	assert.Equal(t, plaintext, decrypted)
 }
 
-func TestEncryptDecrypt_Bad(t *testing.T) {
+func TestPGP_EncryptDecrypt_Bad(t *testing.T) {
 	kp1, err := CreateKeyPair("User One", "one@example.com", "")
 	require.NoError(t, err)
 	kp2, err := CreateKeyPair("User Two", "two@example.com", "")
@@ -61,7 +61,7 @@ func TestEncryptDecrypt_Bad(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestEncryptDecrypt_Ugly(t *testing.T) {
+func TestPGP_EncryptDecrypt_Ugly(t *testing.T) {
 	// Invalid public key for encryption
 	_, err := Encrypt([]byte("data"), "not-a-pgp-key")
 	assert.Error(t, err)
@@ -71,7 +71,7 @@ func TestEncryptDecrypt_Ugly(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestEncryptDecryptWithPassword_Good(t *testing.T) {
+func TestPGP_EncryptDecryptWithPassword_Good(t *testing.T) {
 	password := "my-secret-passphrase"
 	kp, err := CreateKeyPair("Secure User", "secure@example.com", password)
 	require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestEncryptDecryptWithPassword_Good(t *testing.T) {
 	assert.Equal(t, plaintext, decrypted)
 }
 
-func TestSignVerify_Good(t *testing.T) {
+func TestPGP_SignVerify_Good(t *testing.T) {
 	kp, err := CreateKeyPair("Signer", "signer@example.com", "")
 	require.NoError(t, err)
 
@@ -99,7 +99,7 @@ func TestSignVerify_Good(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestSignVerify_Bad(t *testing.T) {
+func TestPGP_SignVerify_Bad(t *testing.T) {
 	kp, err := CreateKeyPair("Signer", "signer@example.com", "")
 	require.NoError(t, err)
 
@@ -112,7 +112,7 @@ func TestSignVerify_Bad(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestSignVerify_Ugly(t *testing.T) {
+func TestPGP_SignVerify_Ugly(t *testing.T) {
 	// Invalid key for signing
 	_, err := Sign([]byte("data"), "not-a-key", "")
 	assert.Error(t, err)
@@ -129,7 +129,7 @@ func TestSignVerify_Ugly(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestSignVerifyWithPassword_Good(t *testing.T) {
+func TestPGP_SignVerifyWithPassword_Good(t *testing.T) {
 	password := "signing-password"
 	kp, err := CreateKeyPair("Signer", "signer@example.com", password)
 	require.NoError(t, err)
@@ -142,7 +142,7 @@ func TestSignVerifyWithPassword_Good(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestFullRoundTrip_Good(t *testing.T) {
+func TestPGP_FullRoundTrip_Good(t *testing.T) {
 	// Generate keys, encrypt, decrypt, sign, and verify - full round trip
 	kp, err := CreateKeyPair("Full Test", "full@example.com", "")
 	require.NoError(t, err)

@@ -1,9 +1,7 @@
 package crypt
 
 import (
-	"fmt"
-	"path/filepath"
-
+	core "dappco.re/go/core"
 	"dappco.re/go/core/crypt/crypt"
 	"forge.lthn.ai/core/cli/pkg/cli"
 )
@@ -42,12 +40,12 @@ func runChecksum(path string) error {
 
 	if checksumVerify != "" {
 		if hash == checksumVerify {
-			cli.Success(fmt.Sprintf("Checksum matches: %s", filepath.Base(path)))
+			cli.Success(core.Sprintf("Checksum matches: %s", core.PathBase(path)))
 			return nil
 		}
-		cli.Error(fmt.Sprintf("Checksum mismatch: %s", filepath.Base(path)))
-		cli.Dim(fmt.Sprintf("  expected: %s", checksumVerify))
-		cli.Dim(fmt.Sprintf("  got:      %s", hash))
+		cli.Error(core.Sprintf("Checksum mismatch: %s", core.PathBase(path)))
+		cli.Dim(core.Sprintf("  expected: %s", checksumVerify))
+		cli.Dim(core.Sprintf("  got:      %s", hash))
 		return cli.Err("checksum verification failed")
 	}
 
@@ -56,6 +54,6 @@ func runChecksum(path string) error {
 		algo = "SHA-512"
 	}
 
-	fmt.Printf("%s  %s  (%s)\n", hash, path, algo)
+	core.Print(nil, "%s  %s  (%s)", hash, path, algo)
 	return nil
 }

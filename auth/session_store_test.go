@@ -2,13 +2,11 @@ package auth
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
+	core "dappco.re/go/core"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -18,7 +16,7 @@ import (
 
 // --- MemorySessionStore ---
 
-func TestMemorySessionStore_GetSetDelete_Good(t *testing.T) {
+func TestSessionStore_MemorySessionStore_GetSetDelete_Good(t *testing.T) {
 	store := NewMemorySessionStore()
 
 	session := &Session{
@@ -46,27 +44,27 @@ func TestMemorySessionStore_GetSetDelete_Good(t *testing.T) {
 	assert.ErrorIs(t, err, ErrSessionNotFound)
 }
 
-func TestMemorySessionStore_GetNotFound_Bad(t *testing.T) {
+func TestSessionStore_MemorySessionStore_GetNotFound_Bad(t *testing.T) {
 	store := NewMemorySessionStore()
 
 	_, err := store.Get("nonexistent-token")
 	assert.ErrorIs(t, err, ErrSessionNotFound)
 }
 
-func TestMemorySessionStore_DeleteNotFound_Bad(t *testing.T) {
+func TestSessionStore_MemorySessionStore_DeleteNotFound_Bad(t *testing.T) {
 	store := NewMemorySessionStore()
 
 	err := store.Delete("nonexistent-token")
 	assert.ErrorIs(t, err, ErrSessionNotFound)
 }
 
-func TestMemorySessionStore_DeleteByUser_Good(t *testing.T) {
+func TestSessionStore_MemorySessionStore_DeleteByUser_Good(t *testing.T) {
 	store := NewMemorySessionStore()
 
 	// Create sessions for two users
 	for i := range 3 {
 		err := store.Set(&Session{
-			Token:     fmt.Sprintf("user-a-token-%d", i),
+			Token:     core.Sprintf("user-a-token-%d", i),
 			UserID:    "user-a",
 			ExpiresAt: time.Now().Add(1 * time.Hour),
 		})
@@ -86,7 +84,7 @@ func TestMemorySessionStore_DeleteByUser_Good(t *testing.T) {
 
 	// user-a sessions should be gone
 	for i := range 3 {
-		_, err := store.Get(fmt.Sprintf("user-a-token-%d", i))
+		_, err := store.Get(core.Sprintf("user-a-token-%d", i))
 		assert.ErrorIs(t, err, ErrSessionNotFound)
 	}
 
@@ -96,7 +94,7 @@ func TestMemorySessionStore_DeleteByUser_Good(t *testing.T) {
 	assert.Equal(t, "user-b", got.UserID)
 }
 
-func TestMemorySessionStore_Cleanup_Good(t *testing.T) {
+func TestSessionStore_MemorySessionStore_Cleanup_Good(t *testing.T) {
 	store := NewMemorySessionStore()
 
 	// Create expired and valid sessions
@@ -136,7 +134,7 @@ func TestMemorySessionStore_Cleanup_Good(t *testing.T) {
 	assert.ErrorIs(t, err, ErrSessionNotFound)
 }
 
-func TestMemorySessionStore_Concurrent_Good(t *testing.T) {
+func TestSessionStore_MemorySessionStore_Concurrent_Good(t *testing.T) {
 	store := NewMemorySessionStore()
 
 	const n = 20
@@ -146,11 +144,11 @@ func TestMemorySessionStore_Concurrent_Good(t *testing.T) {
 	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
-			token := fmt.Sprintf("concurrent-token-%d", idx)
+			token := core.Sprintf("concurrent-token-%d", idx)
 
 			err := store.Set(&Session{
 				Token:     token,
-				UserID:    fmt.Sprintf("user-%d", idx%5),
+				UserID:    core.Sprintf("user-%d", idx%5),
 				ExpiresAt: time.Now().Add(1 * time.Hour),
 			})
 			assert.NoError(t, err)
@@ -166,7 +164,7 @@ func TestMemorySessionStore_Concurrent_Good(t *testing.T) {
 
 // --- SQLiteSessionStore ---
 
-func TestSQLiteSessionStore_GetSetDelete_Good(t *testing.T) {
+func TestSessionStore_SQLiteSessionStore_GetSetDelete_Good(t *testing.T) {
 	store, err := NewSQLiteSessionStore(":memory:")
 	require.NoError(t, err)
 	defer store.Close()
@@ -196,7 +194,7 @@ func TestSQLiteSessionStore_GetSetDelete_Good(t *testing.T) {
 	assert.ErrorIs(t, err, ErrSessionNotFound)
 }
 
-func TestSQLiteSessionStore_GetNotFound_Bad(t *testing.T) {
+func TestSessionStore_SQLiteSessionStore_GetNotFound_Bad(t *testing.T) {
 	store, err := NewSQLiteSessionStore(":memory:")
 	require.NoError(t, err)
 	defer store.Close()
@@ -205,7 +203,7 @@ func TestSQLiteSessionStore_GetNotFound_Bad(t *testing.T) {
 	assert.ErrorIs(t, err, ErrSessionNotFound)
 }
 
-func TestSQLiteSessionStore_DeleteNotFound_Bad(t *testing.T) {
+func TestSessionStore_SQLiteSessionStore_DeleteNotFound_Bad(t *testing.T) {
 	store, err := NewSQLiteSessionStore(":memory:")
 	require.NoError(t, err)
 	defer store.Close()
@@ -214,7 +212,7 @@ func TestSQLiteSessionStore_DeleteNotFound_Bad(t *testing.T) {
 	assert.ErrorIs(t, err, ErrSessionNotFound)
 }
 
-func TestSQLiteSessionStore_DeleteByUser_Good(t *testing.T) {
+func TestSessionStore_SQLiteSessionStore_DeleteByUser_Good(t *testing.T) {
 	store, err := NewSQLiteSessionStore(":memory:")
 	require.NoError(t, err)
 	defer store.Close()
@@ -222,7 +220,7 @@ func TestSQLiteSessionStore_DeleteByUser_Good(t *testing.T) {
 	// Create sessions for two users
 	for i := range 3 {
 		err := store.Set(&Session{
-			Token:     fmt.Sprintf("sqlite-user-a-%d", i),
+			Token:     core.Sprintf("sqlite-user-a-%d", i),
 			UserID:    "user-a",
 			ExpiresAt: time.Now().Add(1 * time.Hour),
 		})
@@ -242,7 +240,7 @@ func TestSQLiteSessionStore_DeleteByUser_Good(t *testing.T) {
 
 	// user-a sessions should be gone
 	for i := range 3 {
-		_, err := store.Get(fmt.Sprintf("sqlite-user-a-%d", i))
+		_, err := store.Get(core.Sprintf("sqlite-user-a-%d", i))
 		assert.ErrorIs(t, err, ErrSessionNotFound)
 	}
 
@@ -252,7 +250,7 @@ func TestSQLiteSessionStore_DeleteByUser_Good(t *testing.T) {
 	assert.Equal(t, "user-b", got.UserID)
 }
 
-func TestSQLiteSessionStore_Cleanup_Good(t *testing.T) {
+func TestSessionStore_SQLiteSessionStore_Cleanup_Good(t *testing.T) {
 	store, err := NewSQLiteSessionStore(":memory:")
 	require.NoError(t, err)
 	defer store.Close()
@@ -294,9 +292,9 @@ func TestSQLiteSessionStore_Cleanup_Good(t *testing.T) {
 	assert.ErrorIs(t, err, ErrSessionNotFound)
 }
 
-func TestSQLiteSessionStore_Persistence_Good(t *testing.T) {
+func TestSessionStore_SQLiteSessionStore_Persistence_Good(t *testing.T) {
 	dir := t.TempDir()
-	dbPath := filepath.Join(dir, "sessions.db")
+	dbPath := core.Path(dir, "sessions.db")
 
 	// Write a session
 	store1, err := NewSQLiteSessionStore(dbPath)
@@ -325,9 +323,9 @@ func TestSQLiteSessionStore_Persistence_Good(t *testing.T) {
 	assert.Equal(t, "persist-token", got.Token)
 }
 
-func TestSQLiteSessionStore_Concurrent_Good(t *testing.T) {
+func TestSessionStore_SQLiteSessionStore_Concurrent_Good(t *testing.T) {
 	// Use a temp file — :memory: SQLite has concurrency limitations
-	dbPath := filepath.Join(t.TempDir(), "concurrent.db")
+	dbPath := core.Path(t.TempDir(), "concurrent.db")
 	store, err := NewSQLiteSessionStore(dbPath)
 	require.NoError(t, err)
 	defer store.Close()
@@ -339,11 +337,11 @@ func TestSQLiteSessionStore_Concurrent_Good(t *testing.T) {
 	for i := range n {
 		go func(idx int) {
 			defer wg.Done()
-			token := fmt.Sprintf("sqlite-concurrent-%d", idx)
+			token := core.Sprintf("sqlite-concurrent-%d", idx)
 
 			err := store.Set(&Session{
 				Token:     token,
-				UserID:    fmt.Sprintf("user-%d", idx%5),
+				UserID:    core.Sprintf("user-%d", idx%5),
 				ExpiresAt: time.Now().Add(1 * time.Hour),
 			})
 			assert.NoError(t, err)
@@ -361,7 +359,7 @@ func TestSQLiteSessionStore_Concurrent_Good(t *testing.T) {
 
 // --- Authenticator with SessionStore ---
 
-func TestAuthenticator_WithSessionStore_Good(t *testing.T) {
+func TestSessionStore_Authenticator_WithSessionStore_Good(t *testing.T) {
 	sqliteStore, err := NewSQLiteSessionStore(":memory:")
 	require.NoError(t, err)
 	defer sqliteStore.Close()
@@ -400,7 +398,7 @@ func TestAuthenticator_WithSessionStore_Good(t *testing.T) {
 	assert.Contains(t, err.Error(), "session not found")
 }
 
-func TestAuthenticator_DefaultStore_Good(t *testing.T) {
+func TestSessionStore_Authenticator_DefaultStore_Good(t *testing.T) {
 	m := io.NewMockMedium()
 	a := New(m)
 
@@ -409,7 +407,7 @@ func TestAuthenticator_DefaultStore_Good(t *testing.T) {
 	assert.True(t, ok, "default store should be MemorySessionStore")
 }
 
-func TestAuthenticator_StartCleanup_Good(t *testing.T) {
+func TestSessionStore_Authenticator_StartCleanup_Good(t *testing.T) {
 	m := io.NewMockMedium()
 	a := New(m, WithSessionTTL(1*time.Millisecond))
 
@@ -438,7 +436,7 @@ func TestAuthenticator_StartCleanup_Good(t *testing.T) {
 	assert.Contains(t, err.Error(), "session not found")
 }
 
-func TestAuthenticator_StartCleanup_CancelStops_Good(t *testing.T) {
+func TestSessionStore_Authenticator_StartCleanup_CancelStops_Good(t *testing.T) {
 	m := io.NewMockMedium()
 	a := New(m)
 
@@ -450,7 +448,7 @@ func TestAuthenticator_StartCleanup_CancelStops_Good(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 }
 
-func TestSQLiteSessionStore_UpdateExisting_Good(t *testing.T) {
+func TestSessionStore_SQLiteSessionStore_UpdateExisting_Good(t *testing.T) {
 	store, err := NewSQLiteSessionStore(":memory:")
 	require.NoError(t, err)
 	defer store.Close()
@@ -478,10 +476,9 @@ func TestSQLiteSessionStore_UpdateExisting_Good(t *testing.T) {
 		"updated session should have later expiry")
 }
 
-func TestSQLiteSessionStore_TempFile_Good(t *testing.T) {
+func TestSessionStore_SQLiteSessionStore_TempFile_Good(t *testing.T) {
 	// Verify we can use a real temp file (not :memory:)
-	tmpFile := filepath.Join(os.TempDir(), "go-crypt-test-session-store.db")
-	defer os.Remove(tmpFile)
+	tmpFile := core.Path(t.TempDir(), "go-crypt-test-session-store.db")
 
 	store, err := NewSQLiteSessionStore(tmpFile)
 	require.NoError(t, err)

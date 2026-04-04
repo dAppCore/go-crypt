@@ -29,12 +29,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
-	"fmt"
-	"strings"
 	"sync"
 	"time"
 
+	core "dappco.re/go/core"
 	"dappco.re/go/core/crypt/crypt"
 	"dappco.re/go/core/crypt/crypt/lthn"
 	"dappco.re/go/core/crypt/crypt/pgp"
@@ -42,11 +40,14 @@ import (
 	coreerr "dappco.re/go/core/log"
 )
 
-// Default durations for challenge and session lifetimes.
 const (
+	// DefaultChallengeTTL is the default lifetime for a generated challenge.
+	// Usage: pass DefaultChallengeTTL into WithChallengeTTL(...) to keep the package default.
 	DefaultChallengeTTL = 5 * time.Minute
-	DefaultSessionTTL   = 24 * time.Hour
-	nonceBytes          = 32
+	// DefaultSessionTTL is the default lifetime for an authenticated session.
+	// Usage: pass DefaultSessionTTL into WithSessionTTL(...) to keep the package default.
+	DefaultSessionTTL = 24 * time.Hour
+	nonceBytes        = 32
 )
 
 // protectedUsers lists usernames that cannot be deleted.
@@ -57,6 +58,7 @@ var protectedUsers = map[string]bool{
 }
 
 // User represents a registered user with PGP credentials.
+// Usage: use User with the other exported helpers in this package.
 type User struct {
 	PublicKey    string    `json:"public_key"`
 	KeyID        string    `json:"key_id"`
@@ -67,6 +69,7 @@ type User struct {
 }
 
 // Challenge is a PGP-encrypted nonce sent to a client during authentication.
+// Usage: use Challenge with the other exported helpers in this package.
 type Challenge struct {
 	Nonce     []byte    `json:"nonce"`
 	Encrypted string    `json:"encrypted"` // PGP-encrypted nonce (armored)
@@ -74,6 +77,7 @@ type Challenge struct {
 }
 
 // Session represents an authenticated session.
+// Usage: use Session with the other exported helpers in this package.
 type Session struct {
 	Token     string    `json:"token"`
 	UserID    string    `json:"user_id"`
@@ -82,6 +86,7 @@ type Session struct {
 
 // Revocation records the details of a revoked user key.
 // Stored as JSON in the user's .rev file, replacing the legacy placeholder.
+// Usage: use Revocation with the other exported helpers in this package.
 type Revocation struct {
 	UserID    string    `json:"user_id"`
 	Reason    string    `json:"reason"`
@@ -89,9 +94,11 @@ type Revocation struct {
 }
 
 // Option configures an Authenticator.
+// Usage: use Option with the other exported helpers in this package.
 type Option func(*Authenticator)
 
 // WithChallengeTTL sets the lifetime of a challenge before it expires.
+// Usage: pass WithChallengeTTL(...) into the related constructor to adjust the default behaviour.
 func WithChallengeTTL(d time.Duration) Option {
 	return func(a *Authenticator) {
 		a.challengeTTL = d
@@ -99,6 +106,7 @@ func WithChallengeTTL(d time.Duration) Option {
 }
 
 // WithSessionTTL sets the lifetime of a session before it expires.
+// Usage: pass WithSessionTTL(...) into the related constructor to adjust the default behaviour.
 func WithSessionTTL(d time.Duration) Option {
 	return func(a *Authenticator) {
 		a.sessionTTL = d
@@ -107,6 +115,7 @@ func WithSessionTTL(d time.Duration) Option {
 
 // WithSessionStore sets the SessionStore implementation.
 // If not provided, an in-memory store is used (sessions lost on restart).
+// Usage: pass WithSessionStore(...) into the related constructor to adjust the default behaviour.
 func WithSessionStore(s SessionStore) Option {
 	return func(a *Authenticator) {
 		a.store = s
@@ -122,6 +131,7 @@ func WithSessionStore(s SessionStore) Option {
 // An optional HardwareKey can be provided via WithHardwareKey for
 // hardware-backed cryptographic operations (PKCS#11, YubiKey, etc.).
 // See auth/hardware.go for the interface definition and integration points.
+// Usage: create an Authenticator with New(...) and then call Register, Login, or CreateChallenge.
 type Authenticator struct {
 	medium       io.Medium
 	store        SessionStore
@@ -135,6 +145,7 @@ type Authenticator struct {
 // New creates an Authenticator that persists user data via the given Medium.
 // By default, sessions are stored in memory. Use WithSessionStore to provide
 // a persistent implementation (e.g. SQLiteSessionStore).
+// Usage: call New(...) to create a ready-to-use value.
 func New(m io.Medium, opts ...Option) *Authenticator {
 	a := &Authenticator{
 		medium:       m,
@@ -161,6 +172,7 @@ func userPath(userID, ext string) string {
 // produce a userID, generates a PGP keypair (protected by the given password),
 // and persists the public key, private key, revocation placeholder, password
 // hash (Argon2id), and encrypted metadata via the Medium.
+// Usage: call Register(...) during the package's normal workflow.
 func (a *Authenticator) Register(username, password string) (*User, error) {
 	const op = "auth.Register"
 
@@ -218,12 +230,13 @@ func (a *Authenticator) Register(username, password string) (*User, error) {
 	}
 
 	// Encrypt metadata with the user's public key and store
-	metaJSON, err := json.Marshal(user)
-	if err != nil {
+	metaJSONResult := core.JSONMarshal(user)
+	if !metaJSONResult.OK {
+		err, _ := metaJSONResult.Value.(error)
 		return nil, coreerr.E(op, "failed to marshal user metadata", err)
 	}
 
-	encMeta, err := pgp.Encrypt(metaJSON, kp.PublicKey)
+	encMeta, err := pgp.Encrypt(metaJSONResult.Value.([]byte), kp.PublicKey)
 	if err != nil {
 		return nil, coreerr.E(op, "failed to encrypt user metadata", err)
 	}
@@ -238,6 +251,7 @@ func (a *Authenticator) Register(username, password string) (*User, error) {
 // CreateChallenge generates a cryptographic challenge for the given user.
 // A random nonce is created and encrypted with the user's PGP public key.
 // The client must decrypt the nonce and sign it to prove key ownership.
+// Usage: call CreateChallenge(...) during the package's normal workflow.
 func (a *Authenticator) CreateChallenge(userID string) (*Challenge, error) {
 	const op = "auth.CreateChallenge"
 
@@ -280,6 +294,7 @@ func (a *Authenticator) CreateChallenge(userID string) (*Challenge, error) {
 // ValidateResponse verifies a signed nonce from the client. The client must
 // have decrypted the challenge nonce and signed it with their private key.
 // On success, a new session is created and returned.
+// Usage: call ValidateResponse(...) during the package's normal workflow.
 func (a *Authenticator) ValidateResponse(userID string, signedNonce []byte) (*Session, error) {
 	const op = "auth.ValidateResponse"
 
@@ -314,6 +329,7 @@ func (a *Authenticator) ValidateResponse(userID string, signedNonce []byte) (*Se
 }
 
 // ValidateSession checks whether a token maps to a valid, non-expired session.
+// Usage: call ValidateSession(...) during the package's normal workflow.
 func (a *Authenticator) ValidateSession(token string) (*Session, error) {
 	const op = "auth.ValidateSession"
 
@@ -331,6 +347,7 @@ func (a *Authenticator) ValidateSession(token string) (*Session, error) {
 }
 
 // RefreshSession extends the expiry of an existing valid session.
+// Usage: call RefreshSession(...) during the package's normal workflow.
 func (a *Authenticator) RefreshSession(token string) (*Session, error) {
 	const op = "auth.RefreshSession"
 
@@ -352,6 +369,7 @@ func (a *Authenticator) RefreshSession(token string) (*Session, error) {
 }
 
 // RevokeSession removes a session, invalidating the token immediately.
+// Usage: call RevokeSession(...) during the package's normal workflow.
 func (a *Authenticator) RevokeSession(token string) error {
 	const op = "auth.RevokeSession"
 
@@ -364,6 +382,7 @@ func (a *Authenticator) RevokeSession(token string) error {
 // DeleteUser removes a user and all associated keys from storage.
 // The "server" user is protected and cannot be deleted (mirroring the
 // original TypeScript implementation's safeguard).
+// Usage: call DeleteUser(...) during the package's normal workflow.
 func (a *Authenticator) DeleteUser(userID string) error {
 	const op = "auth.DeleteUser"
 
@@ -404,6 +423,8 @@ func (a *Authenticator) DeleteUser(userID string) error {
 //   - Otherwise, falls back to legacy .lthn file with LTHN hash verification.
 //     On successful legacy login, the password is re-hashed with Argon2id and
 //     a .hash file is written (transparent migration).
+//
+// Usage: call Login(...) for password-based flows when challenge-response is not required.
 func (a *Authenticator) Login(userID, password string) (*Session, error) {
 	const op = "auth.Login"
 
@@ -419,7 +440,7 @@ func (a *Authenticator) Login(userID, password string) (*Session, error) {
 			return nil, coreerr.E(op, "failed to read password hash", err)
 		}
 
-		if strings.HasPrefix(storedHash, "$argon2id$") {
+		if core.HasPrefix(storedHash, "$argon2id$") {
 			valid, err := crypt.VerifyPassword(password, storedHash)
 			if err != nil {
 				return nil, coreerr.E(op, "failed to verify password", err)
@@ -456,6 +477,7 @@ func (a *Authenticator) Login(userID, password string) (*Session, error) {
 // all existing sessions. The caller must provide the current password
 // (oldPassword) to decrypt existing metadata and the new password (newPassword)
 // to protect the new keypair.
+// Usage: call RotateKeyPair(...) during the package's normal workflow.
 func (a *Authenticator) RotateKeyPair(userID, oldPassword, newPassword string) (*User, error) {
 	const op = "auth.RotateKeyPair"
 
@@ -482,7 +504,9 @@ func (a *Authenticator) RotateKeyPair(userID, oldPassword, newPassword string) (
 	}
 
 	var user User
-	if err := json.Unmarshal(metaJSON, &user); err != nil {
+	metaResult := core.JSONUnmarshal(metaJSON, &user)
+	if !metaResult.OK {
+		err, _ := metaResult.Value.(error)
 		return nil, coreerr.E(op, "failed to unmarshal user metadata", err)
 	}
 
@@ -504,12 +528,13 @@ func (a *Authenticator) RotateKeyPair(userID, oldPassword, newPassword string) (
 	user.PasswordHash = newHash
 
 	// Re-encrypt metadata with new public key
-	updatedMeta, err := json.Marshal(&user)
-	if err != nil {
+	updatedMetaResult := core.JSONMarshal(&user)
+	if !updatedMetaResult.OK {
+		err, _ := updatedMetaResult.Value.(error)
 		return nil, coreerr.E(op, "failed to marshal updated metadata", err)
 	}
 
-	encUpdatedMeta, err := pgp.Encrypt(updatedMeta, newKP.PublicKey)
+	encUpdatedMeta, err := pgp.Encrypt(updatedMetaResult.Value.([]byte), newKP.PublicKey)
 	if err != nil {
 		return nil, coreerr.E(op, "failed to encrypt metadata with new key", err)
 	}
@@ -537,6 +562,7 @@ func (a *Authenticator) RotateKeyPair(userID, oldPassword, newPassword string) (
 // RevokeKey marks a user's key as revoked. It verifies the password first,
 // writes a JSON revocation record to the .rev file (replacing the placeholder),
 // and invalidates all sessions for the user.
+// Usage: call RevokeKey(...) during the package's normal workflow.
 func (a *Authenticator) RevokeKey(userID, password, reason string) error {
 	const op = "auth.RevokeKey"
 
@@ -556,11 +582,12 @@ func (a *Authenticator) RevokeKey(userID, password, reason string) error {
 		Reason:    reason,
 		RevokedAt: time.Now(),
 	}
-	revJSON, err := json.Marshal(&rev)
-	if err != nil {
+	revJSONResult := core.JSONMarshal(&rev)
+	if !revJSONResult.OK {
+		err, _ := revJSONResult.Value.(error)
 		return coreerr.E(op, "failed to marshal revocation record", err)
 	}
-	if err := a.medium.Write(userPath(userID, ".rev"), string(revJSON)); err != nil {
+	if err := a.medium.Write(userPath(userID, ".rev"), string(revJSONResult.Value.([]byte))); err != nil {
 		return coreerr.E(op, "failed to write revocation record", err)
 	}
 
@@ -573,6 +600,7 @@ func (a *Authenticator) RevokeKey(userID, password, reason string) error {
 // IsRevoked checks whether a user's key has been revoked by inspecting the
 // .rev file. Returns true only if the file contains valid revocation JSON
 // (not the legacy "REVOCATION_PLACEHOLDER" string).
+// Usage: call IsRevoked(...) during the package's normal workflow.
 func (a *Authenticator) IsRevoked(userID string) bool {
 	content, err := a.medium.Read(userPath(userID, ".rev"))
 	if err != nil {
@@ -586,7 +614,8 @@ func (a *Authenticator) IsRevoked(userID string) bool {
 
 	// Attempt to parse as JSON revocation record
 	var rev Revocation
-	if err := json.Unmarshal([]byte(content), &rev); err != nil {
+	revResult := core.JSONUnmarshal([]byte(content), &rev)
+	if !revResult.OK {
 		return false
 	}
 
@@ -597,6 +626,7 @@ func (a *Authenticator) IsRevoked(userID string) bool {
 // WriteChallengeFile writes an encrypted challenge to a file for air-gapped
 // (courier) transport. The challenge is created and then its encrypted nonce
 // is written to the specified path on the Medium.
+// Usage: call WriteChallengeFile(...) during the package's normal workflow.
 func (a *Authenticator) WriteChallengeFile(userID, path string) error {
 	const op = "auth.WriteChallengeFile"
 
@@ -605,12 +635,13 @@ func (a *Authenticator) WriteChallengeFile(userID, path string) error {
 		return coreerr.E(op, "failed to create challenge", err)
 	}
 
-	data, err := json.Marshal(challenge)
-	if err != nil {
+	challengeResult := core.JSONMarshal(challenge)
+	if !challengeResult.OK {
+		err, _ := challengeResult.Value.(error)
 		return coreerr.E(op, "failed to marshal challenge", err)
 	}
 
-	if err := a.medium.Write(path, string(data)); err != nil {
+	if err := a.medium.Write(path, string(challengeResult.Value.([]byte))); err != nil {
 		return coreerr.E(op, "failed to write challenge file", err)
 	}
 
@@ -620,6 +651,7 @@ func (a *Authenticator) WriteChallengeFile(userID, path string) error {
 // ReadResponseFile reads a signed response from a file and validates it,
 // completing the air-gapped authentication flow. The file must contain the
 // raw PGP signature bytes (armored).
+// Usage: call ReadResponseFile(...) during the package's normal workflow.
 func (a *Authenticator) ReadResponseFile(userID, path string) (*Session, error) {
 	const op = "auth.ReadResponseFile"
 
@@ -645,7 +677,7 @@ func (a *Authenticator) verifyPassword(userID, password string) error {
 	// Try Argon2id hash first (.hash file)
 	if a.medium.IsFile(userPath(userID, ".hash")) {
 		storedHash, err := a.medium.Read(userPath(userID, ".hash"))
-		if err == nil && strings.HasPrefix(storedHash, "$argon2id$") {
+		if err == nil && core.HasPrefix(storedHash, "$argon2id$") {
 			valid, verr := crypt.VerifyPassword(password, storedHash)
 			if verr != nil {
 				return coreerr.E(op, "failed to verify password", nil)
@@ -693,6 +725,7 @@ func (a *Authenticator) createSession(userID string) (*Session, error) {
 
 // StartCleanup runs a background goroutine that periodically removes expired
 // sessions from the store. It stops when the context is cancelled.
+// Usage: call StartCleanup(...) during the package's normal workflow.
 func (a *Authenticator) StartCleanup(ctx context.Context, interval time.Duration) {
 	go func() {
 		ticker := time.NewTicker(interval)
@@ -705,11 +738,11 @@ func (a *Authenticator) StartCleanup(ctx context.Context, interval time.Duration
 			case <-ticker.C:
 				count, err := a.store.Cleanup()
 				if err != nil {
-					fmt.Printf("auth: session cleanup error: %v\n", err)
+					core.Print(nil, "auth: session cleanup error: %v", err)
 					continue
 				}
 				if count > 0 {
-					fmt.Printf("auth: cleaned up %d expired session(s)\n", count)
+					core.Print(nil, "auth: cleaned up %d expired session(s)", count)
 				}
 			}
 		}

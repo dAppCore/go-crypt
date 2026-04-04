@@ -13,6 +13,7 @@ import (
 // ChaCha20Encrypt encrypts plaintext using ChaCha20-Poly1305.
 // The key must be 32 bytes. The nonce is randomly generated and prepended
 // to the ciphertext.
+// Usage: call ChaCha20Encrypt(...) during the package's normal workflow.
 func ChaCha20Encrypt(plaintext, key []byte) ([]byte, error) {
 	aead, err := chacha20poly1305.NewX(key)
 	if err != nil {
@@ -30,6 +31,7 @@ func ChaCha20Encrypt(plaintext, key []byte) ([]byte, error) {
 
 // ChaCha20Decrypt decrypts ciphertext encrypted with ChaCha20Encrypt.
 // The key must be 32 bytes. Expects the nonce prepended to the ciphertext.
+// Usage: call ChaCha20Decrypt(...) during the package's normal workflow.
 func ChaCha20Decrypt(ciphertext, key []byte) ([]byte, error) {
 	aead, err := chacha20poly1305.NewX(key)
 	if err != nil {
@@ -53,6 +55,7 @@ func ChaCha20Decrypt(ciphertext, key []byte) ([]byte, error) {
 // AESGCMEncrypt encrypts plaintext using AES-256-GCM.
 // The key must be 32 bytes. The nonce is randomly generated and prepended
 // to the ciphertext.
+// Usage: call AESGCMEncrypt(...) during the package's normal workflow.
 func AESGCMEncrypt(plaintext, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -75,6 +78,7 @@ func AESGCMEncrypt(plaintext, key []byte) ([]byte, error) {
 
 // AESGCMDecrypt decrypts ciphertext encrypted with AESGCMEncrypt.
 // The key must be 32 bytes. Expects the nonce prepended to the ciphertext.
+// Usage: call AESGCMDecrypt(...) during the package's normal workflow.
 func AESGCMDecrypt(ciphertext, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {

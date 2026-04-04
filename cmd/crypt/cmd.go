@@ -7,6 +7,7 @@ func init() {
 }
 
 // AddCryptCommands registers the 'crypt' command group and all subcommands.
+// Usage: call AddCryptCommands(...) during the package's normal workflow.
 func AddCryptCommands(root *cli.Command) {
 	cryptCmd := &cli.Command{
 		Use:   "crypt",

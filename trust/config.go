@@ -1,15 +1,14 @@
 package trust
 
 import (
-	"encoding/json"
-	"fmt"
 	"io"
-	"os"
 
+	core "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
 )
 
 // PolicyConfig is the JSON-serialisable representation of a trust policy.
+// Usage: use PolicyConfig with the other exported helpers in this package.
 type PolicyConfig struct {
 	Tier             int      `json:"tier"`
 	Allowed          []string `json:"allowed"`
@@ -18,26 +17,40 @@ type PolicyConfig struct {
 }
 
 // PoliciesConfig is the top-level configuration containing all tier policies.
+// Usage: use PoliciesConfig with the other exported helpers in this package.
 type PoliciesConfig struct {
 	Policies []PolicyConfig `json:"policies"`
 }
 
 // LoadPoliciesFromFile reads a JSON file and returns parsed policies.
+// Usage: call LoadPoliciesFromFile(...) during the package's normal workflow.
 func LoadPoliciesFromFile(path string) ([]Policy, error) {
-	f, err := os.Open(path)
-	if err != nil {
+	openResult := (&core.Fs{}).New("/").Open(path)
+	if !openResult.OK {
+		err, _ := openResult.Value.(error)
 		return nil, coreerr.E("trust.LoadPoliciesFromFile", "failed to open file", err)
 	}
-	defer f.Close()
-	return LoadPolicies(f)
+	return LoadPolicies(openResult.Value.(io.Reader))
 }
 
 // LoadPolicies reads JSON from a reader and returns parsed policies.
+// Usage: call LoadPolicies(...) during the package's normal workflow.
 func LoadPolicies(r io.Reader) ([]Policy, error) {
+	readResult := core.ReadAll(r)
+	if !readResult.OK {
+		err, _ := readResult.Value.(error)
+		return nil, coreerr.E("trust.LoadPolicies", "failed to decode JSON", err)
+	}
+
+	data := []byte(readResult.Value.(string))
+	if err := validatePoliciesJSON(data); err != nil {
+		return nil, coreerr.E("trust.LoadPolicies", "failed to decode JSON", err)
+	}
+
 	var cfg PoliciesConfig
-	dec := json.NewDecoder(r)
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&cfg); err != nil {
+	decodeResult := core.JSONUnmarshal(data, &cfg)
+	if !decodeResult.OK {
+		err, _ := decodeResult.Value.(error)
 		return nil, coreerr.E("trust.LoadPolicies", "failed to decode JSON", err)
 	}
 	return convertPolicies(cfg)
@@ -50,7 +63,7 @@ func convertPolicies(cfg PoliciesConfig) ([]Policy, error) {
 	for i, pc := range cfg.Policies {
 		tier := Tier(pc.Tier)
 		if !tier.Valid() {
-			return nil, coreerr.E("trust.LoadPolicies", fmt.Sprintf("invalid tier %d at index %d", pc.Tier, i), nil)
+			return nil, coreerr.E("trust.LoadPolicies", core.Sprintf("invalid tier %d at index %d", pc.Tier, i), nil)
 		}
 
 		p := Policy{
@@ -67,6 +80,7 @@ func convertPolicies(cfg PoliciesConfig) ([]Policy, error) {
 
 // ApplyPolicies loads policies from a reader and sets them on the engine,
 // replacing any existing policies for the same tiers.
+// Usage: call ApplyPolicies(...) during the package's normal workflow.
 func (pe *PolicyEngine) ApplyPolicies(r io.Reader) error {
 	policies, err := LoadPolicies(r)
 	if err != nil {
@@ -81,16 +95,18 @@ func (pe *PolicyEngine) ApplyPolicies(r io.Reader) error {
 }
 
 // ApplyPoliciesFromFile loads policies from a JSON file and sets them on the engine.
+// Usage: call ApplyPoliciesFromFile(...) during the package's normal workflow.
 func (pe *PolicyEngine) ApplyPoliciesFromFile(path string) error {
-	f, err := os.Open(path)
-	if err != nil {
+	openResult := (&core.Fs{}).New("/").Open(path)
+	if !openResult.OK {
+		err, _ := openResult.Value.(error)
 		return coreerr.E("trust.ApplyPoliciesFromFile", "failed to open file", err)
 	}
-	defer f.Close()
-	return pe.ApplyPolicies(f)
+	return pe.ApplyPolicies(openResult.Value.(io.Reader))
 }
 
 // ExportPolicies serialises the current policies as JSON to the given writer.
+// Usage: call ExportPolicies(...) during the package's normal workflow.
 func (pe *PolicyEngine) ExportPolicies(w io.Writer) error {
 	var cfg PoliciesConfig
 	for _, tier := range []Tier{TierUntrusted, TierVerified, TierFull} {
@@ -106,12 +122,64 @@ func (pe *PolicyEngine) ExportPolicies(w io.Writer) error {
 		})
 	}
 
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(cfg); err != nil {
+	dataResult := core.JSONMarshal(cfg)
+	if !dataResult.OK {
+		err, _ := dataResult.Value.(error)
+		return coreerr.E("trust.ExportPolicies", "failed to encode JSON", err)
+	}
+	if _, err := w.Write(dataResult.Value.([]byte)); err != nil {
 		return coreerr.E("trust.ExportPolicies", "failed to encode JSON", err)
 	}
 	return nil
+}
+
+func validatePoliciesJSON(data []byte) error {
+	var raw map[string]any
+
+	result := core.JSONUnmarshal(data, &raw)
+	if !result.OK {
+		err, _ := result.Value.(error)
+		return err
+	}
+
+	for key := range raw {
+		if key != "policies" {
+			return core.NewError(core.Sprintf("json: unknown field %q", key))
+		}
+	}
+
+	rawPolicies, ok := raw["policies"]
+	if !ok {
+		return nil
+	}
+
+	policies, ok := rawPolicies.([]any)
+	if !ok {
+		return nil
+	}
+
+	for _, rawPolicy := range policies {
+		fields, ok := rawPolicy.(map[string]any)
+		if !ok {
+			continue
+		}
+		for key := range fields {
+			if !isKnownPolicyConfigKey(key) {
+				return core.NewError(core.Sprintf("json: unknown field %q", key))
+			}
+		}
+	}
+
+	return nil
+}
+
+func isKnownPolicyConfigKey(key string) bool {
+	switch key {
+	case "tier", "allowed", "requires_approval", "denied":
+		return true
+	default:
+		return false
+	}
 }
 
 // toCapabilities converts string slices to Capability slices.

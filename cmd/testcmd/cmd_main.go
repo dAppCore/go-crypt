@@ -20,7 +20,7 @@ var (
 	testCovLowStyle  = cli.NewStyle().Foreground(cli.ColourRed500)
 )
 
-// Flag variables for test command
+// Flag variables for test command.
 var (
 	testVerbose  bool
 	testCoverage bool
@@ -31,10 +31,15 @@ var (
 	testJSON     bool
 )
 
+// testCmd wraps `go test`, defaulting to `./...` and keeping coverage enabled
+// so both human-readable and JSON summaries can report package coverage.
 var testCmd = &cli.Command{
 	Use:   "test",
 	Short: i18n.T("cmd.test.short"),
 	Long:  i18n.T("cmd.test.long"),
+	Example: `  core test
+  core test --pkg ./auth --run TestLogin_Good
+  core test --race --json`,
 	RunE: func(cmd *cli.Command, args []string) error {
 		return runTest(testVerbose, testCoverage, testShort, testPkg, testRun, testRace, testJSON)
 	},
@@ -51,6 +56,7 @@ func initTestFlags() {
 }
 
 // AddTestCommands registers the 'test' command and all subcommands.
+// Usage: call AddTestCommands(...) during the package's normal workflow.
 func AddTestCommands(root *cli.Command) {
 	initTestFlags()
 	root.AddCommand(testCmd)

@@ -3,9 +3,9 @@ package crypt
 import (
 	"crypto/subtle"
 	"encoding/base64"
-	"fmt"
-	"strings"
+	"strconv"
 
+	core "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
 
 	"golang.org/x/crypto/argon2"
@@ -14,6 +14,7 @@ import (
 
 // HashPassword hashes a password using Argon2id with default parameters.
 // Returns a string in the format: $argon2id$v=19$m=65536,t=3,p=4$<base64salt>$<base64hash>
+// Usage: call HashPassword(...) during the package's normal workflow.
 func HashPassword(password string) (string, error) {
 	salt, err := generateSalt(argon2SaltLen)
 	if err != nil {
@@ -25,7 +26,7 @@ func HashPassword(password string) (string, error) {
 	b64Salt := base64.RawStdEncoding.EncodeToString(salt)
 	b64Hash := base64.RawStdEncoding.EncodeToString(hash)
 
-	encoded := fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
+	encoded := core.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
 		argon2.Version, argon2Memory, argon2Time, argon2Parallelism,
 		b64Salt, b64Hash)
 
@@ -34,21 +35,23 @@ func HashPassword(password string) (string, error) {
 
 // VerifyPassword verifies a password against an Argon2id hash string.
 // The hash must be in the format produced by HashPassword.
+// Usage: call VerifyPassword(...) during the package's normal workflow.
 func VerifyPassword(password, hash string) (bool, error) {
-	parts := strings.Split(hash, "$")
+	parts := core.Split(hash, "$")
 	if len(parts) != 6 {
 		return false, coreerr.E("crypt.VerifyPassword", "invalid hash format", nil)
 	}
 
-	var version int
-	if _, err := fmt.Sscanf(parts[2], "v=%d", &version); err != nil {
+	version, err := parsePrefixedInt(parts[2], "v=")
+	if err != nil {
 		return false, coreerr.E("crypt.VerifyPassword", "failed to parse version", err)
 	}
+	if version != argon2.Version {
+		return false, coreerr.E("crypt.VerifyPassword", core.Sprintf("unsupported argon2 version %d", version), nil)
+	}
 
-	var memory uint32
-	var time uint32
-	var parallelism uint8
-	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &memory, &time, &parallelism); err != nil {
+	memory, time, parallelism, err := parseArgonParams(parts[3])
+	if err != nil {
 		return false, coreerr.E("crypt.VerifyPassword", "failed to parse parameters", err)
 	}
 
@@ -67,8 +70,55 @@ func VerifyPassword(password, hash string) (bool, error) {
 	return subtle.ConstantTimeCompare(computedHash, expectedHash) == 1, nil
 }
 
+func parseArgonParams(input string) (uint32, uint32, uint8, error) {
+	fields := core.Split(input, ",")
+	if len(fields) != 3 {
+		return 0, 0, 0, core.NewError("invalid argon2 parameters")
+	}
+
+	memory, err := parsePrefixedUint32(fields[0], "m=")
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	time, err := parsePrefixedUint32(fields[1], "t=")
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	parallelismValue, err := parsePrefixedUint32(fields[2], "p=")
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	return memory, time, uint8(parallelismValue), nil
+}
+
+func parsePrefixedInt(input, prefix string) (int, error) {
+	if !core.HasPrefix(input, prefix) {
+		return 0, core.NewError(core.Sprintf("missing %q prefix", prefix))
+	}
+
+	value, err := strconv.Atoi(core.TrimPrefix(input, prefix))
+	if err != nil {
+		return 0, err
+	}
+	return value, nil
+}
+
+func parsePrefixedUint32(input, prefix string) (uint32, error) {
+	if !core.HasPrefix(input, prefix) {
+		return 0, core.NewError(core.Sprintf("missing %q prefix", prefix))
+	}
+
+	value, err := strconv.ParseUint(core.TrimPrefix(input, prefix), 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(value), nil
+}
+
 // HashBcrypt hashes a password using bcrypt with the given cost.
 // Cost must be between bcrypt.MinCost and bcrypt.MaxCost.
+// Usage: call HashBcrypt(...) during the package's normal workflow.
 func HashBcrypt(password string, cost int) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), cost)
 	if err != nil {
@@ -78,6 +128,7 @@ func HashBcrypt(password string, cost int) (string, error) {
 }
 
 // VerifyBcrypt verifies a password against a bcrypt hash.
+// Usage: call VerifyBcrypt(...) during the package's normal workflow.
 func VerifyBcrypt(password, hash string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	if err == bcrypt.ErrMismatchedHashAndPassword {

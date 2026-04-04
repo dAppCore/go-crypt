@@ -1,8 +1,9 @@
 package trust
 
 import (
-	"fmt"
 	"testing"
+
+	core "dappco.re/go/core"
 )
 
 // BenchmarkPolicyEvaluate measures policy evaluation across 100 registered agents.
@@ -17,7 +18,7 @@ func BenchmarkPolicyEvaluate(b *testing.B) {
 			tier = TierVerified
 		}
 		_ = r.Register(Agent{
-			Name:        fmt.Sprintf("agent-%d", i),
+			Name:        core.Sprintf("agent-%d", i),
 			Tier:        tier,
 			ScopedRepos: []string{"host-uk/core", "host-uk/docs"},
 		})
@@ -32,7 +33,7 @@ func BenchmarkPolicyEvaluate(b *testing.B) {
 
 	b.ResetTimer()
 	for i := range b.N {
-		agentName := fmt.Sprintf("agent-%d", i%100)
+		agentName := core.Sprintf("agent-%d", i%100)
 		cap := caps[i%len(caps)]
 		_ = pe.Evaluate(agentName, cap, "host-uk/core")
 	}
@@ -43,14 +44,14 @@ func BenchmarkRegistryGet(b *testing.B) {
 	r := NewRegistry()
 	for i := range 100 {
 		_ = r.Register(Agent{
-			Name: fmt.Sprintf("agent-%d", i),
+			Name: core.Sprintf("agent-%d", i),
 			Tier: TierVerified,
 		})
 	}
 
 	b.ResetTimer()
 	for i := range b.N {
-		name := fmt.Sprintf("agent-%d", i%100)
+		name := core.Sprintf("agent-%d", i%100)
 		_ = r.Get(name)
 	}
 }
@@ -62,7 +63,7 @@ func BenchmarkRegistryRegister(b *testing.B) {
 	b.ResetTimer()
 	for i := range b.N {
 		_ = r.Register(Agent{
-			Name: fmt.Sprintf("bench-agent-%d", i),
+			Name: core.Sprintf("bench-agent-%d", i),
 			Tier: TierVerified,
 		})
 	}

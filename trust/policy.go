@@ -1,14 +1,14 @@
 package trust
 
 import (
-	"fmt"
 	"slices"
-	"strings"
 
+	core "dappco.re/go/core"
 	coreerr "dappco.re/go/core/log"
 )
 
 // Policy defines the access rules for a given trust tier.
+// Usage: use Policy with the other exported helpers in this package.
 type Policy struct {
 	// Tier is the trust level this policy applies to.
 	Tier Tier
@@ -21,24 +21,30 @@ type Policy struct {
 }
 
 // PolicyEngine evaluates capability requests against registered policies.
+// Usage: use PolicyEngine with the other exported helpers in this package.
 type PolicyEngine struct {
 	registry *Registry
 	policies map[Tier]*Policy
 }
 
 // Decision is the result of a policy evaluation.
+// Usage: use Decision with the other exported helpers in this package.
 type Decision int
 
 const (
 	// Deny means the action is not permitted.
+	// Usage: compare or pass Deny when using the related package APIs.
 	Deny Decision = iota
 	// Allow means the action is permitted.
+	// Usage: compare or pass Allow when using the related package APIs.
 	Allow
 	// NeedsApproval means the action requires human or higher-tier approval.
+	// Usage: compare or pass NeedsApproval when using the related package APIs.
 	NeedsApproval
 )
 
 // String returns the human-readable name of the decision.
+// Usage: call String(...) during the package's normal workflow.
 func (d Decision) String() string {
 	switch d {
 	case Deny:
@@ -48,11 +54,12 @@ func (d Decision) String() string {
 	case NeedsApproval:
 		return "needs_approval"
 	default:
-		return fmt.Sprintf("unknown(%d)", int(d))
+		return core.Sprintf("unknown(%d)", int(d))
 	}
 }
 
 // EvalResult contains the outcome of a capability evaluation.
+// Usage: use EvalResult with the other exported helpers in this package.
 type EvalResult struct {
 	Decision Decision
 	Agent    string
@@ -61,6 +68,7 @@ type EvalResult struct {
 }
 
 // NewPolicyEngine creates a policy engine with the given registry and default policies.
+// Usage: call NewPolicyEngine(...) to create a ready-to-use value.
 func NewPolicyEngine(registry *Registry) *PolicyEngine {
 	pe := &PolicyEngine{
 		registry: registry,
@@ -73,6 +81,7 @@ func NewPolicyEngine(registry *Registry) *PolicyEngine {
 // Evaluate checks whether the named agent can perform the given capability.
 // If the agent has scoped repos and the capability is repo-scoped, the repo
 // parameter is checked against the agent's allowed repos.
+// Usage: call Evaluate(...) during the package's normal workflow.
 func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) EvalResult {
 	agent := pe.registry.Get(agentName)
 	if agent == nil {
@@ -90,7 +99,7 @@ func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) 
 			Decision: Deny,
 			Agent:    agentName,
 			Cap:      cap,
-			Reason:   fmt.Sprintf("no policy for tier %s", agent.Tier),
+			Reason:   core.Sprintf("no policy for tier %s", agent.Tier),
 		}
 	}
 
@@ -100,7 +109,7 @@ func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) 
 			Decision: Deny,
 			Agent:    agentName,
 			Cap:      cap,
-			Reason:   fmt.Sprintf("capability %s is denied for tier %s", cap, agent.Tier),
+			Reason:   core.Sprintf("capability %s is denied for tier %s", cap, agent.Tier),
 		}
 	}
 
@@ -110,7 +119,7 @@ func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) 
 			Decision: NeedsApproval,
 			Agent:    agentName,
 			Cap:      cap,
-			Reason:   fmt.Sprintf("capability %s requires approval for tier %s", cap, agent.Tier),
+			Reason:   core.Sprintf("capability %s requires approval for tier %s", cap, agent.Tier),
 		}
 	}
 
@@ -124,7 +133,7 @@ func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) 
 						Decision: Deny,
 						Agent:    agentName,
 						Cap:      cap,
-						Reason:   fmt.Sprintf("agent %q does not have access to repo %q", agentName, repo),
+						Reason:   core.Sprintf("agent %q does not have access to repo %q", agentName, repo),
 					}
 				}
 			}
@@ -132,7 +141,7 @@ func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) 
 				Decision: Allow,
 				Agent:    agentName,
 				Cap:      cap,
-				Reason:   fmt.Sprintf("capability %s allowed for tier %s", cap, agent.Tier),
+				Reason:   core.Sprintf("capability %s allowed for tier %s", cap, agent.Tier),
 			}
 		}
 	}
@@ -141,20 +150,22 @@ func (pe *PolicyEngine) Evaluate(agentName string, cap Capability, repo string) 
 		Decision: Deny,
 		Agent:    agentName,
 		Cap:      cap,
-		Reason:   fmt.Sprintf("capability %s not granted for tier %s", cap, agent.Tier),
+		Reason:   core.Sprintf("capability %s not granted for tier %s", cap, agent.Tier),
 	}
 }
 
 // SetPolicy replaces the policy for a given tier.
+// Usage: call SetPolicy(...) during the package's normal workflow.
 func (pe *PolicyEngine) SetPolicy(p Policy) error {
 	if !p.Tier.Valid() {
-		return coreerr.E("trust.SetPolicy", fmt.Sprintf("invalid tier %d", p.Tier), nil)
+		return coreerr.E("trust.SetPolicy", core.Sprintf("invalid tier %d", p.Tier), nil)
 	}
 	pe.policies[p.Tier] = &p
 	return nil
 }
 
 // GetPolicy returns the policy for a tier, or nil if none is set.
+// Usage: call GetPolicy(...) during the package's normal workflow.
 func (pe *PolicyEngine) GetPolicy(t Tier) *Policy {
 	return pe.policies[t]
 }
@@ -218,8 +229,8 @@ func (pe *PolicyEngine) loadDefaults() {
 
 // isRepoScoped returns true if the capability is constrained by repo scope.
 func isRepoScoped(cap Capability) bool {
-	return strings.HasPrefix(string(cap), "repo.") ||
-		strings.HasPrefix(string(cap), "pr.") ||
+	return core.HasPrefix(string(cap), "repo.") ||
+		core.HasPrefix(string(cap), "pr.") ||
 		cap == CapReadSecrets
 }
 
@@ -248,14 +259,14 @@ func matchScope(pattern, repo string) bool {
 	}
 
 	// Check for wildcard patterns.
-	if !strings.Contains(pattern, "*") {
+	if !core.Contains(pattern, "*") {
 		return false
 	}
 
 	// "prefix/**" — recursive: matches anything under prefix/.
-	if strings.HasSuffix(pattern, "/**") {
+	if core.HasSuffix(pattern, "/**") {
 		prefix := pattern[:len(pattern)-3] // strip "/**"
-		if !strings.HasPrefix(repo, prefix+"/") {
+		if !core.HasPrefix(repo, prefix+"/") {
 			return false
 		}
 		// Must have something after the prefix/.
@@ -263,14 +274,14 @@ func matchScope(pattern, repo string) bool {
 	}
 
 	// "prefix/*" — single level: matches prefix/X but not prefix/X/Y.
-	if strings.HasSuffix(pattern, "/*") {
+	if core.HasSuffix(pattern, "/*") {
 		prefix := pattern[:len(pattern)-2] // strip "/*"
-		if !strings.HasPrefix(repo, prefix+"/") {
+		if !core.HasPrefix(repo, prefix+"/") {
 			return false
 		}
 		remainder := repo[len(prefix)+1:]
 		// Must have a non-empty name, and no further slashes.
-		return remainder != "" && !strings.Contains(remainder, "/")
+		return remainder != "" && !core.Contains(remainder, "/")
 	}
 
 	// Unsupported wildcard position — fall back to no match.

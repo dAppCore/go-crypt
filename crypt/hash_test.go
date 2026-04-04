@@ -7,7 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func TestHashPassword_Good(t *testing.T) {
+func TestHash_HashPassword_Good(t *testing.T) {
 	password := "my-secure-password"
 
 	hash, err := HashPassword(password)
@@ -20,7 +20,7 @@ func TestHashPassword_Good(t *testing.T) {
 	assert.True(t, match)
 }
 
-func TestVerifyPassword_Bad(t *testing.T) {
+func TestHash_VerifyPassword_Bad(t *testing.T) {
 	password := "my-secure-password"
 	wrongPassword := "wrong-password"
 
@@ -32,7 +32,7 @@ func TestVerifyPassword_Bad(t *testing.T) {
 	assert.False(t, match)
 }
 
-func TestHashBcrypt_Good(t *testing.T) {
+func TestHash_HashBcrypt_Good(t *testing.T) {
 	password := "bcrypt-test-password"
 
 	hash, err := HashBcrypt(password, bcrypt.DefaultCost)
