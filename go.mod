@@ -4,22 +4,19 @@ go 1.26.0
 
 require (
 	dappco.re/go/core v0.8.0-alpha.1
-	dappco.re/go/core/i18n v0.2.0
-	dappco.re/go/core/io v0.2.0
-	dappco.re/go/core/log v0.1.0
-	dappco.re/go/core/process v0.3.0
-	dappco.re/go/core/store v0.2.0
-	forge.lthn.ai/core/cli v0.3.7
+	dappco.re/go/core/cli v0.5.2
+	dappco.re/go/core/i18n v0.2.3
+	dappco.re/go/core/io v0.4.1
+	dappco.re/go/core/log v0.1.2
+	dappco.re/go/core/process v0.5.1
+	dappco.re/go/core/store v0.3.0
 	github.com/ProtonMail/go-crypto v1.4.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/crypto v0.49.0
 )
 
 require (
-	forge.lthn.ai/core/go v0.3.2 // indirect
-	forge.lthn.ai/core/go-i18n v0.1.7 // indirect
-	forge.lthn.ai/core/go-inference v0.1.7 // indirect
-	forge.lthn.ai/core/go-log v0.0.4 // indirect
+	dappco.re/go/core/inference v0.3.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/bubbletea v1.3.10 // indirect
 	github.com/charmbracelet/colorprofile v0.4.3 // indirect
@@ -35,6 +32,7 @@ require (
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect

@@ -3,7 +3,7 @@ package crypt
 import (
 	core "dappco.re/go/core"
 	"dappco.re/go/core/crypt/crypt"
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"dappco.re/go/core/cli/pkg/cli"
 )
 
 // Checksum command flags

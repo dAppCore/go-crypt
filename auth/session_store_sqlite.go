@@ -37,7 +37,7 @@ func (s *SQLiteSessionStore) Get(token string) (*Session, error) {
 
 	val, err := s.store.Get(sessionGroup, token)
 	if err != nil {
-		if core.Is(err, store.ErrNotFound) {
+		if core.Is(err, store.NotFoundError) {
 			return nil, ErrSessionNotFound
 		}
 		return nil, err
@@ -75,7 +75,7 @@ func (s *SQLiteSessionStore) Delete(token string) error {
 	// Check existence first to return ErrSessionNotFound
 	_, err := s.store.Get(sessionGroup, token)
 	if err != nil {
-		if core.Is(err, store.ErrNotFound) {
+		if core.Is(err, store.NotFoundError) {
 			return ErrSessionNotFound
 		}
 		return err
