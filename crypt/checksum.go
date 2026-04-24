@@ -9,7 +9,7 @@ import (
 	"io"
 
 	core "dappco.re/go/core"
-	coreerr "dappco.re/go/core/log"
+	coreerr "dappco.re/go/log"
 )
 
 // SHA256File computes the SHA-256 checksum of a file and returns it as a hex string.

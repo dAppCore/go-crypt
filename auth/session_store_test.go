@@ -8,8 +8,8 @@ import (
 
 	core "dappco.re/go/core"
 
-	"dappco.re/go/core/crypt/crypt/lthn"
-	"dappco.re/go/core/io"
+	"dappco.re/go/crypt/crypt/lthn"
+	"dappco.re/go/io"
 )
 
 // --- MemorySessionStore ---

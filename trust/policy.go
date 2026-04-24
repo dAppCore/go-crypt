@@ -4,7 +4,7 @@ import (
 	"slices"
 
 	core "dappco.re/go/core"
-	coreerr "dappco.re/go/core/log"
+	coreerr "dappco.re/go/log"
 )
 
 // Policy defines the access rules for a given trust tier.

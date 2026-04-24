@@ -8,7 +8,7 @@ import (
 	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/rand"
 
-	coreerr "dappco.re/go/core/log"
+	coreerr "dappco.re/go/log"
 
 	"golang.org/x/crypto/chacha20poly1305"
 )

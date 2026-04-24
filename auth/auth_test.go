@@ -7,9 +7,9 @@ import (
 
 	core "dappco.re/go/core"
 
-	"dappco.re/go/core/crypt/crypt/lthn"
-	"dappco.re/go/core/crypt/crypt/pgp"
-	"dappco.re/go/core/io"
+	"dappco.re/go/crypt/crypt/lthn"
+	"dappco.re/go/crypt/crypt/pgp"
+	"dappco.re/go/io"
 )
 
 // helper creates a fresh Authenticator backed by MockMedium.

@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 
 	core "dappco.re/go/core"
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"dappco.re/go/cli/pkg/cli"
 )
 
 // Keygen command flags

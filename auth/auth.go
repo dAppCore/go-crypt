@@ -33,11 +33,11 @@ import (
 	"time"
 
 	core "dappco.re/go/core"
-	"dappco.re/go/core/crypt/crypt"
-	"dappco.re/go/core/crypt/crypt/lthn"
-	"dappco.re/go/core/crypt/crypt/pgp"
-	"dappco.re/go/core/io"
-	coreerr "dappco.re/go/core/log"
+	"dappco.re/go/crypt/crypt"
+	"dappco.re/go/crypt/crypt/lthn"
+	"dappco.re/go/crypt/crypt/pgp"
+	"dappco.re/go/io"
+	coreerr "dappco.re/go/log"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"io"
 
 	core "dappco.re/go/core"
-	coreerr "dappco.re/go/core/log"
+	coreerr "dappco.re/go/log"
 )
 
 // PolicyConfig is the JSON-serialisable representation of a trust policy.

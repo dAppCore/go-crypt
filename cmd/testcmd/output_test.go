@@ -5,7 +5,7 @@ import (
 )
 
 func TestOutput_ShortenPackageName_Good(t *testing.T) {
-	wantEqual(t, "pkg/foo", shortenPackageName("dappco.re/go/core/pkg/foo"))
+	wantEqual(t, "pkg/foo", shortenPackageName("dappco.re/go/pkg/foo"))
 	wantEqual(t, "cli-php", shortenPackageName("example.com/org/cli-php"))
 	wantEqual(t, "bar", shortenPackageName("github.com/other/bar"))
 }
@@ -26,7 +26,7 @@ FAIL	dappco.re/go/core/pkg/bar
 	wantEqual(t, 1, results.failed)
 	wantEqual(t, 1, results.skipped)
 	wantEqual(t, 1, len(results.failedPkgs))
-	wantEqual(t, "dappco.re/go/core/pkg/bar", results.failedPkgs[0])
+	wantEqual(t, "dappco.re/go/pkg/bar", results.failedPkgs[0])
 	wantEqual(t, 1, len(results.packages))
 	wantEqual(t, 50.0, results.packages[0].coverage)
 }
@@ -35,8 +35,8 @@ func TestOutput_PrintCoverageSummary_Good_LongPackageNames(t *testing.T) {
 	// This tests the bug fix for long package names causing negative Repeat count
 	results := testResults{
 		packages: []packageCoverage{
-			{name: "dappco.re/go/core/pkg/short", coverage: 100, hasCov: true},
-			{name: "dappco.re/go/core/pkg/a-very-very-very-very-very-long-package-name-that-might-cause-issues", coverage: 80, hasCov: true},
+			{name: "dappco.re/go/pkg/short", coverage: 100, hasCov: true},
+			{name: "dappco.re/go/pkg/a-very-very-very-very-very-long-package-name-that-might-cause-issues", coverage: 80, hasCov: true},
 		},
 		passed:   2,
 		totalCov: 180,

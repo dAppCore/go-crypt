@@ -5,7 +5,7 @@ import (
 	"time"
 
 	core "dappco.re/go/core"
-	"dappco.re/go/core/store"
+	"dappco.re/go/store"
 )
 
 const sessionGroup = "sessions"

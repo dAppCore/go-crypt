@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	core "dappco.re/go/core"
-	"dappco.re/go/core/i18n"
+	"dappco.re/go/i18n"
 )
 
 type packageCoverage struct {

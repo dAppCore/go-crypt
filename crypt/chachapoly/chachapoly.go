@@ -5,7 +5,7 @@ import (
 	"io"
 
 	core "dappco.re/go/core"
-	coreerr "dappco.re/go/core/log"
+	coreerr "dappco.re/go/log"
 
 	"golang.org/x/crypto/chacha20poly1305"
 )

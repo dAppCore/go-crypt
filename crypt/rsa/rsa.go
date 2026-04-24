@@ -8,7 +8,7 @@ import (
 	"encoding/pem"
 
 	core "dappco.re/go/core"
-	coreerr "dappco.re/go/core/log"
+	coreerr "dappco.re/go/log"
 )
 
 // Service provides RSA functionality.

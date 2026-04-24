@@ -2,9 +2,9 @@ package crypt
 
 import (
 	core "dappco.re/go/core"
-	"dappco.re/go/core/crypt/crypt"
-	coreio "dappco.re/go/core/io"
-	"forge.lthn.ai/core/cli/pkg/cli"
+	"dappco.re/go/crypt/crypt"
+	coreio "dappco.re/go/io"
+	"dappco.re/go/cli/pkg/cli"
 )
 
 // Encrypt command flags
