@@ -4,8 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestHMAC_HMACSHA256_Good(t *testing.T) {
@@ -15,7 +13,7 @@ func TestHMAC_HMACSHA256_Good(t *testing.T) {
 	expected := "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
 
 	mac := HMACSHA256(message, key)
-	assert.Equal(t, expected, hex.EncodeToString(mac))
+	wantEqual(t, expected, hex.EncodeToString(mac))
 }
 
 func TestHMAC_VerifyHMAC_Good(t *testing.T) {
@@ -25,7 +23,7 @@ func TestHMAC_VerifyHMAC_Good(t *testing.T) {
 	mac := HMACSHA256(message, key)
 
 	valid := VerifyHMAC(message, key, mac, sha256.New)
-	assert.True(t, valid)
+	wantTrue(t, valid)
 }
 
 func TestHMAC_VerifyHMAC_Bad(t *testing.T) {
@@ -36,5 +34,5 @@ func TestHMAC_VerifyHMAC_Bad(t *testing.T) {
 	mac := HMACSHA256(message, key)
 
 	valid := VerifyHMAC(tampered, key, mac, sha256.New)
-	assert.False(t, valid)
+	wantFalse(t, valid)
 }
