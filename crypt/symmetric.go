@@ -1,8 +1,11 @@
 package crypt
 
 import (
+	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/aes"
+	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/cipher"
+	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/rand"
 
 	coreerr "dappco.re/go/core/log"
