@@ -1,9 +1,15 @@
 package crypt
 
 import (
+<<<<<<< HEAD
 	core "dappco.re/go/core"
 	"dappco.re/go/crypt/crypt"
 	"dappco.re/go/cli/pkg/cli"
+=======
+	"dappco.re/go/core"
+	"dappco.re/go/crypt/crypt"
+	"forge.lthn.ai/core/cli/pkg/cli"
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -38,7 +44,11 @@ func runHash(input string) error {
 		if err != nil {
 			return cli.Wrap(err, "failed to hash password")
 		}
+<<<<<<< HEAD
 		core.Println(hash)
+=======
+		core.Print(nil, "%s", hash)
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 		return nil
 	}
 
@@ -46,7 +56,11 @@ func runHash(input string) error {
 	if err != nil {
 		return cli.Wrap(err, "failed to hash password")
 	}
+<<<<<<< HEAD
 	core.Println(hash)
+=======
+	core.Print(nil, "%s", hash)
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	return nil
 }
 

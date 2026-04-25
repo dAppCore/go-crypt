@@ -19,7 +19,8 @@ package lthn
 import (
 	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/hex"
+
+	"dappco.re/go/crypt/internal/corecompat"
 )
 
 // keyMap defines the character substitutions for quasi-salt derivation.
@@ -67,7 +68,7 @@ func GetKeyMap() map[rune]rune {
 func Hash(input string) string {
 	salt := createSalt(input)
 	hash := sha256.Sum256([]byte(input + salt))
-	return hex.EncodeToString(hash[:])
+	return corecompat.HexEncode(hash[:])
 }
 
 // createSalt derives a quasi-salt by reversing the input and applying substitutions.

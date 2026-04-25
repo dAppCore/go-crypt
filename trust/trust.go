@@ -12,7 +12,7 @@ package trust
 
 import (
 	"iter"
-	"sync"
+	"sync" // Note: AX-6 — internal concurrency primitive; structural for trust registry state.
 	"time"
 
 	core "dappco.re/go/core"

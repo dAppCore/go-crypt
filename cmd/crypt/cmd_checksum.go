@@ -1,9 +1,17 @@
 package crypt
 
 import (
+<<<<<<< HEAD
 	core "dappco.re/go/core"
 	"dappco.re/go/crypt/crypt"
 	"dappco.re/go/cli/pkg/cli"
+=======
+	"path/filepath"
+
+	"dappco.re/go/core"
+	"dappco.re/go/crypt/crypt"
+	"forge.lthn.ai/core/cli/pkg/cli"
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 // Checksum command flags
@@ -40,10 +48,17 @@ func runChecksum(path string) error {
 
 	if checksumVerify != "" {
 		if hash == checksumVerify {
+<<<<<<< HEAD
 			cli.Success(core.Sprintf("Checksum matches: %s", core.PathBase(path)))
 			return nil
 		}
 		cli.Error(core.Sprintf("Checksum mismatch: %s", core.PathBase(path)))
+=======
+			cli.Success(core.Sprintf("Checksum matches: %s", filepath.Base(path)))
+			return nil
+		}
+		cli.Error(core.Sprintf("Checksum mismatch: %s", filepath.Base(path)))
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 		cli.Dim(core.Sprintf("  expected: %s", checksumVerify))
 		cli.Dim(core.Sprintf("  got:      %s", hash))
 		return cli.Err("checksum verification failed")

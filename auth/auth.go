@@ -28,6 +28,7 @@ package auth
 import (
 	"context"
 	"crypto/rand"
+<<<<<<< HEAD
 	"encoding/hex"
 	"sync"
 	"time"
@@ -38,6 +39,19 @@ import (
 	"dappco.re/go/crypt/crypt/pgp"
 	"dappco.re/go/io"
 	coreerr "dappco.re/go/log"
+=======
+	"encoding/json"
+	"sync" // Note: AX-6 — internal concurrency primitive; structural for pending authentication challenges.
+	"time"
+
+	"dappco.re/go/core"
+	"dappco.re/go/crypt/crypt"
+	"dappco.re/go/crypt/internal/corecompat"
+	"dappco.re/go/crypt/crypt/lthn"
+	"dappco.re/go/crypt/crypt/pgp"
+	"dappco.re/go/core/io"
+	coreerr "dappco.re/go/log"
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 const (
@@ -440,6 +454,7 @@ func (a *Authenticator) Login(userID, password string) (*Session, error) {
 			return nil, coreerr.E(op, "failed to read password hash", err)
 		}
 
+<<<<<<< HEAD
 		if core.HasPrefix(storedHash, "$argon2id$") {
 			valid, err := crypt.VerifyPassword(password, storedHash)
 			if err != nil {
@@ -449,6 +464,10 @@ func (a *Authenticator) Login(userID, password string) (*Session, error) {
 				return nil, coreerr.E(op, "invalid password", nil)
 			}
 			return a.createSession(userID)
+=======
+		if !core.HasPrefix(storedHash, "$argon2id$") {
+			return nil, coreerr.E(op, "corrupted password hash", nil)
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 		}
 	}
 
@@ -687,6 +706,22 @@ func (a *Authenticator) verifyPassword(userID, password string) error {
 			}
 			return nil
 		}
+<<<<<<< HEAD
+=======
+
+		if !core.HasPrefix(storedHash, "$argon2id$") {
+			return coreerr.E(op, "corrupted password hash", nil)
+		}
+
+		valid, verr := crypt.VerifyPassword(password, storedHash)
+		if verr != nil {
+			return coreerr.E(op, "failed to verify password", verr)
+		}
+		if !valid {
+			return coreerr.E(op, "invalid password", nil)
+		}
+		return nil
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	}
 
 	// Fall back to legacy LTHN hash (.lthn file)
@@ -711,7 +746,7 @@ func (a *Authenticator) createSession(userID string) (*Session, error) {
 	}
 
 	session := &Session{
-		Token:     hex.EncodeToString(tokenBytes),
+		Token:     corecompat.HexEncode(tokenBytes),
 		UserID:    userID,
 		ExpiresAt: time.Now().Add(a.sessionTTL),
 	}

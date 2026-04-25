@@ -2,6 +2,7 @@ package testcmd
 
 import (
 	"bufio"
+<<<<<<< HEAD
 	"context"
 	"runtime"
 	"sync"
@@ -15,6 +16,16 @@ import (
 var (
 	processInitOnce sync.Once
 	processInitErr  error
+=======
+	"io"
+	"os"
+	"os/exec"
+	"runtime"
+
+	"dappco.re/go/core"
+	"dappco.re/go/core/i18n"
+	coreerr "dappco.re/go/log"
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bool) error {
@@ -59,6 +70,7 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 	args = append(args, pkg)
 
 	if !jsonOutput {
+<<<<<<< HEAD
 		core.Println(core.Sprintf("%s %s", testHeaderStyle.Render(i18n.Label("test")), i18n.ProgressSubject("run", "tests")))
 		core.Println(core.Sprintf("  %s %s", i18n.Label("package"), testDimStyle.Render(pkg)))
 		if run != "" {
@@ -74,6 +86,27 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 	}
 	if target := getMacOSDeploymentTarget(); target != "" {
 		options.Env = []string{target}
+=======
+		testPrintf("%s %s\n", testHeaderStyle.Render(i18n.Label("test")), i18n.ProgressSubject("run", "tests"))
+		testPrintf("  %s %s\n", i18n.Label("package"), testDimStyle.Render(pkg))
+		if run != "" {
+			testPrintf("  %s  %s\n", i18n.Label("filter"), testDimStyle.Render(run))
+		}
+		testPrintln()
+	}
+
+	// Capture output for parsing
+	stdout, stderr := core.NewBuilder(), core.NewBuilder()
+
+	if verbose && !jsonOutput {
+		// Stream output in verbose mode, but also capture for parsing
+		cmd.Stdout = io.MultiWriter(os.Stdout, stdout)
+		cmd.Stderr = io.MultiWriter(os.Stderr, stderr)
+	} else {
+		// Capture output for parsing
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	}
 
 	proc, err := process.StartWithOptions(context.Background(), options)
@@ -102,16 +135,21 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 		printTestSummary(results, coverage)
 	} else if coverage {
 		// In verbose mode, still show coverage summary at end
+<<<<<<< HEAD
 		if combined != "" {
 			core.Println(combined)
 		}
 		core.Println()
+=======
+		testPrintln()
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 		printCoverageSummary(results)
 	} else if combined != "" {
 		core.Println(combined)
 	}
 
 	if exitCode != 0 {
+<<<<<<< HEAD
 		core.Println()
 		core.Println(core.Sprintf("%s %s", testFailStyle.Render(i18n.T("cli.fail")), i18n.T("cmd.test.tests_failed")))
 		return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), waitErr)
@@ -119,6 +157,13 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 
 	core.Println()
 	core.Println(core.Sprintf("%s %s", testPassStyle.Render(i18n.T("cli.pass")), i18n.T("common.result.all_passed")))
+=======
+		testPrintf("\n%s %s\n", testFailStyle.Render(i18n.T("cli.fail")), i18n.T("cmd.test.tests_failed"))
+		return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), nil)
+	}
+
+	testPrintf("\n%s %s\n", testPassStyle.Render(i18n.T("cli.pass")), i18n.T("common.result.all_passed"))
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	return nil
 }
 

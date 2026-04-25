@@ -5,11 +5,15 @@ import (
 	"crypto/sha256"
 	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/sha512"
-	"encoding/hex"
 	"io"
 
+<<<<<<< HEAD
 	core "dappco.re/go/core"
 	coreerr "dappco.re/go/log"
+=======
+	"dappco.re/go/crypt/internal/corecompat"
+	coreerr "dappco.re/go/log"
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 // SHA256File computes the SHA-256 checksum of a file and returns it as a hex string.
@@ -28,7 +32,7 @@ func SHA256File(path string) (string, error) {
 		return "", coreerr.E("crypt.SHA256File", "failed to read file", err)
 	}
 
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return corecompat.HexEncode(h.Sum(nil)), nil
 }
 
 // SHA512File computes the SHA-512 checksum of a file and returns it as a hex string.
@@ -47,19 +51,19 @@ func SHA512File(path string) (string, error) {
 		return "", coreerr.E("crypt.SHA512File", "failed to read file", err)
 	}
 
-	return hex.EncodeToString(h.Sum(nil)), nil
+	return corecompat.HexEncode(h.Sum(nil)), nil
 }
 
 // SHA256Sum computes the SHA-256 checksum of data and returns it as a hex string.
 // Usage: call SHA256Sum(...) during the package's normal workflow.
 func SHA256Sum(data []byte) string {
 	h := sha256.Sum256(data)
-	return hex.EncodeToString(h[:])
+	return corecompat.HexEncode(h[:])
 }
 
 // SHA512Sum computes the SHA-512 checksum of data and returns it as a hex string.
 // Usage: call SHA512Sum(...) during the package's normal workflow.
 func SHA512Sum(data []byte) string {
 	h := sha512.Sum512(data)
-	return hex.EncodeToString(h[:])
+	return corecompat.HexEncode(h[:])
 }

@@ -1,7 +1,13 @@
 package auth
 
 import (
+<<<<<<< HEAD
 	"sync"
+=======
+	"encoding/json"
+	"errors"
+	"sync" // Note: AX-6 — internal concurrency primitive; structural for SQLite single-writer serialisation.
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	"time"
 
 	core "dappco.re/go/core"

@@ -3,7 +3,7 @@ package trust
 import (
 	"io"
 	"iter"
-	"sync"
+	"sync" // Note: AX-6 — internal concurrency primitive; structural for append-only audit log state.
 	"time"
 
 	core "dappco.re/go/core"

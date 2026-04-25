@@ -2,11 +2,18 @@ package crypt
 
 import (
 	"crypto/rand"
+<<<<<<< HEAD
 	"encoding/base64"
 	"encoding/hex"
 
 	core "dappco.re/go/core"
 	"dappco.re/go/cli/pkg/cli"
+=======
+
+	"dappco.re/go/core"
+	"dappco.re/go/crypt/internal/corecompat"
+	"forge.lthn.ai/core/cli/pkg/cli"
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 // Keygen command flags
@@ -43,12 +50,21 @@ func runKeygen() error {
 
 	switch {
 	case keygenHex:
+<<<<<<< HEAD
 		core.Println(hex.EncodeToString(key))
 	case keygenBase64:
 		core.Println(base64.StdEncoding.EncodeToString(key))
 	default:
 		// Default to hex output
 		core.Println(hex.EncodeToString(key))
+=======
+		core.Print(nil, "%s", corecompat.HexEncode(key))
+	case keygenBase64:
+		core.Print(nil, "%s", corecompat.Base64Encode(key))
+	default:
+		// Default to hex output
+		core.Print(nil, "%s", corecompat.HexEncode(key))
+>>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	}
 
 	return nil
