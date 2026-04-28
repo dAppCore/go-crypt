@@ -1,15 +1,14 @@
 package crypt
 
 import (
-	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
-	"crypto/sha256"
-	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
-	"crypto/sha512"
+	stdcrypto "crypto"
 	"io"
 
 	core "dappco.re/go"
 	"dappco.re/go/crypt/internal/corecompat"
 	coreerr "dappco.re/go/log"
+
+	"forge.lthn.ai/Snider/Enchantrix/pkg/enchantrix"
 )
 
 // SHA256File computes the SHA-256 checksum of a file and returns it as a hex string.
@@ -27,12 +26,12 @@ func SHA256File(path string) (string, error) {
 		}
 	}()
 
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+	data, err := io.ReadAll(f)
+	if err != nil {
 		return "", coreerr.E("crypt.SHA256File", "failed to read file", err)
 	}
 
-	return corecompat.HexEncode(h.Sum(nil)), nil
+	return enchantrixHexHash(stdcrypto.SHA256, data)
 }
 
 // SHA512File computes the SHA-512 checksum of a file and returns it as a hex string.
@@ -50,24 +49,38 @@ func SHA512File(path string) (string, error) {
 		}
 	}()
 
-	h := sha512.New()
-	if _, err := io.Copy(h, f); err != nil {
+	data, err := io.ReadAll(f)
+	if err != nil {
 		return "", coreerr.E("crypt.SHA512File", "failed to read file", err)
 	}
 
-	return corecompat.HexEncode(h.Sum(nil)), nil
+	return enchantrixHexHash(stdcrypto.SHA512, data)
 }
 
 // SHA256Sum computes the SHA-256 checksum of data and returns it as a hex string.
 // Usage: call SHA256Sum(...) during the package's normal workflow.
 func SHA256Sum(data []byte) string {
-	h := sha256.Sum256(data)
-	return corecompat.HexEncode(h[:])
+	return mustEnchantrixHexHash(stdcrypto.SHA256, data)
 }
 
 // SHA512Sum computes the SHA-512 checksum of data and returns it as a hex string.
 // Usage: call SHA512Sum(...) during the package's normal workflow.
 func SHA512Sum(data []byte) string {
-	h := sha512.Sum512(data)
-	return corecompat.HexEncode(h[:])
+	return mustEnchantrixHexHash(stdcrypto.SHA512, data)
+}
+
+func enchantrixHexHash(hash stdcrypto.Hash, data []byte) (string, error) {
+	sum, err := enchantrix.NewHashSigil(hash).In(data)
+	if err != nil {
+		return "", err
+	}
+	return corecompat.HexEncode(sum), nil
+}
+
+func mustEnchantrixHexHash(hash stdcrypto.Hash, data []byte) string {
+	sum, err := enchantrixHexHash(hash, data)
+	if err != nil {
+		return ""
+	}
+	return sum
 }

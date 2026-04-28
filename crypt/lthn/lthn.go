@@ -17,41 +17,23 @@
 package lthn
 
 import (
-	"crypto/sha256"
 	"crypto/subtle"
 
-	"dappco.re/go/crypt/internal/corecompat"
+	enchantrixlthn "forge.lthn.ai/Snider/Enchantrix/pkg/crypt/std/lthn"
 )
-
-// keyMap defines the character substitutions for quasi-salt derivation.
-// These are inspired by "leet speak" conventions for letter-number substitution.
-// The mapping is bidirectional for most characters but NOT fully symmetric.
-var keyMap = map[rune]rune{
-	'o': '0', // letter O -> zero
-	'l': '1', // letter L -> one
-	'e': '3', // letter E -> three
-	'a': '4', // letter A -> four
-	's': 'z', // letter S -> Z
-	't': '7', // letter T -> seven
-	'0': 'o', // zero -> letter O
-	'1': 'l', // one -> letter L
-	'3': 'e', // three -> letter E
-	'4': 'a', // four -> letter A
-	'7': 't', // seven -> letter T
-}
 
 // SetKeyMap replaces the default character substitution map.
 // Use this to customize the quasi-salt derivation for specific applications.
 // Changes affect all subsequent Hash and Verify calls.
 // Usage: call SetKeyMap(...) during the package's normal workflow.
 func SetKeyMap(newKeyMap map[rune]rune) {
-	keyMap = newKeyMap
+	enchantrixlthn.SetKeyMap(newKeyMap)
 }
 
 // GetKeyMap returns the current character substitution map.
 // Usage: call GetKeyMap(...) during the package's normal workflow.
 func GetKeyMap() map[rune]rune {
-	return keyMap
+	return enchantrixlthn.GetKeyMap()
 }
 
 // Hash computes the LTHN hash of the input string.
@@ -66,28 +48,7 @@ func GetKeyMap() map[rune]rune {
 // without storing a separate salt value.
 // Usage: call Hash(...) when you need a deterministic content-style digest rather than a password hash.
 func Hash(input string) string {
-	salt := createSalt(input)
-	hash := sha256.Sum256([]byte(input + salt))
-	return corecompat.HexEncode(hash[:])
-}
-
-// createSalt derives a quasi-salt by reversing the input and applying substitutions.
-// For example: "hello" -> reversed "olleh" -> substituted "011eh"
-func createSalt(input string) string {
-	if input == "" {
-		return ""
-	}
-	runes := []rune(input)
-	salt := make([]rune, len(runes))
-	for i := range runes {
-		char := runes[len(runes)-1-i]
-		if replacement, ok := keyMap[char]; ok {
-			salt[i] = replacement
-		} else {
-			salt[i] = char
-		}
-	}
-	return string(salt)
+	return enchantrixlthn.Hash(input)
 }
 
 // Verify checks if an input string produces the given hash.

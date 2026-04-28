@@ -8,6 +8,7 @@ require (
 	dappco.re/go/io v0.8.0-alpha.1
 	dappco.re/go/log v0.8.0-alpha.1
 	dappco.re/go/store v0.8.0-alpha.1
+	forge.lthn.ai/Snider/Enchantrix v0.0.5
 	github.com/ProtonMail/go-crypto v1.4.0
 	golang.org/x/crypto v0.50.0
 )
