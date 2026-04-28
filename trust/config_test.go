@@ -3,7 +3,7 @@ package trust
 import (
 	"testing"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 )
 
 const validPolicyJSON = `{
@@ -103,13 +103,14 @@ func TestConfig_LoadPoliciesFromFile_Good(t *testing.T) {
 }
 
 func TestConfig_LoadPoliciesFromFile_Bad_NotFound(t *testing.T) {
-	_, err := LoadPoliciesFromFile("/nonexistent/path/policies.json")
+	policies, err := LoadPoliciesFromFile("/nonexistent/path/policies.json")
 	wantError(t, err)
+	wantNil(t, policies)
 }
 
 // --- ApplyPolicies ---
 
-func TestConfig_ApplyPolicies_Good(t *testing.T) {
+func TestConfig_PolicyEngine_ApplyPolicies_Good(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{Name: "TestAgent", Tier: TierVerified}))
 	pe := NewPolicyEngine(r)
@@ -133,7 +134,7 @@ func TestConfig_ApplyPolicies_Good(t *testing.T) {
 	wantEqual(t, Allow, result.Decision)
 }
 
-func TestConfig_ApplyPolicies_Bad_InvalidJSON(t *testing.T) {
+func TestConfig_PolicyEngine_ApplyPolicies_Bad_InvalidJSON(t *testing.T) {
 	r := NewRegistry()
 	pe := NewPolicyEngine(r)
 
@@ -141,7 +142,7 @@ func TestConfig_ApplyPolicies_Bad_InvalidJSON(t *testing.T) {
 	wantError(t, err)
 }
 
-func TestConfig_ApplyPolicies_Bad_InvalidTier(t *testing.T) {
+func TestConfig_PolicyEngine_ApplyPolicies_Bad_InvalidTier(t *testing.T) {
 	r := NewRegistry()
 	pe := NewPolicyEngine(r)
 
@@ -152,7 +153,7 @@ func TestConfig_ApplyPolicies_Bad_InvalidTier(t *testing.T) {
 
 // --- ApplyPoliciesFromFile ---
 
-func TestConfig_ApplyPoliciesFromFile_Good(t *testing.T) {
+func TestConfig_PolicyEngine_ApplyPoliciesFromFile_Good(t *testing.T) {
 	dir := t.TempDir()
 	path := core.Path(dir, "policies.json")
 	writePolicyFile(t, path, validPolicyJSON)
@@ -170,7 +171,7 @@ func TestConfig_ApplyPoliciesFromFile_Good(t *testing.T) {
 	wantLen(t, p.Allowed, 3)
 }
 
-func TestConfig_ApplyPoliciesFromFile_Bad_NotFound(t *testing.T) {
+func TestConfig_PolicyEngine_ApplyPoliciesFromFile_Bad_NotFound(t *testing.T) {
 	r := NewRegistry()
 	pe := NewPolicyEngine(r)
 	err := pe.ApplyPoliciesFromFile("/nonexistent/policies.json")
@@ -179,7 +180,7 @@ func TestConfig_ApplyPoliciesFromFile_Bad_NotFound(t *testing.T) {
 
 // --- ExportPolicies ---
 
-func TestConfig_ExportPolicies_Good(t *testing.T) {
+func TestConfig_PolicyEngine_ExportPolicies_Good(t *testing.T) {
 	r := NewRegistry()
 	pe := NewPolicyEngine(r) // loads defaults
 
@@ -194,7 +195,7 @@ func TestConfig_ExportPolicies_Good(t *testing.T) {
 	wantLen(t, cfg.Policies, 3)
 }
 
-func TestConfig_ExportPolicies_Good_RoundTrip(t *testing.T) {
+func TestConfig_PolicyEngine_ExportPolicies_Good_RoundTrip(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{Name: "A", Tier: TierFull}))
 	pe := NewPolicyEngine(r)
@@ -238,8 +239,10 @@ func TestConfig_ToCapabilities_Good(t *testing.T) {
 }
 
 func TestConfig_ToCapabilities_Good_Empty(t *testing.T) {
-	wantNil(t, toCapabilities(nil))
-	wantNil(t, toCapabilities([]string{}))
+	nilCaps := toCapabilities(nil)
+	emptyCaps := toCapabilities([]string{})
+	wantNil(t, nilCaps)
+	wantNil(t, emptyCaps)
 }
 
 func TestConfig_FromCapabilities_Good(t *testing.T) {
@@ -250,6 +253,8 @@ func TestConfig_FromCapabilities_Good(t *testing.T) {
 }
 
 func TestConfig_FromCapabilities_Good_Empty(t *testing.T) {
-	wantNil(t, fromCapabilities(nil))
-	wantNil(t, fromCapabilities([]Capability{}))
+	nilStrings := fromCapabilities(nil)
+	emptyStrings := fromCapabilities([]Capability{})
+	wantNil(t, nilStrings)
+	wantNil(t, emptyStrings)
 }

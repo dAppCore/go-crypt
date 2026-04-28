@@ -6,7 +6,7 @@ import (
 	"sync" // Note: AX-6 — internal concurrency primitive; structural for append-only audit log state.
 	"time"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 	coreerr "dappco.re/go/log"
 )
 

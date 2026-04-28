@@ -2,18 +2,10 @@ package crypt
 
 import (
 	"crypto/rand"
-<<<<<<< HEAD
-	"encoding/base64"
-	"encoding/hex"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-=======
-
-	"dappco.re/go/core"
 	"dappco.re/go/crypt/internal/corecompat"
-	"forge.lthn.ai/core/cli/pkg/cli"
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 // Keygen command flags
@@ -23,16 +15,19 @@ var (
 	keygenBase64 bool
 )
 
-func addKeygenCommand(parent *cli.Command) {
-	keygenCmd := cli.NewCommand("keygen", "Generate a random cryptographic key", "", func(cmd *cli.Command, args []string) error {
-		return runKeygen()
+func addKeygenCommand(c *core.Core) {
+	c.Command("crypt/keygen", core.Command{
+		Description: "Generate a random cryptographic key",
+		Action: func(opts core.Options) core.Result {
+			keygenLength = opts.Int("length")
+			if keygenLength == 0 {
+				keygenLength = 32
+			}
+			keygenHex = opts.Bool("hex")
+			keygenBase64 = opts.Bool("base64")
+			return core.ResultOf(nil, runKeygen())
+		},
 	})
-
-	cli.IntFlag(keygenCmd, &keygenLength, "length", "l", 32, "Key length in bytes")
-	cli.BoolFlag(keygenCmd, &keygenHex, "hex", "", false, "Output as hex string")
-	cli.BoolFlag(keygenCmd, &keygenBase64, "base64", "", false, "Output as base64 string")
-
-	parent.AddCommand(keygenCmd)
 }
 
 func runKeygen() error {
@@ -50,21 +45,12 @@ func runKeygen() error {
 
 	switch {
 	case keygenHex:
-<<<<<<< HEAD
-		core.Println(hex.EncodeToString(key))
-	case keygenBase64:
-		core.Println(base64.StdEncoding.EncodeToString(key))
-	default:
-		// Default to hex output
-		core.Println(hex.EncodeToString(key))
-=======
 		core.Print(nil, "%s", corecompat.HexEncode(key))
 	case keygenBase64:
 		core.Print(nil, "%s", corecompat.Base64Encode(key))
 	default:
 		// Default to hex output
 		core.Print(nil, "%s", corecompat.HexEncode(key))
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	}
 
 	return nil

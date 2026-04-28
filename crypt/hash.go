@@ -3,19 +3,11 @@ package crypt
 import (
 	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/subtle"
-<<<<<<< HEAD
-	"encoding/base64"
 	"strconv"
 
-	core "dappco.re/go/core"
-	coreerr "dappco.re/go/log"
-=======
-	"strconv"
-
-	"dappco.re/go/core"
+	core "dappco.re/go"
 	"dappco.re/go/crypt/internal/corecompat"
 	coreerr "dappco.re/go/log"
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/bcrypt"
@@ -51,23 +43,15 @@ func VerifyPassword(password, hash string) (bool, error) {
 		return false, coreerr.E("crypt.VerifyPassword", "invalid hash format", nil)
 	}
 
-<<<<<<< HEAD
-	version, err := parsePrefixedInt(parts[2], "v=")
+	version, err := parseArgon2Version(parts[2])
 	if err != nil {
-=======
-	if _, err := parseArgon2Version(parts[2]); err != nil {
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 		return false, coreerr.E("crypt.VerifyPassword", "failed to parse version", err)
 	}
 	if version != argon2.Version {
 		return false, coreerr.E("crypt.VerifyPassword", core.Sprintf("unsupported argon2 version %d", version), nil)
 	}
 
-<<<<<<< HEAD
-	memory, time, parallelism, err := parseArgonParams(parts[3])
-=======
 	memory, time, parallelism, err := parseArgon2Params(parts[3])
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	if err != nil {
 		return false, coreerr.E("crypt.VerifyPassword", "failed to parse parameters", err)
 	}

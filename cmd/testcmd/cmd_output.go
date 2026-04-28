@@ -3,21 +3,12 @@ package testcmd
 import (
 	"bufio"
 	"cmp"
-<<<<<<< HEAD
-=======
-	"path/filepath"
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	"regexp"
 	"slices"
 	"strconv"
 
-<<<<<<< HEAD
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 	"dappco.re/go/i18n"
-=======
-	"dappco.re/go/core"
-	"dappco.re/go/core/i18n"
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 type packageCoverage struct {
@@ -92,7 +83,6 @@ func printTestSummary(results testResults, showCoverage bool) {
 	// Print pass/fail summary
 	total := results.passed + results.failed
 	if total > 0 {
-<<<<<<< HEAD
 		line := core.NewBuilder()
 		line.WriteString("  ")
 		line.WriteString(testPassStyle.Render("✓"))
@@ -111,30 +101,14 @@ func printTestSummary(results testResults, showCoverage bool) {
 			line.WriteString(i18n.T("i18n.count.skipped", results.skipped))
 		}
 		core.Println(line.String())
-=======
-		testPrintf("  %s %s", testPassStyle.Render("✓"), i18n.T("i18n.count.passed", results.passed))
-		if results.failed > 0 {
-			testPrintf("  %s %s", testFailStyle.Render("✗"), i18n.T("i18n.count.failed", results.failed))
-		}
-		if results.skipped > 0 {
-			testPrintf("  %s %s", testSkipStyle.Render("○"), i18n.T("i18n.count.skipped", results.skipped))
-		}
-		testPrintln()
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	}
 
 	// Print failed packages
 	if len(results.failedPkgs) > 0 {
-<<<<<<< HEAD
 		core.Println()
 		core.Println("  " + i18n.T("cmd.test.failed_packages"))
 		for _, pkg := range results.failedPkgs {
 			core.Println(core.Sprintf("    %s %s", testFailStyle.Render("✗"), pkg))
-=======
-		testPrintf("\n  %s\n", i18n.T("cmd.test.failed_packages"))
-		for _, pkg := range results.failedPkgs {
-			testPrintf("    %s %s\n", testFailStyle.Render("✗"), pkg)
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 		}
 	}
 
@@ -143,12 +117,8 @@ func printTestSummary(results testResults, showCoverage bool) {
 		printCoverageSummary(results)
 	} else if results.covCount > 0 {
 		avgCov := results.totalCov / float64(results.covCount)
-<<<<<<< HEAD
 		core.Println()
 		core.Println(core.Sprintf("  %s %s", i18n.Label("coverage"), formatCoverage(avgCov)))
-=======
-		testPrintf("\n  %s %s\n", i18n.Label("coverage"), formatCoverage(avgCov))
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	}
 }
 
@@ -157,12 +127,8 @@ func printCoverageSummary(results testResults) {
 		return
 	}
 
-<<<<<<< HEAD
 	core.Println()
 	core.Println("  " + testHeaderStyle.Render(i18n.T("cmd.test.coverage_by_package")))
-=======
-	testPrintf("\n  %s\n", testHeaderStyle.Render(i18n.T("cmd.test.coverage_by_package")))
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 
 	// Sort packages by name
 	slices.SortFunc(results.packages, func(a, b packageCoverage) int {
@@ -188,13 +154,8 @@ func printCoverageSummary(results testResults) {
 		if padLen < 0 {
 			padLen = 2
 		}
-<<<<<<< HEAD
 		padding := repeatString(" ", padLen)
 		core.Println(core.Sprintf("    %s%s%s", name, padding, formatCoverage(pkg.coverage)))
-=======
-		padding := repeatSpaces(padLen)
-		testPrintf("    %s%s%s\n", name, padding, formatCoverage(pkg.coverage))
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	}
 
 	// Print average
@@ -205,14 +166,9 @@ func printCoverageSummary(results testResults) {
 		if padLen < 0 {
 			padLen = 2
 		}
-<<<<<<< HEAD
 		padding := repeatString(" ", padLen)
 		core.Println()
 		core.Println(core.Sprintf("    %s%s%s", testHeaderStyle.Render(avgLabel), padding, formatCoverage(avgCov)))
-=======
-		padding := repeatSpaces(padLen)
-		testPrintf("\n    %s%s%s\n", testHeaderStyle.Render(avgLabel), padding, formatCoverage(avgCov))
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	}
 }
 
@@ -229,23 +185,12 @@ func formatCoverage(cov float64) string {
 func shortenPackageName(name string) string {
 	const modulePrefix = "dappco.re/go/"
 	if core.HasPrefix(name, modulePrefix) {
-		remainder := core.TrimPrefix(name, modulePrefix)
-<<<<<<< HEAD
-=======
-		// If there's a sub-path (e.g. "go/pkg/foo"), strip the module name
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
-		parts := core.SplitN(remainder, "/", 2)
-		if len(parts) == 2 {
-			return parts[1]
-		}
-		// Module root (e.g. "cli-php") — return as-is
-		return remainder
+		return core.TrimPrefix(name, modulePrefix)
 	}
 	return core.PathBase(name)
 }
 
 func printJSONResults(results testResults, exitCode int) {
-<<<<<<< HEAD
 	payload := struct {
 		Passed         int      `json:"passed"`
 		Failed         int      `json:"failed"`
@@ -276,30 +221,4 @@ func repeatString(part string, count int) string {
 		builder.WriteString(part)
 	}
 	return builder.String()
-=======
-	// Simple JSON output for agents
-	testPrintf("{\n")
-	testPrintf("  \"passed\": %d,\n", results.passed)
-	testPrintf("  \"failed\": %d,\n", results.failed)
-	testPrintf("  \"skipped\": %d,\n", results.skipped)
-	if results.covCount > 0 {
-		avgCov := results.totalCov / float64(results.covCount)
-		testPrintf("  \"coverage\": %.1f,\n", avgCov)
-	}
-	testPrintf("  \"exit_code\": %d,\n", exitCode)
-	if len(results.failedPkgs) > 0 {
-		testPrintf("  \"failed_packages\": [\n")
-		for i, pkg := range results.failedPkgs {
-			comma := ","
-			if i == len(results.failedPkgs)-1 {
-				comma = ""
-			}
-			testPrintf("    %q%s\n", pkg, comma)
-		}
-		testPrintf("  ]\n")
-	} else {
-		testPrintf("  \"failed_packages\": []\n")
-	}
-	testPrintf("}\n")
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 }

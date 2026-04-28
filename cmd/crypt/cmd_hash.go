@@ -1,15 +1,9 @@
 package crypt
 
 import (
-<<<<<<< HEAD
-	core "dappco.re/go/core"
-	"dappco.re/go/crypt/crypt"
+	core "dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-=======
-	"dappco.re/go/core"
 	"dappco.re/go/crypt/crypt"
-	"forge.lthn.ai/core/cli/pkg/cli"
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,16 +14,19 @@ var (
 	hashVerify string
 )
 
-func addHashCommand(parent *cli.Command) {
-	hashCmd := cli.NewCommand("hash", "Hash a password with Argon2id or bcrypt", "", func(cmd *cli.Command, args []string) error {
-		return runHash(args[0])
+func addHashCommand(c *core.Core) {
+	c.Command("crypt/hash", core.Command{
+		Description: "Hash a password with Argon2id or bcrypt",
+		Action: func(opts core.Options) core.Result {
+			input := opts.String("_arg")
+			if input == "" {
+				return core.Fail(cli.Err("hash requires input"))
+			}
+			hashBcrypt = opts.Bool("bcrypt")
+			hashVerify = opts.String("verify")
+			return core.ResultOf(nil, runHash(input))
+		},
 	})
-	hashCmd.Args = cli.ExactArgs(1)
-
-	cli.BoolFlag(hashCmd, &hashBcrypt, "bcrypt", "b", false, "Use bcrypt instead of Argon2id")
-	cli.StringFlag(hashCmd, &hashVerify, "verify", "", "", "Verify input against this hash")
-
-	parent.AddCommand(hashCmd)
 }
 
 func runHash(input string) error {
@@ -44,11 +41,7 @@ func runHash(input string) error {
 		if err != nil {
 			return cli.Wrap(err, "failed to hash password")
 		}
-<<<<<<< HEAD
 		core.Println(hash)
-=======
-		core.Print(nil, "%s", hash)
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 		return nil
 	}
 
@@ -56,11 +49,7 @@ func runHash(input string) error {
 	if err != nil {
 		return cli.Wrap(err, "failed to hash password")
 	}
-<<<<<<< HEAD
 	core.Println(hash)
-=======
-	core.Print(nil, "%s", hash)
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	return nil
 }
 

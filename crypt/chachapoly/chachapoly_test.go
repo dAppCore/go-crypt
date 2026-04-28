@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"testing"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 )
 
 // mockReader is a reader that returns an error.

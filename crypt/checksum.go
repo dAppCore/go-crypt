@@ -7,13 +7,9 @@ import (
 	"crypto/sha512"
 	"io"
 
-<<<<<<< HEAD
-	core "dappco.re/go/core"
-	coreerr "dappco.re/go/log"
-=======
+	core "dappco.re/go"
 	"dappco.re/go/crypt/internal/corecompat"
 	coreerr "dappco.re/go/log"
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 // SHA256File computes the SHA-256 checksum of a file and returns it as a hex string.
@@ -25,7 +21,11 @@ func SHA256File(path string) (string, error) {
 		return "", coreerr.E("crypt.SHA256File", "failed to open file", err)
 	}
 	f := openResult.Value.(io.ReadCloser)
-	defer func() { _ = f.Close() }()
+	defer func() {
+		if err := f.Close(); err != nil {
+			core.Print(nil, "crypt.SHA256File: close failed: %v", err)
+		}
+	}()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
@@ -44,7 +44,11 @@ func SHA512File(path string) (string, error) {
 		return "", coreerr.E("crypt.SHA512File", "failed to open file", err)
 	}
 	f := openResult.Value.(io.ReadCloser)
-	defer func() { _ = f.Close() }()
+	defer func() {
+		if err := f.Close(); err != nil {
+			core.Print(nil, "crypt.SHA512File: close failed: %v", err)
+		}
+	}()
 
 	h := sha512.New()
 	if _, err := io.Copy(h, f); err != nil {

@@ -17,9 +17,9 @@ func TestOutput_FormatCoverage_Good(t *testing.T) {
 }
 
 func TestOutput_ParseTestOutput_Good(t *testing.T) {
-	output := `ok  	dappco.re/go/core/pkg/foo	0.100s	coverage: 50.0% of statements
-FAIL	dappco.re/go/core/pkg/bar
-?   	dappco.re/go/core/pkg/baz	[no test files]
+	output := `ok  	dappco.re/go/pkg/foo	0.100s	coverage: 50.0% of statements
+FAIL	dappco.re/go/pkg/bar
+?   	dappco.re/go/pkg/baz	[no test files]
 `
 	results := parseTestOutput(output)
 	wantEqual(t, 1, results.passed)

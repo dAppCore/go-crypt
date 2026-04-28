@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestCrypt_EncryptDecrypt_Good(t *testing.T) {
+func TestCrypt_Encrypt_Good(t *testing.T) {
 	plaintext := []byte("hello, world!")
 	passphrase := []byte("correct-horse-battery-staple")
 
@@ -18,7 +18,7 @@ func TestCrypt_EncryptDecrypt_Good(t *testing.T) {
 	wantEqual(t, plaintext, decrypted)
 }
 
-func TestCrypt_EncryptDecrypt_Bad(t *testing.T) {
+func TestCrypt_Decrypt_Bad(t *testing.T) {
 	plaintext := []byte("secret data")
 	passphrase := []byte("correct-passphrase")
 	wrongPassphrase := []byte("wrong-passphrase")
@@ -30,7 +30,7 @@ func TestCrypt_EncryptDecrypt_Bad(t *testing.T) {
 	wantError(t, err)
 }
 
-func TestCrypt_EncryptDecryptAES_Good(t *testing.T) {
+func TestCrypt_EncryptAES_Good(t *testing.T) {
 	plaintext := []byte("hello, AES world!")
 	passphrase := []byte("my-secure-passphrase")
 
@@ -45,8 +45,8 @@ func TestCrypt_EncryptDecryptAES_Good(t *testing.T) {
 
 // --- Phase 0 Additions ---
 
-// TestCrypt_WrongPassphraseDecrypt_Bad verifies wrong passphrase returns error, not corrupt data.
-func TestCrypt_WrongPassphraseDecrypt_Bad(t *testing.T) {
+// TestCrypt_DecryptAES_Bad verifies wrong passphrase returns error, not corrupt data.
+func TestCrypt_DecryptAES_Bad(t *testing.T) {
 	plaintext := []byte("sensitive payload")
 	passphrase := []byte("correct-passphrase")
 	wrongPassphrase := []byte("wrong-passphrase")

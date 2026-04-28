@@ -8,7 +8,7 @@ import (
 	"encoding/pem"
 	"testing"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 )
 
 // mockReader is a reader that returns an error.
@@ -18,7 +18,7 @@ func (r *mockReader) Read(p []byte) (n int, err error) {
 	return 0, core.NewError("read error")
 }
 
-func TestRSA_RSA_Good(t *testing.T) {
+func TestRSA_Service_GenerateKeyPair_Good(t *testing.T) {
 	s := NewService()
 
 	// Generate a new key pair
@@ -36,7 +36,7 @@ func TestRSA_RSA_Good(t *testing.T) {
 	wantEqual(t, message, plaintext)
 }
 
-func TestRSA_RSA_Bad(t *testing.T) {
+func TestRSA_Service_GenerateKeyPair_Bad(t *testing.T) {
 	s := NewService()
 
 	// Decrypt with wrong key
@@ -55,7 +55,7 @@ func TestRSA_RSA_Bad(t *testing.T) {
 	wantError(t, err)
 }
 
-func TestRSA_RSA_Ugly(t *testing.T) {
+func TestRSA_Service_GenerateKeyPair_Ugly(t *testing.T) {
 	s := NewService()
 
 	// Malformed keys and messages

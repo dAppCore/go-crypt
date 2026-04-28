@@ -7,13 +7,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 
-<<<<<<< HEAD
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 	coreerr "dappco.re/go/log"
-=======
-	"dappco.re/go/core"
-	coreerr "dappco.re/go/log"
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 // Service provides RSA functionality.

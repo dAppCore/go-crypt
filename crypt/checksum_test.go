@@ -3,7 +3,7 @@ package crypt
 import (
 	"testing"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 )
 
 func TestChecksum_SHA256Sum_Good(t *testing.T) {
@@ -24,8 +24,8 @@ func TestChecksum_SHA512Sum_Good(t *testing.T) {
 
 // --- Phase 0 Additions ---
 
-// TestChecksum_SHA256FileEmpty_Good verifies checksum of an empty file.
-func TestChecksum_SHA256FileEmpty_Good(t *testing.T) {
+// TestChecksum_SHA256File_Good verifies checksum of an empty file.
+func TestChecksum_SHA256File_Good(t *testing.T) {
 	tmpDir := t.TempDir()
 	emptyFile := core.Path(tmpDir, "empty.bin")
 	writeResult := (&core.Fs{}).New("/").WriteMode(emptyFile, "", 0o644)
@@ -37,8 +37,8 @@ func TestChecksum_SHA256FileEmpty_Good(t *testing.T) {
 	wantEqual(t, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", hash)
 }
 
-// TestChecksum_SHA512FileEmpty_Good verifies SHA-512 checksum of an empty file.
-func TestChecksum_SHA512FileEmpty_Good(t *testing.T) {
+// TestChecksum_SHA512File_Good verifies SHA-512 checksum of an empty file.
+func TestChecksum_SHA512File_Good(t *testing.T) {
 	tmpDir := t.TempDir()
 	emptyFile := core.Path(tmpDir, "empty.bin")
 	writeResult := (&core.Fs{}).New("/").WriteMode(emptyFile, "", 0o644)

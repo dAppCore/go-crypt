@@ -5,13 +5,8 @@ import (
 	"sync" // Note: AX-6 — internal concurrency primitive; structural for approval queue state.
 	"time"
 
-<<<<<<< HEAD
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 	coreerr "dappco.re/go/log"
-=======
-	"dappco.re/go/core"
-	coreerr "dappco.re/go/log"
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 // ApprovalStatus represents the state of an approval request.

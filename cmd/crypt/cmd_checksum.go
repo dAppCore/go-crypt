@@ -1,17 +1,9 @@
 package crypt
 
 import (
-<<<<<<< HEAD
-	core "dappco.re/go/core"
-	"dappco.re/go/crypt/crypt"
+	core "dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
-=======
-	"path/filepath"
-
-	"dappco.re/go/core"
 	"dappco.re/go/crypt/crypt"
-	"forge.lthn.ai/core/cli/pkg/cli"
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 )
 
 // Checksum command flags
@@ -20,16 +12,19 @@ var (
 	checksumVerify string
 )
 
-func addChecksumCommand(parent *cli.Command) {
-	checksumCmd := cli.NewCommand("checksum", "Compute file checksum", "", func(cmd *cli.Command, args []string) error {
-		return runChecksum(args[0])
+func addChecksumCommand(c *core.Core) {
+	c.Command("crypt/checksum", core.Command{
+		Description: "Compute file checksum",
+		Action: func(opts core.Options) core.Result {
+			path := opts.String("_arg")
+			if path == "" {
+				return core.Fail(cli.Err("checksum requires a path"))
+			}
+			checksumSHA512 = opts.Bool("sha512")
+			checksumVerify = opts.String("verify")
+			return core.ResultOf(nil, runChecksum(path))
+		},
 	})
-	checksumCmd.Args = cli.ExactArgs(1)
-
-	cli.BoolFlag(checksumCmd, &checksumSHA512, "sha512", "", false, "Use SHA-512 instead of SHA-256")
-	cli.StringFlag(checksumCmd, &checksumVerify, "verify", "", "", "Verify file against this hash")
-
-	parent.AddCommand(checksumCmd)
 }
 
 func runChecksum(path string) error {
@@ -48,17 +43,10 @@ func runChecksum(path string) error {
 
 	if checksumVerify != "" {
 		if hash == checksumVerify {
-<<<<<<< HEAD
 			cli.Success(core.Sprintf("Checksum matches: %s", core.PathBase(path)))
 			return nil
 		}
 		cli.Error(core.Sprintf("Checksum mismatch: %s", core.PathBase(path)))
-=======
-			cli.Success(core.Sprintf("Checksum matches: %s", filepath.Base(path)))
-			return nil
-		}
-		cli.Error(core.Sprintf("Checksum mismatch: %s", filepath.Base(path)))
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 		cli.Dim(core.Sprintf("  expected: %s", checksumVerify))
 		cli.Dim(core.Sprintf("  got:      %s", hash))
 		return cli.Err("checksum verification failed")

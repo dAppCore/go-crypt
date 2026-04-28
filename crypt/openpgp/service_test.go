@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	framework "dappco.re/go/core"
+	framework "dappco.re/go"
 )
 
 func TestService_CreateKeyPair_Good(t *testing.T) {

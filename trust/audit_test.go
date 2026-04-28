@@ -5,12 +5,12 @@ import (
 	"sync"
 	"testing"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 )
 
 // --- AuditLog basic ---
 
-func TestAudit_AuditRecord_Good(t *testing.T) {
+func TestAudit_AuditLog_Record_Good(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	result := EvalResult{
@@ -24,7 +24,7 @@ func TestAudit_AuditRecord_Good(t *testing.T) {
 	wantEqual(t, 1, log.Len())
 }
 
-func TestAudit_AuditRecord_Good_EntryFields(t *testing.T) {
+func TestAudit_AuditLog_Record_Good_EntryFields(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	result := EvalResult{
@@ -48,7 +48,7 @@ func TestAudit_AuditRecord_Good_EntryFields(t *testing.T) {
 	wantFalse(t, e.Timestamp.IsZero())
 }
 
-func TestAudit_AuditRecord_Good_NoRepo(t *testing.T) {
+func TestAudit_AuditLog_Record_Good_NoRepo(t *testing.T) {
 	log := NewAuditLog(nil)
 	result := EvalResult{
 		Decision: Allow,
@@ -64,7 +64,7 @@ func TestAudit_AuditRecord_Good_NoRepo(t *testing.T) {
 	wantEmpty(t, entries[0].Repo)
 }
 
-func TestAudit_AuditEntries_Good_Snapshot(t *testing.T) {
+func TestAudit_AuditLog_Entries_Good_Snapshot(t *testing.T) {
 	log := NewAuditLog(nil)
 	log.Record(EvalResult{Agent: "A", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
 
@@ -76,12 +76,14 @@ func TestAudit_AuditEntries_Good_Snapshot(t *testing.T) {
 	wantEqual(t, "A", log.Entries()[0].Agent)
 }
 
-func TestAudit_AuditEntries_Good_Empty(t *testing.T) {
+func TestAudit_AuditLog_Entries_Good_Empty(t *testing.T) {
 	log := NewAuditLog(nil)
-	wantEmpty(t, log.Entries())
+	entries := log.Entries()
+	wantEmpty(t, entries)
+	wantEqual(t, 0, log.Len())
 }
 
-func TestAudit_AuditEntries_Good_AppendOnly(t *testing.T) {
+func TestAudit_AuditLog_Entries_Good_AppendOnly(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	for i := range 5 {
@@ -97,7 +99,7 @@ func TestAudit_AuditEntries_Good_AppendOnly(t *testing.T) {
 
 // --- EntriesFor ---
 
-func TestAudit_AuditEntriesFor_Good(t *testing.T) {
+func TestAudit_AuditLog_EntriesFor_Good(t *testing.T) {
 	log := NewAuditLog(nil)
 
 	log.Record(EvalResult{Agent: "Athena", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
@@ -119,7 +121,7 @@ func TestAudit_AuditEntriesFor_Good(t *testing.T) {
 	wantEqual(t, 2, count)
 }
 
-func TestAudit_AuditEntriesSeq_Good(t *testing.T) {
+func TestAudit_AuditLog_EntriesSeq_Good(t *testing.T) {
 	log := NewAuditLog(nil)
 	log.Record(EvalResult{Agent: "Athena", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
 	log.Record(EvalResult{Agent: "Clotho", Cap: CapCreatePR, Decision: Allow, Reason: "ok"}, "")
@@ -131,7 +133,7 @@ func TestAudit_AuditEntriesSeq_Good(t *testing.T) {
 	wantEqual(t, 2, count)
 }
 
-func TestAudit_AuditEntriesFor_Bad_NotFound(t *testing.T) {
+func TestAudit_AuditLog_EntriesFor_Bad_NotFound(t *testing.T) {
 	log := NewAuditLog(nil)
 	log.Record(EvalResult{Agent: "Athena", Cap: CapPushRepo, Decision: Allow, Reason: "ok"}, "")
 
@@ -140,7 +142,7 @@ func TestAudit_AuditEntriesFor_Bad_NotFound(t *testing.T) {
 
 // --- Writer output ---
 
-func TestAudit_AuditRecord_Good_WritesToWriter(t *testing.T) {
+func TestAudit_AuditLog_Record_Good_WritesToWriter(t *testing.T) {
 	buf := core.NewBuilder()
 	log := NewAuditLog(buf)
 
@@ -166,7 +168,7 @@ func TestAudit_AuditRecord_Good_WritesToWriter(t *testing.T) {
 	wantEqual(t, "host-uk/core", entry.Repo)
 }
 
-func TestAudit_AuditRecord_Good_MultipleLines(t *testing.T) {
+func TestAudit_AuditLog_Record_Good_MultipleLines(t *testing.T) {
 	buf := core.NewBuilder()
 	log := NewAuditLog(buf)
 
@@ -190,7 +192,7 @@ func TestAudit_AuditRecord_Good_MultipleLines(t *testing.T) {
 	}
 }
 
-func TestAudit_AuditRecord_Bad_WriterError(t *testing.T) {
+func TestAudit_AuditLog_Record_Bad_WriterError(t *testing.T) {
 	log := NewAuditLog(&failWriter{})
 
 	result := EvalResult{

@@ -7,7 +7,9 @@ import (
 // --- matchScope ---
 
 func TestScope_MatchScope_Good_ExactMatch(t *testing.T) {
-	wantTrue(t, matchScope("host-uk/core", "host-uk/core"))
+	pattern := "host-uk/core"
+	repo := "host-uk/core"
+	wantTrue(t, matchScope(pattern, repo))
 }
 
 func TestScope_MatchScope_Good_SingleWildcard(t *testing.T) {
@@ -23,47 +25,62 @@ func TestScope_MatchScope_Good_RecursiveWildcard(t *testing.T) {
 }
 
 func TestScope_MatchScope_Bad_ExactMismatch(t *testing.T) {
-	wantFalse(t, matchScope("host-uk/core", "host-uk/docs"))
+	pattern := "host-uk/core"
+	repo := "host-uk/docs"
+	wantFalse(t, matchScope(pattern, repo))
 }
 
 func TestScope_MatchScope_Bad_SingleWildcardNoNested(t *testing.T) {
 	// "core/*" should NOT match "core/php/sub" — only single level.
 	wantFalse(t, matchScope("core/*", "core/php/sub"))
 	wantFalse(t, matchScope("core/*", "core/a/b"))
+	wantTrue(t, matchScope("core/*", "core/php"))
 }
 
 func TestScope_MatchScope_Bad_SingleWildcardNoPrefix(t *testing.T) {
 	// "core/*" should NOT match "other/php".
-	wantFalse(t, matchScope("core/*", "other/php"))
+	pattern := "core/*"
+	wantFalse(t, matchScope(pattern, "other/php"))
+	wantTrue(t, matchScope(pattern, "core/php"))
 }
 
 func TestScope_MatchScope_Bad_RecursiveWildcardNoPrefix(t *testing.T) {
-	wantFalse(t, matchScope("core/**", "other/php"))
+	pattern := "core/**"
+	wantFalse(t, matchScope(pattern, "other/php"))
+	wantTrue(t, matchScope(pattern, "core/php"))
 }
 
 func TestScope_MatchScope_Bad_EmptyRepo(t *testing.T) {
-	wantFalse(t, matchScope("core/*", ""))
+	pattern := "core/*"
+	wantFalse(t, matchScope(pattern, ""))
+	wantTrue(t, matchScope(pattern, "core/php"))
 }
 
 func TestScope_MatchScope_Bad_WildcardInMiddle(t *testing.T) {
 	// Wildcard not at the end — should not match.
-	wantFalse(t, matchScope("core/*/sub", "core/php/sub"))
+	pattern := "core/*/sub"
+	wantFalse(t, matchScope(pattern, "core/php/sub"))
+	wantFalse(t, matchScope(pattern, "core/go/sub"))
 }
 
 func TestScope_MatchScope_Bad_WildcardOnlyPrefix(t *testing.T) {
 	// "core/*" should not match the prefix itself.
 	wantFalse(t, matchScope("core/*", "core"))
 	wantFalse(t, matchScope("core/*", "core/"))
+	wantTrue(t, matchScope("core/*", "core/php"))
 }
 
 func TestScope_MatchScope_Good_RecursiveWildcardSingleLevel(t *testing.T) {
 	// "core/**" should also match single-level children.
-	wantTrue(t, matchScope("core/**", "core/php"))
+	pattern := "core/**"
+	repo := "core/php"
+	wantTrue(t, matchScope(pattern, repo))
 }
 
 func TestScope_MatchScope_Bad_RecursiveWildcardPrefixOnly(t *testing.T) {
 	wantFalse(t, matchScope("core/**", "core"))
 	wantFalse(t, matchScope("core/**", "corefoo"))
+	wantTrue(t, matchScope("core/**", "core/php"))
 }
 
 // --- repoAllowed with wildcards ---
@@ -90,11 +107,14 @@ func TestScope_RepoAllowedWildcard_Bad_NoMatch(t *testing.T) {
 func TestScope_RepoAllowedWildcard_Bad_EmptyRepo(t *testing.T) {
 	scoped := []string{"core/*"}
 	wantFalse(t, repoAllowed(scoped, ""))
+	wantTrue(t, repoAllowed(scoped, "core/php"))
 }
 
 func TestScope_RepoAllowedWildcard_Bad_EmptyScope(t *testing.T) {
+	empty := []string{}
 	wantFalse(t, repoAllowed(nil, "core/php"))
-	wantFalse(t, repoAllowed([]string{}, "core/php"))
+	wantFalse(t, repoAllowed(empty, "core/php"))
+	wantLen(t, empty, 0)
 }
 
 // --- Integration: PolicyEngine with wildcard scopes ---

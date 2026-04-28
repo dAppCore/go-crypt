@@ -4,8 +4,9 @@
 package testcmd
 
 import (
-	"dappco.re/go/i18n"
+	core "dappco.re/go"
 	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/i18n"
 )
 
 // Style aliases from shared
@@ -31,33 +32,20 @@ var (
 	testJSON     bool
 )
 
-// testCmd wraps `go test`, defaulting to `./...` and keeping coverage enabled
-// so both human-readable and JSON summaries can report package coverage.
-var testCmd = &cli.Command{
-	Use:   "test",
-	Short: i18n.T("cmd.test.short"),
-	Long:  i18n.T("cmd.test.long"),
-	Example: `  core test
-  core test --pkg ./auth --run TestLogin_Good
-  core test --race --json`,
-	RunE: func(cmd *cli.Command, args []string) error {
-		return runTest(testVerbose, testCoverage, testShort, testPkg, testRun, testRace, testJSON)
-	},
-}
-
-func initTestFlags() {
-	testCmd.Flags().BoolVar(&testVerbose, "verbose", false, i18n.T("cmd.test.flag.verbose"))
-	testCmd.Flags().BoolVar(&testCoverage, "coverage", false, i18n.T("common.flag.coverage"))
-	testCmd.Flags().BoolVar(&testShort, "short", false, i18n.T("cmd.test.flag.short"))
-	testCmd.Flags().StringVar(&testPkg, "pkg", "", i18n.T("cmd.test.flag.pkg"))
-	testCmd.Flags().StringVar(&testRun, "run", "", i18n.T("cmd.test.flag.run"))
-	testCmd.Flags().BoolVar(&testRace, "race", false, i18n.T("cmd.test.flag.race"))
-	testCmd.Flags().BoolVar(&testJSON, "json", false, i18n.T("cmd.test.flag.json"))
-}
-
 // AddTestCommands registers the 'test' command and all subcommands.
 // Usage: call AddTestCommands(...) during the package's normal workflow.
-func AddTestCommands(root *cli.Command) {
-	initTestFlags()
-	root.AddCommand(testCmd)
+func AddTestCommands(c *core.Core) {
+	c.Command("test", core.Command{
+		Description: i18n.T("cmd.test.short"),
+		Action: func(opts core.Options) core.Result {
+			testVerbose = opts.Bool("verbose")
+			testCoverage = opts.Bool("coverage")
+			testShort = opts.Bool("short")
+			testPkg = opts.String("pkg")
+			testRun = opts.String("run")
+			testRace = opts.Bool("race")
+			testJSON = opts.Bool("json")
+			return core.ResultOf(nil, runTest(testVerbose, testCoverage, testShort, testPkg, testRun, testRace, testJSON))
+		},
+	})
 }

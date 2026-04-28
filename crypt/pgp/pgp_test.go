@@ -28,7 +28,7 @@ func TestPGP_CreateKeyPair_Ugly(t *testing.T) {
 	mustNotNil(t, kp)
 }
 
-func TestPGP_EncryptDecrypt_Good(t *testing.T) {
+func TestPGP_Encrypt_Good(t *testing.T) {
 	kp, err := CreateKeyPair("Test User", "test@example.com", "")
 	mustNoError(t, err)
 
@@ -43,7 +43,7 @@ func TestPGP_EncryptDecrypt_Good(t *testing.T) {
 	wantEqual(t, plaintext, decrypted)
 }
 
-func TestPGP_EncryptDecrypt_Bad(t *testing.T) {
+func TestPGP_Encrypt_Bad(t *testing.T) {
 	kp1, err := CreateKeyPair("User One", "one@example.com", "")
 	mustNoError(t, err)
 	kp2, err := CreateKeyPair("User Two", "two@example.com", "")
@@ -58,7 +58,7 @@ func TestPGP_EncryptDecrypt_Bad(t *testing.T) {
 	wantError(t, err)
 }
 
-func TestPGP_EncryptDecrypt_Ugly(t *testing.T) {
+func TestPGP_Encrypt_Ugly(t *testing.T) {
 	// Invalid public key for encryption
 	_, err := Encrypt([]byte("data"), "not-a-pgp-key")
 	wantError(t, err)
@@ -82,7 +82,7 @@ func TestPGP_EncryptDecryptWithPassword_Good(t *testing.T) {
 	wantEqual(t, plaintext, decrypted)
 }
 
-func TestPGP_SignVerify_Good(t *testing.T) {
+func TestPGP_Sign_Good(t *testing.T) {
 	kp, err := CreateKeyPair("Signer", "signer@example.com", "")
 	mustNoError(t, err)
 
@@ -96,7 +96,7 @@ func TestPGP_SignVerify_Good(t *testing.T) {
 	wantNoError(t, err)
 }
 
-func TestPGP_SignVerify_Bad(t *testing.T) {
+func TestPGP_Sign_Bad(t *testing.T) {
 	kp, err := CreateKeyPair("Signer", "signer@example.com", "")
 	mustNoError(t, err)
 
@@ -109,7 +109,7 @@ func TestPGP_SignVerify_Bad(t *testing.T) {
 	wantError(t, err)
 }
 
-func TestPGP_SignVerify_Ugly(t *testing.T) {
+func TestPGP_Sign_Ugly(t *testing.T) {
 	// Invalid key for signing
 	_, err := Sign([]byte("data"), "not-a-key", "")
 	wantError(t, err)

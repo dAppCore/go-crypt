@@ -3,7 +3,7 @@ package trust
 import (
 	"testing"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 )
 
 // BenchmarkPolicyEvaluate measures policy evaluation across 100 registered agents.

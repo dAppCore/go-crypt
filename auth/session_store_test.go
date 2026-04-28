@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 
 	"dappco.re/go/crypt/crypt/lthn"
 	"dappco.re/go/io"

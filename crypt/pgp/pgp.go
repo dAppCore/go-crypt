@@ -36,7 +36,9 @@ func CreateKeyPair(name, email, password string) (*KeyPair, error) {
 
 	// Sign all the identities
 	for _, id := range entity.Identities {
-		_ = id.SelfSignature.SignUserId(id.UserId.Id, entity.PrimaryKey, entity.PrivateKey, nil)
+		if err := id.SelfSignature.SignUserId(id.UserId.Id, entity.PrimaryKey, entity.PrivateKey, nil); err != nil {
+			return nil, coreerr.E(op, "failed to sign identity", err)
+		}
 	}
 
 	// Encrypt private key with password if provided
@@ -170,7 +172,9 @@ func Decrypt(data []byte, privateKeyArmor, password string) ([]byte, error) {
 		}
 		for _, subkey := range entity.Subkeys {
 			if subkey.PrivateKey != nil && subkey.PrivateKey.Encrypted {
-				_ = subkey.PrivateKey.Decrypt([]byte(password))
+				if err := subkey.PrivateKey.Decrypt([]byte(password)); err != nil {
+					return nil, coreerr.E(op, "failed to decrypt subkey", err)
+				}
 			}
 		}
 	}

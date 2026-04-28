@@ -1,16 +1,10 @@
 package auth
 
 import (
-<<<<<<< HEAD
 	"sync"
-=======
-	"encoding/json"
-	"errors"
-	"sync" // Note: AX-6 — internal concurrency primitive; structural for SQLite single-writer serialisation.
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	"time"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 	"dappco.re/go/store"
 )
 
@@ -43,7 +37,7 @@ func (s *SQLiteSessionStore) Get(token string) (*Session, error) {
 
 	val, err := s.store.Get(sessionGroup, token)
 	if err != nil {
-		if core.Is(err, store.ErrNotFound) {
+		if core.Is(err, store.NotFoundError) {
 			return nil, ErrSessionNotFound
 		}
 		return nil, err
@@ -81,7 +75,7 @@ func (s *SQLiteSessionStore) Delete(token string) error {
 	// Check existence first to return ErrSessionNotFound
 	_, err := s.store.Get(sessionGroup, token)
 	if err != nil {
-		if core.Is(err, store.ErrNotFound) {
+		if core.Is(err, store.NotFoundError) {
 			return ErrSessionNotFound
 		}
 		return err

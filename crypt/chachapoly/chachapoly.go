@@ -4,13 +4,8 @@ import (
 	"crypto/rand"
 	"io"
 
-<<<<<<< HEAD
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 	coreerr "dappco.re/go/log"
-=======
-	"dappco.re/go/core"
-	coreerr "dappco.re/go/log"
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 
 	"golang.org/x/crypto/chacha20poly1305"
 )
@@ -41,11 +36,7 @@ func Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
 
 	minLen := aead.NonceSize() + aead.Overhead()
 	if len(ciphertext) < minLen {
-<<<<<<< HEAD
 		return nil, coreerr.E("chachapoly.Decrypt", core.Sprintf("ciphertext too short: got %d bytes, need at least %d bytes", len(ciphertext), minLen), nil)
-=======
-		return nil, coreerr.E(op, core.Sprintf("ciphertext too short: got %d bytes, need at least %d bytes", len(ciphertext), minLen), nil)
->>>>>>> 5927297 (fix(crypt): AX-6 banned-import purge across auth/cmd/crypt/trust (#414))
 	}
 
 	nonce, ciphertext := ciphertext[:aead.NonceSize()], ciphertext[aead.NonceSize():]

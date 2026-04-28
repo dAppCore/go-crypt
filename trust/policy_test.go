@@ -26,19 +26,21 @@ func newTestEngine(t *testing.T) *PolicyEngine {
 
 // --- Decision ---
 
-func TestPolicy_DecisionString_Good(t *testing.T) {
+func TestPolicy_Decision_String_Good(t *testing.T) {
 	wantEqual(t, "deny", Deny.String())
 	wantEqual(t, "allow", Allow.String())
 	wantEqual(t, "needs_approval", NeedsApproval.String())
 }
 
-func TestPolicy_DecisionString_Bad_Unknown(t *testing.T) {
-	wantContains(t, Decision(99).String(), "unknown")
+func TestPolicy_Decision_String_Bad_Unknown(t *testing.T) {
+	got := Decision(99).String()
+	wantContains(t, got, "unknown")
+	wantContains(t, got, "99")
 }
 
 // --- Tier 3 (Full Trust) ---
 
-func TestPolicy_Evaluate_Good_Tier3CanDoAnything(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Good_Tier3CanDoAnything(t *testing.T) {
 	pe := newTestEngine(t)
 
 	caps := []Capability{
@@ -54,56 +56,56 @@ func TestPolicy_Evaluate_Good_Tier3CanDoAnything(t *testing.T) {
 
 // --- Tier 2 (Verified) ---
 
-func TestPolicy_Evaluate_Good_Tier2CanCreatePR(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Good_Tier2CanCreatePR(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("Clotho", CapCreatePR, "host-uk/core")
 	wantEqual(t, Allow, result.Decision)
 }
 
-func TestPolicy_Evaluate_Good_Tier2CanPushToScopedRepo(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Good_Tier2CanPushToScopedRepo(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("Clotho", CapPushRepo, "host-uk/core")
 	wantEqual(t, Allow, result.Decision)
 }
 
-func TestPolicy_Evaluate_Good_Tier2NeedsApprovalToMerge(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Good_Tier2NeedsApprovalToMerge(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("Clotho", CapMergePR, "host-uk/core")
 	wantEqual(t, NeedsApproval, result.Decision)
 }
 
-func TestPolicy_Evaluate_Good_Tier2CanCreateIssue(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Good_Tier2CanCreateIssue(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("Clotho", CapCreateIssue, "")
 	wantEqual(t, Allow, result.Decision)
 }
 
-func TestPolicy_Evaluate_Bad_Tier2CannotAccessWorkspace(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier2CannotAccessWorkspace(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("Clotho", CapAccessWorkspace, "")
 	wantEqual(t, Deny, result.Decision)
 }
 
-func TestPolicy_Evaluate_Bad_Tier2CannotModifyFlows(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier2CannotModifyFlows(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("Clotho", CapModifyFlows, "")
 	wantEqual(t, Deny, result.Decision)
 }
 
-func TestPolicy_Evaluate_Bad_Tier2CannotRunPrivileged(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier2CannotRunPrivileged(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("Clotho", CapRunPrivileged, "")
 	wantEqual(t, Deny, result.Decision)
 }
 
-func TestPolicy_Evaluate_Bad_Tier2CannotPushToUnscopedRepo(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier2CannotPushToUnscopedRepo(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("Clotho", CapPushRepo, "host-uk/secret-repo")
 	wantEqual(t, Deny, result.Decision)
 	wantContains(t, result.Reason, "does not have access")
 }
 
-func TestPolicy_Evaluate_Bad_Tier2RepoScopeEmptyRepo(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier2RepoScopeEmptyRepo(t *testing.T) {
 	pe := newTestEngine(t)
 	// Push without specifying a repo should be denied for scoped agents.
 	result := pe.Evaluate("Clotho", CapPushRepo, "")
@@ -112,43 +114,43 @@ func TestPolicy_Evaluate_Bad_Tier2RepoScopeEmptyRepo(t *testing.T) {
 
 // --- Tier 1 (Untrusted) ---
 
-func TestPolicy_Evaluate_Good_Tier1CanCreatePR(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Good_Tier1CanCreatePR(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("BugSETI-001", CapCreatePR, "")
 	wantEqual(t, Allow, result.Decision)
 }
 
-func TestPolicy_Evaluate_Good_Tier1CanCommentIssue(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Good_Tier1CanCommentIssue(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("BugSETI-001", CapCommentIssue, "")
 	wantEqual(t, Allow, result.Decision)
 }
 
-func TestPolicy_Evaluate_Bad_Tier1CannotPush(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier1CannotPush(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("BugSETI-001", CapPushRepo, "")
 	wantEqual(t, Deny, result.Decision)
 }
 
-func TestPolicy_Evaluate_Bad_Tier1CannotMerge(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier1CannotMerge(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("BugSETI-001", CapMergePR, "")
 	wantEqual(t, Deny, result.Decision)
 }
 
-func TestPolicy_Evaluate_Bad_Tier1CannotCreateIssue(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier1CannotCreateIssue(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("BugSETI-001", CapCreateIssue, "")
 	wantEqual(t, Deny, result.Decision)
 }
 
-func TestPolicy_Evaluate_Bad_Tier1CannotReadSecrets(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier1CannotReadSecrets(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("BugSETI-001", CapReadSecrets, "")
 	wantEqual(t, Deny, result.Decision)
 }
 
-func TestPolicy_Evaluate_Bad_Tier1CannotRunPrivileged(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier1CannotRunPrivileged(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("BugSETI-001", CapRunPrivileged, "")
 	wantEqual(t, Deny, result.Decision)
@@ -156,14 +158,14 @@ func TestPolicy_Evaluate_Bad_Tier1CannotRunPrivileged(t *testing.T) {
 
 // --- Edge cases ---
 
-func TestPolicy_Evaluate_Bad_UnknownAgent(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_UnknownAgent(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("Unknown", CapCreatePR, "")
 	wantEqual(t, Deny, result.Decision)
 	wantContains(t, result.Reason, "not registered")
 }
 
-func TestPolicy_Evaluate_Good_EvalResultFields(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Good_EvalResultFields(t *testing.T) {
 	pe := newTestEngine(t)
 	result := pe.Evaluate("Athena", CapPushRepo, "")
 	wantEqual(t, "Athena", result.Agent)
@@ -173,7 +175,7 @@ func TestPolicy_Evaluate_Good_EvalResultFields(t *testing.T) {
 
 // --- SetPolicy ---
 
-func TestPolicy_SetPolicy_Good(t *testing.T) {
+func TestPolicy_PolicyEngine_SetPolicy_Good(t *testing.T) {
 	pe := newTestEngine(t)
 	err := pe.SetPolicy(Policy{
 		Tier:    TierVerified,
@@ -186,23 +188,25 @@ func TestPolicy_SetPolicy_Good(t *testing.T) {
 	wantEqual(t, Allow, result.Decision)
 }
 
-func TestPolicy_SetPolicy_Bad_InvalidTier(t *testing.T) {
+func TestPolicy_PolicyEngine_SetPolicy_Bad_InvalidTier(t *testing.T) {
 	pe := newTestEngine(t)
 	err := pe.SetPolicy(Policy{Tier: Tier(0)})
 	wantError(t, err)
 	wantContains(t, err.Error(), "invalid tier")
 }
 
-func TestPolicy_GetPolicy_Good(t *testing.T) {
+func TestPolicy_PolicyEngine_GetPolicy_Good(t *testing.T) {
 	pe := newTestEngine(t)
 	p := pe.GetPolicy(TierFull)
 	mustNotNil(t, p)
 	wantEqual(t, TierFull, p.Tier)
 }
 
-func TestPolicy_GetPolicy_Bad_NotFound(t *testing.T) {
+func TestPolicy_PolicyEngine_GetPolicy_Bad_NotFound(t *testing.T) {
 	pe := newTestEngine(t)
-	wantNil(t, pe.GetPolicy(Tier(99)))
+	policy := pe.GetPolicy(Tier(99))
+	wantNil(t, policy)
+	wantLen(t, pe.policies, 3)
 }
 
 // --- isRepoScoped / repoAllowed helpers ---
@@ -228,22 +232,28 @@ func TestPolicy_RepoAllowed_Good(t *testing.T) {
 
 func TestPolicy_RepoAllowed_Bad_NotInScope(t *testing.T) {
 	scoped := []string{"host-uk/core"}
-	wantFalse(t, repoAllowed(scoped, "host-uk/secret"))
+	allowed := repoAllowed(scoped, "host-uk/secret")
+	wantFalse(t, allowed)
+	wantTrue(t, repoAllowed(scoped, "host-uk/core"))
 }
 
 func TestPolicy_RepoAllowed_Bad_EmptyRepo(t *testing.T) {
 	scoped := []string{"host-uk/core"}
-	wantFalse(t, repoAllowed(scoped, ""))
+	allowed := repoAllowed(scoped, "")
+	wantFalse(t, allowed)
+	wantTrue(t, repoAllowed(scoped, "host-uk/core"))
 }
 
 func TestPolicy_RepoAllowed_Bad_EmptyScope(t *testing.T) {
+	empty := []string{}
 	wantFalse(t, repoAllowed(nil, "host-uk/core"))
-	wantFalse(t, repoAllowed([]string{}, "host-uk/core"))
+	wantFalse(t, repoAllowed(empty, "host-uk/core"))
+	wantLen(t, empty, 0)
 }
 
 // --- Tier 3 ignores repo scoping ---
 
-func TestPolicy_Evaluate_Good_Tier3IgnoresRepoScope(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Good_Tier3IgnoresRepoScope(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{
 		Name:        "Virgil",
@@ -267,11 +277,11 @@ func TestPolicy_DefaultRateLimit_Good(t *testing.T) {
 
 // --- Phase 0 Additions ---
 
-// TestPolicy_Evaluate_Good_Tier2EmptyScopedReposAllowsAll verifies that a Tier 2
+// TestPolicy_PolicyEngine_Evaluate_Good_Tier2EmptyScopedReposAllowsAll verifies that a Tier 2
 // agent with empty ScopedRepos is treated as "unrestricted" for repo-scoped
 // capabilities. NOTE: This is a potential security concern documented in
 // FINDINGS.md — empty ScopedRepos bypasses the repo scope check entirely.
-func TestPolicy_Evaluate_Good_Tier2EmptyScopedReposAllowsAll(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Good_Tier2EmptyScopedReposAllowsAll(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{
 		Name:        "Hypnos",
@@ -298,9 +308,9 @@ func TestPolicy_Evaluate_Good_Tier2EmptyScopedReposAllowsAll(t *testing.T) {
 	wantEqual(t, Allow, result.Decision)
 }
 
-// TestPolicy_Evaluate_Bad_CapabilityNotInAnyList verifies that a capability not in
+// TestPolicy_PolicyEngine_Evaluate_Bad_CapabilityNotInAnyList verifies that a capability not in
 // allowed, denied, or requires_approval lists defaults to deny.
-func TestPolicy_Evaluate_Bad_CapabilityNotInAnyList(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_CapabilityNotInAnyList(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{
 		Name: "TestAgent",
@@ -322,9 +332,9 @@ func TestPolicy_Evaluate_Bad_CapabilityNotInAnyList(t *testing.T) {
 	wantContains(t, result.Reason, "not granted")
 }
 
-// TestPolicy_Evaluate_Bad_UnknownCapability verifies that a completely invented
+// TestPolicy_PolicyEngine_Evaluate_Bad_UnknownCapability verifies that a completely invented
 // capability string is denied.
-func TestPolicy_Evaluate_Bad_UnknownCapability(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_UnknownCapability(t *testing.T) {
 	pe := newTestEngine(t)
 
 	result := pe.Evaluate("Athena", Capability("nonexistent.capability"), "")
@@ -357,10 +367,10 @@ func TestPolicy_ConcurrentEvaluate_Good(t *testing.T) {
 	wg.Wait()
 }
 
-// TestPolicy_Evaluate_Bad_Tier2ScopedReposWithEmptyRepoParam verifies that
+// TestPolicy_PolicyEngine_Evaluate_Bad_Tier2ScopedReposWithEmptyRepoParam verifies that
 // a scoped agent requesting a repo-scoped capability without specifying
 // the repo is denied.
-func TestPolicy_Evaluate_Bad_Tier2ScopedReposWithEmptyRepoParam(t *testing.T) {
+func TestPolicy_PolicyEngine_Evaluate_Bad_Tier2ScopedReposWithEmptyRepoParam(t *testing.T) {
 	pe := newTestEngine(t)
 
 	// Clotho has ScopedRepos but passes empty repo

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 
 	"dappco.re/go/crypt/crypt/lthn"
 	"dappco.re/go/crypt/crypt/pgp"
@@ -21,7 +21,7 @@ func newTestAuth(opts ...Option) (*Authenticator, *io.MockMedium) {
 
 // --- Register ---
 
-func TestAuth_Register_Good(t *testing.T) {
+func TestAuth_Authenticator_Register_Good(t *testing.T) {
 	a, m := newTestAuth()
 
 	user, err := a.Register("alice", "hunter2")
@@ -46,7 +46,7 @@ func TestAuth_Register_Good(t *testing.T) {
 	wantFalse(t, user.Created.IsZero())
 }
 
-func TestAuth_Register_Bad(t *testing.T) {
+func TestAuth_Authenticator_Register_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	// Register first time succeeds
@@ -59,7 +59,7 @@ func TestAuth_Register_Bad(t *testing.T) {
 	wantContains(t, err.Error(), "user already exists")
 }
 
-func TestAuth_Register_Ugly(t *testing.T) {
+func TestAuth_Authenticator_Register_Ugly(t *testing.T) {
 	a, _ := newTestAuth()
 
 	// Empty username/password should still work (PGP allows it)
@@ -70,7 +70,7 @@ func TestAuth_Register_Ugly(t *testing.T) {
 
 // --- CreateChallenge ---
 
-func TestAuth_CreateChallenge_Good(t *testing.T) {
+func TestAuth_Authenticator_CreateChallenge_Good(t *testing.T) {
 	a, _ := newTestAuth()
 
 	user, err := a.Register("charlie", "pass")
@@ -85,7 +85,7 @@ func TestAuth_CreateChallenge_Good(t *testing.T) {
 	wantTrue(t, challenge.ExpiresAt.After(time.Now()))
 }
 
-func TestAuth_CreateChallenge_Bad(t *testing.T) {
+func TestAuth_Authenticator_CreateChallenge_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	// Challenge for non-existent user
@@ -94,7 +94,7 @@ func TestAuth_CreateChallenge_Bad(t *testing.T) {
 	wantContains(t, err.Error(), "user not found")
 }
 
-func TestAuth_CreateChallenge_Ugly(t *testing.T) {
+func TestAuth_Authenticator_CreateChallenge_Ugly(t *testing.T) {
 	a, _ := newTestAuth()
 
 	// Empty userID
@@ -104,7 +104,7 @@ func TestAuth_CreateChallenge_Ugly(t *testing.T) {
 
 // --- ValidateResponse (full challenge-response flow) ---
 
-func TestAuth_ValidateResponse_Good(t *testing.T) {
+func TestAuth_Authenticator_ValidateResponse_Good(t *testing.T) {
 	a, m := newTestAuth()
 
 	// Register user
@@ -138,7 +138,7 @@ func TestAuth_ValidateResponse_Good(t *testing.T) {
 	wantTrue(t, session.ExpiresAt.After(time.Now()))
 }
 
-func TestAuth_ValidateResponse_Bad(t *testing.T) {
+func TestAuth_Authenticator_ValidateResponse_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	_, err := a.Register("eve", "pass")
@@ -151,7 +151,7 @@ func TestAuth_ValidateResponse_Bad(t *testing.T) {
 	wantContains(t, err.Error(), "no pending challenge")
 }
 
-func TestAuth_ValidateResponse_Ugly(t *testing.T) {
+func TestAuth_Authenticator_ValidateResponse_Ugly(t *testing.T) {
 	a, m := newTestAuth(WithChallengeTTL(1 * time.Millisecond))
 
 	_, err := a.Register("frank", "pass")
@@ -178,7 +178,7 @@ func TestAuth_ValidateResponse_Ugly(t *testing.T) {
 
 // --- ValidateSession ---
 
-func TestAuth_ValidateSession_Good(t *testing.T) {
+func TestAuth_Authenticator_ValidateSession_Good(t *testing.T) {
 	a, _ := newTestAuth()
 
 	_, err := a.Register("grace", "pass")
@@ -194,7 +194,7 @@ func TestAuth_ValidateSession_Good(t *testing.T) {
 	wantEqual(t, userID, validated.UserID)
 }
 
-func TestAuth_ValidateSession_Bad(t *testing.T) {
+func TestAuth_Authenticator_ValidateSession_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	_, err := a.ValidateSession("nonexistent-token")
@@ -202,7 +202,7 @@ func TestAuth_ValidateSession_Bad(t *testing.T) {
 	wantContains(t, err.Error(), "session not found")
 }
 
-func TestAuth_ValidateSession_Ugly(t *testing.T) {
+func TestAuth_Authenticator_ValidateSession_Ugly(t *testing.T) {
 	a, _ := newTestAuth(WithSessionTTL(1 * time.Millisecond))
 
 	_, err := a.Register("heidi", "pass")
@@ -221,7 +221,7 @@ func TestAuth_ValidateSession_Ugly(t *testing.T) {
 
 // --- RefreshSession ---
 
-func TestAuth_RefreshSession_Good(t *testing.T) {
+func TestAuth_Authenticator_RefreshSession_Good(t *testing.T) {
 	a, _ := newTestAuth(WithSessionTTL(1 * time.Hour))
 
 	_, err := a.Register("ivan", "pass")
@@ -241,7 +241,7 @@ func TestAuth_RefreshSession_Good(t *testing.T) {
 	wantTrue(t, refreshed.ExpiresAt.After(originalExpiry))
 }
 
-func TestAuth_RefreshSession_Bad(t *testing.T) {
+func TestAuth_Authenticator_RefreshSession_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	_, err := a.RefreshSession("nonexistent-token")
@@ -249,7 +249,7 @@ func TestAuth_RefreshSession_Bad(t *testing.T) {
 	wantContains(t, err.Error(), "session not found")
 }
 
-func TestAuth_RefreshSession_Ugly(t *testing.T) {
+func TestAuth_Authenticator_RefreshSession_Ugly(t *testing.T) {
 	a, _ := newTestAuth(WithSessionTTL(1 * time.Millisecond))
 
 	_, err := a.Register("judy", "pass")
@@ -268,7 +268,7 @@ func TestAuth_RefreshSession_Ugly(t *testing.T) {
 
 // --- RevokeSession ---
 
-func TestAuth_RevokeSession_Good(t *testing.T) {
+func TestAuth_Authenticator_RevokeSession_Good(t *testing.T) {
 	a, _ := newTestAuth()
 
 	_, err := a.Register("karl", "pass")
@@ -286,7 +286,7 @@ func TestAuth_RevokeSession_Good(t *testing.T) {
 	wantError(t, err)
 }
 
-func TestAuth_RevokeSession_Bad(t *testing.T) {
+func TestAuth_Authenticator_RevokeSession_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	err := a.RevokeSession("nonexistent-token")
@@ -294,7 +294,7 @@ func TestAuth_RevokeSession_Bad(t *testing.T) {
 	wantContains(t, err.Error(), "session not found")
 }
 
-func TestAuth_RevokeSession_Ugly(t *testing.T) {
+func TestAuth_Authenticator_RevokeSession_Ugly(t *testing.T) {
 	a, _ := newTestAuth()
 
 	// Revoke empty token
@@ -304,7 +304,7 @@ func TestAuth_RevokeSession_Ugly(t *testing.T) {
 
 // --- DeleteUser ---
 
-func TestAuth_DeleteUser_Good(t *testing.T) {
+func TestAuth_Authenticator_DeleteUser_Good(t *testing.T) {
 	a, m := newTestAuth()
 
 	_, err := a.Register("larry", "pass")
@@ -332,7 +332,7 @@ func TestAuth_DeleteUser_Good(t *testing.T) {
 	wantContains(t, err.Error(), "session not found")
 }
 
-func TestAuth_DeleteUser_Bad(t *testing.T) {
+func TestAuth_Authenticator_DeleteUser_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	// Protected user "server" cannot be deleted
@@ -341,7 +341,7 @@ func TestAuth_DeleteUser_Bad(t *testing.T) {
 	wantContains(t, err.Error(), "cannot delete protected user")
 }
 
-func TestAuth_DeleteUser_Ugly(t *testing.T) {
+func TestAuth_Authenticator_DeleteUser_Ugly(t *testing.T) {
 	a, _ := newTestAuth()
 
 	// Non-existent user
@@ -352,7 +352,7 @@ func TestAuth_DeleteUser_Ugly(t *testing.T) {
 
 // --- Login ---
 
-func TestAuth_Login_Good(t *testing.T) {
+func TestAuth_Authenticator_Login_Good(t *testing.T) {
 	a, _ := newTestAuth()
 
 	_, err := a.Register("mallory", "secret")
@@ -368,7 +368,7 @@ func TestAuth_Login_Good(t *testing.T) {
 	wantTrue(t, session.ExpiresAt.After(time.Now()))
 }
 
-func TestAuth_Login_Bad(t *testing.T) {
+func TestAuth_Authenticator_Login_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	_, err := a.Register("nancy", "correct-password")
@@ -381,7 +381,7 @@ func TestAuth_Login_Bad(t *testing.T) {
 	wantContains(t, err.Error(), "invalid password")
 }
 
-func TestAuth_Login_Ugly(t *testing.T) {
+func TestAuth_Authenticator_Login_Ugly(t *testing.T) {
 	a, _ := newTestAuth()
 
 	// Login for non-existent user
@@ -437,7 +437,7 @@ func TestAuth_AirGappedFlow_Good(t *testing.T) {
 	wantEqual(t, userID, session.UserID)
 }
 
-func TestAuth_WriteChallengeFile_Bad(t *testing.T) {
+func TestAuth_Authenticator_WriteChallengeFile_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	// Challenge for non-existent user
@@ -445,7 +445,7 @@ func TestAuth_WriteChallengeFile_Bad(t *testing.T) {
 	wantError(t, err)
 }
 
-func TestAuth_ReadResponseFile_Bad(t *testing.T) {
+func TestAuth_Authenticator_ReadResponseFile_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	// Response file does not exist
@@ -453,7 +453,7 @@ func TestAuth_ReadResponseFile_Bad(t *testing.T) {
 	wantError(t, err)
 }
 
-func TestAuth_ReadResponseFile_Ugly(t *testing.T) {
+func TestAuth_Authenticator_ReadResponseFile_Ugly(t *testing.T) {
 	a, m := newTestAuth()
 
 	_, err := a.Register("peggy", "pass")
@@ -974,9 +974,9 @@ func TestAuth_LegacyLTHNLogin_Bad(t *testing.T) {
 
 // --- Phase 2: Key Rotation ---
 
-// TestAuth_RotateKeyPair_Good verifies the full key rotation flow:
+// TestAuth_Authenticator_RotateKeyPair_Good verifies the full key rotation flow:
 // register -> login -> rotate -> verify old key can't decrypt -> verify new key works -> sessions invalidated.
-func TestAuth_RotateKeyPair_Good(t *testing.T) {
+func TestAuth_Authenticator_RotateKeyPair_Good(t *testing.T) {
 	a, m := newTestAuth()
 
 	// Register and login
@@ -1030,8 +1030,8 @@ func TestAuth_RotateKeyPair_Good(t *testing.T) {
 	wantTrue(t, core.HasPrefix(meta.PasswordHash, "$argon2id$"))
 }
 
-// TestAuth_RotateKeyPair_Bad verifies that rotation fails with wrong old password.
-func TestAuth_RotateKeyPair_Bad(t *testing.T) {
+// TestAuth_Authenticator_RotateKeyPair_Bad verifies that rotation fails with wrong old password.
+func TestAuth_Authenticator_RotateKeyPair_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	_, err := a.Register("rotate-bad", "correct-pass")
@@ -1044,8 +1044,8 @@ func TestAuth_RotateKeyPair_Bad(t *testing.T) {
 	wantContains(t, err.Error(), "failed to decrypt metadata")
 }
 
-// TestAuth_RotateKeyPair_Ugly verifies rotation for non-existent user.
-func TestAuth_RotateKeyPair_Ugly(t *testing.T) {
+// TestAuth_Authenticator_RotateKeyPair_Ugly verifies rotation for non-existent user.
+func TestAuth_Authenticator_RotateKeyPair_Ugly(t *testing.T) {
 	a, _ := newTestAuth()
 
 	_, err := a.RotateKeyPair("nonexistent-user-id", "old", "new")
@@ -1053,9 +1053,9 @@ func TestAuth_RotateKeyPair_Ugly(t *testing.T) {
 	wantContains(t, err.Error(), "user not found")
 }
 
-// TestAuth_RotateKeyPair_OldKeyCannotDecrypt_Good verifies old private key
+// TestAuth_Authenticator_RotateKeyPair_OldKeyCannotDecrypt_Good verifies old private key
 // cannot decrypt metadata after rotation.
-func TestAuth_RotateKeyPair_OldKeyCannotDecrypt_Good(t *testing.T) {
+func TestAuth_Authenticator_RotateKeyPair_OldKeyCannotDecrypt_Good(t *testing.T) {
 	a, m := newTestAuth()
 
 	_, err := a.Register("rotate-crypto", "pass-a")
@@ -1079,9 +1079,9 @@ func TestAuth_RotateKeyPair_OldKeyCannotDecrypt_Good(t *testing.T) {
 
 // --- Phase 2: Key Revocation ---
 
-// TestAuth_RevokeKey_Good verifies the full revocation flow:
+// TestAuth_Authenticator_RevokeKey_Good verifies the full revocation flow:
 // register -> login -> revoke -> login fails -> challenge fails -> sessions invalidated.
-func TestAuth_RevokeKey_Good(t *testing.T) {
+func TestAuth_Authenticator_RevokeKey_Good(t *testing.T) {
 	a, m := newTestAuth()
 
 	_, err := a.Register("revoke-user", "pass")
@@ -1129,8 +1129,8 @@ func TestAuth_RevokeKey_Good(t *testing.T) {
 	wantError(t, err)
 }
 
-// TestAuth_RevokeKey_Bad verifies revocation fails with wrong password.
-func TestAuth_RevokeKey_Bad(t *testing.T) {
+// TestAuth_Authenticator_RevokeKey_Bad verifies revocation fails with wrong password.
+func TestAuth_Authenticator_RevokeKey_Bad(t *testing.T) {
 	a, _ := newTestAuth()
 
 	_, err := a.Register("revoke-bad", "correct")
@@ -1145,8 +1145,8 @@ func TestAuth_RevokeKey_Bad(t *testing.T) {
 	wantFalse(t, a.IsRevoked(userID))
 }
 
-// TestAuth_RevokeKey_Ugly verifies revocation for non-existent user.
-func TestAuth_RevokeKey_Ugly(t *testing.T) {
+// TestAuth_Authenticator_RevokeKey_Ugly verifies revocation for non-existent user.
+func TestAuth_Authenticator_RevokeKey_Ugly(t *testing.T) {
 	a, _ := newTestAuth()
 
 	err := a.RevokeKey("nonexistent-user-id", "pass", "reason")
@@ -1154,9 +1154,9 @@ func TestAuth_RevokeKey_Ugly(t *testing.T) {
 	wantContains(t, err.Error(), "user not found")
 }
 
-// TestAuth_IsRevoked_Placeholder_Good verifies that the legacy placeholder is not
+// TestAuth_Authenticator_IsRevoked_Placeholder_Good verifies that the legacy placeholder is not
 // treated as a valid revocation.
-func TestAuth_IsRevoked_Placeholder_Good(t *testing.T) {
+func TestAuth_Authenticator_IsRevoked_Placeholder_Good(t *testing.T) {
 	a, m := newTestAuth()
 
 	_, err := a.Register("placeholder-user", "pass")
@@ -1172,16 +1172,18 @@ func TestAuth_IsRevoked_Placeholder_Good(t *testing.T) {
 	wantFalse(t, a.IsRevoked(userID))
 }
 
-// TestAuth_IsRevoked_NoRevFile_Good verifies that a missing .rev file returns false.
-func TestAuth_IsRevoked_NoRevFile_Good(t *testing.T) {
+// TestAuth_Authenticator_IsRevoked_NoRevFile_Good verifies that a missing .rev file returns false.
+func TestAuth_Authenticator_IsRevoked_NoRevFile_Good(t *testing.T) {
 	a, _ := newTestAuth()
 
-	wantFalse(t, a.IsRevoked("completely-nonexistent"))
+	userID := "completely-nonexistent"
+	wantFalse(t, a.medium.IsFile(userPath(userID, ".rev")))
+	wantFalse(t, a.IsRevoked(userID))
 }
 
-// TestAuth_RevokeKey_LegacyUser_Good verifies revocation works for a legacy user
+// TestAuth_Authenticator_RevokeKey_LegacyUser_Good verifies revocation works for a legacy user
 // with only a .lthn hash file (no .hash file).
-func TestAuth_RevokeKey_LegacyUser_Good(t *testing.T) {
+func TestAuth_Authenticator_RevokeKey_LegacyUser_Good(t *testing.T) {
 	m := io.NewMockMedium()
 	a := New(m)
 

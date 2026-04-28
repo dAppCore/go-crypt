@@ -3,7 +3,7 @@ package testcmd
 import (
 	"os"
 
-	"dappco.re/go/core"
+	"dappco.re/go"
 )
 
 func testPrintf(format string, args ...any) {

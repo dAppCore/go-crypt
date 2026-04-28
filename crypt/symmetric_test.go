@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestSymmetric_ChaCha20_Good(t *testing.T) {
+func TestSymmetric_ChaCha20Encrypt_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	wantNoError(t, err)
@@ -22,7 +22,7 @@ func TestSymmetric_ChaCha20_Good(t *testing.T) {
 	wantEqual(t, plaintext, decrypted)
 }
 
-func TestSymmetric_ChaCha20_Bad(t *testing.T) {
+func TestSymmetric_ChaCha20Encrypt_Bad(t *testing.T) {
 	key := make([]byte, 32)
 	wrongKey := make([]byte, 32)
 	_, _ = rand.Read(key)
@@ -37,7 +37,7 @@ func TestSymmetric_ChaCha20_Bad(t *testing.T) {
 	wantError(t, err)
 }
 
-func TestSymmetric_AESGCM_Good(t *testing.T) {
+func TestSymmetric_AESGCMEncrypt_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
 	wantNoError(t, err)
@@ -55,8 +55,8 @@ func TestSymmetric_AESGCM_Good(t *testing.T) {
 
 // --- Phase 0 Additions ---
 
-// TestSymmetric_AESGCM_Bad_WrongKey verifies wrong key returns error, not corrupt data.
-func TestSymmetric_AESGCM_Bad_WrongKey(t *testing.T) {
+// TestSymmetric_AESGCMEncrypt_Bad_WrongKey verifies wrong key returns error, not corrupt data.
+func TestSymmetric_AESGCMEncrypt_Bad_WrongKey(t *testing.T) {
 	key := make([]byte, 32)
 	wrongKey := make([]byte, 32)
 	_, _ = rand.Read(key)

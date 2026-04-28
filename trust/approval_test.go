@@ -4,24 +4,26 @@ import (
 	"sync"
 	"testing"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 )
 
 // --- ApprovalStatus ---
 
-func TestApproval_ApprovalStatusString_Good(t *testing.T) {
+func TestApproval_ApprovalStatus_String_Good(t *testing.T) {
 	wantEqual(t, "pending", ApprovalPending.String())
 	wantEqual(t, "approved", ApprovalApproved.String())
 	wantEqual(t, "denied", ApprovalDenied.String())
 }
 
-func TestApproval_ApprovalStatusString_Bad_Unknown(t *testing.T) {
-	wantContains(t, ApprovalStatus(99).String(), "unknown")
+func TestApproval_ApprovalStatus_String_Bad_Unknown(t *testing.T) {
+	got := ApprovalStatus(99).String()
+	wantContains(t, got, "unknown")
+	wantContains(t, got, "99")
 }
 
 // --- Submit ---
 
-func TestApproval_ApprovalSubmit_Good(t *testing.T) {
+func TestApproval_ApprovalQueue_Submit_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	id, err := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	mustNoError(t, err)
@@ -29,7 +31,7 @@ func TestApproval_ApprovalSubmit_Good(t *testing.T) {
 	wantEqual(t, 1, q.Len())
 }
 
-func TestApproval_ApprovalSubmit_Good_MultipleRequests(t *testing.T) {
+func TestApproval_ApprovalQueue_Submit_Good_MultipleRequests(t *testing.T) {
 	q := NewApprovalQueue()
 	id1, err := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	mustNoError(t, err)
@@ -40,7 +42,7 @@ func TestApproval_ApprovalSubmit_Good_MultipleRequests(t *testing.T) {
 	wantEqual(t, 2, q.Len())
 }
 
-func TestApproval_ApprovalSubmit_Good_EmptyRepo(t *testing.T) {
+func TestApproval_ApprovalQueue_Submit_Good_EmptyRepo(t *testing.T) {
 	q := NewApprovalQueue()
 	id, err := q.Submit("Clotho", CapMergePR, "")
 	mustNoError(t, err)
@@ -51,14 +53,14 @@ func TestApproval_ApprovalSubmit_Good_EmptyRepo(t *testing.T) {
 	wantEmpty(t, req.Repo)
 }
 
-func TestApproval_ApprovalSubmit_Bad_EmptyAgent(t *testing.T) {
+func TestApproval_ApprovalQueue_Submit_Bad_EmptyAgent(t *testing.T) {
 	q := NewApprovalQueue()
 	_, err := q.Submit("", CapMergePR, "")
 	wantError(t, err)
 	wantContains(t, err.Error(), "agent name is required")
 }
 
-func TestApproval_ApprovalSubmit_Bad_EmptyCapability(t *testing.T) {
+func TestApproval_ApprovalQueue_Submit_Bad_EmptyCapability(t *testing.T) {
 	q := NewApprovalQueue()
 	_, err := q.Submit("Clotho", "", "")
 	wantError(t, err)
@@ -67,7 +69,7 @@ func TestApproval_ApprovalSubmit_Bad_EmptyCapability(t *testing.T) {
 
 // --- Get ---
 
-func TestApproval_ApprovalGet_Good(t *testing.T) {
+func TestApproval_ApprovalQueue_Get_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	id, err := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	mustNoError(t, err)
@@ -83,7 +85,7 @@ func TestApproval_ApprovalGet_Good(t *testing.T) {
 	wantTrue(t, req.ReviewedAt.IsZero())
 }
 
-func TestApproval_ApprovalGet_Good_ReturnsSnapshot(t *testing.T) {
+func TestApproval_ApprovalQueue_Get_Good_ReturnsSnapshot(t *testing.T) {
 	q := NewApprovalQueue()
 	id, err := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	mustNoError(t, err)
@@ -97,14 +99,16 @@ func TestApproval_ApprovalGet_Good_ReturnsSnapshot(t *testing.T) {
 	wantEqual(t, ApprovalPending, original.Status)
 }
 
-func TestApproval_ApprovalGet_Bad_NotFound(t *testing.T) {
+func TestApproval_ApprovalQueue_Get_Bad_NotFound(t *testing.T) {
 	q := NewApprovalQueue()
-	wantNil(t, q.Get("nonexistent"))
+	req := q.Get("nonexistent")
+	wantNil(t, req)
+	wantEqual(t, 0, q.Len())
 }
 
 // --- Approve ---
 
-func TestApproval_ApprovalApprove_Good(t *testing.T) {
+func TestApproval_ApprovalQueue_Approve_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	id, _ := q.Submit("Clotho", CapMergePR, "host-uk/core")
 
@@ -119,14 +123,14 @@ func TestApproval_ApprovalApprove_Good(t *testing.T) {
 	wantFalse(t, req.ReviewedAt.IsZero())
 }
 
-func TestApproval_ApprovalApprove_Bad_NotFound(t *testing.T) {
+func TestApproval_ApprovalQueue_Approve_Bad_NotFound(t *testing.T) {
 	q := NewApprovalQueue()
 	err := q.Approve("nonexistent", "admin", "")
 	wantError(t, err)
 	wantContains(t, err.Error(), "not found")
 }
 
-func TestApproval_ApprovalApprove_Bad_AlreadyApproved(t *testing.T) {
+func TestApproval_ApprovalQueue_Approve_Bad_AlreadyApproved(t *testing.T) {
 	q := NewApprovalQueue()
 	id, _ := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	mustNoError(t, q.Approve(id, "admin", ""))
@@ -136,7 +140,7 @@ func TestApproval_ApprovalApprove_Bad_AlreadyApproved(t *testing.T) {
 	wantContains(t, err.Error(), "already approved")
 }
 
-func TestApproval_ApprovalApprove_Bad_AlreadyDenied(t *testing.T) {
+func TestApproval_ApprovalQueue_Approve_Bad_AlreadyDenied(t *testing.T) {
 	q := NewApprovalQueue()
 	id, _ := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	mustNoError(t, q.Deny(id, "admin", "nope"))
@@ -148,7 +152,7 @@ func TestApproval_ApprovalApprove_Bad_AlreadyDenied(t *testing.T) {
 
 // --- Deny ---
 
-func TestApproval_ApprovalDeny_Good(t *testing.T) {
+func TestApproval_ApprovalQueue_Deny_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	id, _ := q.Submit("Clotho", CapMergePR, "host-uk/core")
 
@@ -163,14 +167,14 @@ func TestApproval_ApprovalDeny_Good(t *testing.T) {
 	wantFalse(t, req.ReviewedAt.IsZero())
 }
 
-func TestApproval_ApprovalDeny_Bad_NotFound(t *testing.T) {
+func TestApproval_ApprovalQueue_Deny_Bad_NotFound(t *testing.T) {
 	q := NewApprovalQueue()
 	err := q.Deny("nonexistent", "admin", "")
 	wantError(t, err)
 	wantContains(t, err.Error(), "not found")
 }
 
-func TestApproval_ApprovalDeny_Bad_AlreadyDenied(t *testing.T) {
+func TestApproval_ApprovalQueue_Deny_Bad_AlreadyDenied(t *testing.T) {
 	q := NewApprovalQueue()
 	id, _ := q.Submit("Clotho", CapMergePR, "host-uk/core")
 	mustNoError(t, q.Deny(id, "admin", ""))
@@ -182,7 +186,7 @@ func TestApproval_ApprovalDeny_Bad_AlreadyDenied(t *testing.T) {
 
 // --- Pending ---
 
-func TestApproval_ApprovalPending_Good(t *testing.T) {
+func TestApproval_ApprovalQueue_Pending_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	q.Submit("Clotho", CapMergePR, "host-uk/core")
 	q.Submit("Hypnos", CapMergePR, "host-uk/docs")
@@ -194,12 +198,14 @@ func TestApproval_ApprovalPending_Good(t *testing.T) {
 	wantLen(t, pending, 2)
 }
 
-func TestApproval_ApprovalPending_Good_Empty(t *testing.T) {
+func TestApproval_ApprovalQueue_Pending_Good_Empty(t *testing.T) {
 	q := NewApprovalQueue()
-	wantEmpty(t, q.Pending())
+	pending := q.Pending()
+	wantEmpty(t, pending)
+	wantEqual(t, 0, q.Len())
 }
 
-func TestApproval_ApprovalPendingSeq_Good(t *testing.T) {
+func TestApproval_ApprovalQueue_PendingSeq_Good(t *testing.T) {
 	q := NewApprovalQueue()
 	q.Submit("Clotho", CapMergePR, "host-uk/core")
 	q.Submit("Hypnos", CapMergePR, "host-uk/docs")

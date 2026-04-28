@@ -5,28 +5,30 @@ import (
 	"testing"
 	"time"
 
-	core "dappco.re/go/core"
+	core "dappco.re/go"
 )
 
 // --- Tier ---
 
-func TestTrust_TierString_Good(t *testing.T) {
+func TestTrust_Tier_String_Good(t *testing.T) {
 	wantEqual(t, "untrusted", TierUntrusted.String())
 	wantEqual(t, "verified", TierVerified.String())
 	wantEqual(t, "full", TierFull.String())
 }
 
-func TestTrust_TierString_Bad_Unknown(t *testing.T) {
-	wantContains(t, Tier(99).String(), "unknown")
+func TestTrust_Tier_String_Bad_Unknown(t *testing.T) {
+	got := Tier(99).String()
+	wantContains(t, got, "unknown")
+	wantContains(t, got, "99")
 }
 
-func TestTrust_TierValid_Good(t *testing.T) {
+func TestTrust_Tier_Valid_Good(t *testing.T) {
 	wantTrue(t, TierUntrusted.Valid())
 	wantTrue(t, TierVerified.Valid())
 	wantTrue(t, TierFull.Valid())
 }
 
-func TestTrust_TierValid_Bad(t *testing.T) {
+func TestTrust_Tier_Valid_Bad(t *testing.T) {
 	wantFalse(t, Tier(0).Valid())
 	wantFalse(t, Tier(4).Valid())
 	wantFalse(t, Tier(-1).Valid())
@@ -34,14 +36,14 @@ func TestTrust_TierValid_Bad(t *testing.T) {
 
 // --- Registry ---
 
-func TestTrust_RegistryRegister_Good(t *testing.T) {
+func TestTrust_Registry_Register_Good(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Name: "Athena", Tier: TierFull})
 	mustNoError(t, err)
 	wantEqual(t, 1, r.Len())
 }
 
-func TestTrust_RegistryRegister_Good_SetsDefaults(t *testing.T) {
+func TestTrust_Registry_Register_Good_SetsDefaults(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Name: "Athena", Tier: TierFull})
 	mustNoError(t, err)
@@ -52,7 +54,7 @@ func TestTrust_RegistryRegister_Good_SetsDefaults(t *testing.T) {
 	wantFalse(t, a.CreatedAt.IsZero())
 }
 
-func TestTrust_RegistryRegister_Good_TierDefaults(t *testing.T) {
+func TestTrust_Registry_Register_Good_TierDefaults(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{Name: "A", Tier: TierUntrusted}))
 	mustNoError(t, r.Register(Agent{Name: "B", Tier: TierVerified}))
@@ -63,14 +65,14 @@ func TestTrust_RegistryRegister_Good_TierDefaults(t *testing.T) {
 	wantEqual(t, 0, r.Get("C").RateLimit)
 }
 
-func TestTrust_RegistryRegister_Good_PreservesExplicitRateLimit(t *testing.T) {
+func TestTrust_Registry_Register_Good_PreservesExplicitRateLimit(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Name: "Custom", Tier: TierVerified, RateLimit: 30})
 	mustNoError(t, err)
 	wantEqual(t, 30, r.Get("Custom").RateLimit)
 }
 
-func TestTrust_RegistryRegister_Good_Update(t *testing.T) {
+func TestTrust_Registry_Register_Good_Update(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierVerified}))
 	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
@@ -79,21 +81,21 @@ func TestTrust_RegistryRegister_Good_Update(t *testing.T) {
 	wantEqual(t, TierFull, r.Get("Athena").Tier)
 }
 
-func TestTrust_RegistryRegister_Bad_EmptyName(t *testing.T) {
+func TestTrust_Registry_Register_Bad_EmptyName(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Tier: TierFull})
 	wantError(t, err)
 	wantContains(t, err.Error(), "name is required")
 }
 
-func TestTrust_RegistryRegister_Bad_InvalidTier(t *testing.T) {
+func TestTrust_Registry_Register_Bad_InvalidTier(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Name: "Bad", Tier: Tier(0)})
 	wantError(t, err)
 	wantContains(t, err.Error(), "invalid tier")
 }
 
-func TestTrust_RegistryGet_Good(t *testing.T) {
+func TestTrust_Registry_Get_Good(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
 	a := r.Get("Athena")
@@ -101,24 +103,27 @@ func TestTrust_RegistryGet_Good(t *testing.T) {
 	wantEqual(t, "Athena", a.Name)
 }
 
-func TestTrust_RegistryGet_Bad_NotFound(t *testing.T) {
+func TestTrust_Registry_Get_Bad_NotFound(t *testing.T) {
 	r := NewRegistry()
-	wantNil(t, r.Get("nonexistent"))
+	agent := r.Get("nonexistent")
+	wantNil(t, agent)
+	wantEqual(t, 0, r.Len())
 }
 
-func TestTrust_RegistryRemove_Good(t *testing.T) {
+func TestTrust_Registry_Remove_Good(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
 	wantTrue(t, r.Remove("Athena"))
 	wantEqual(t, 0, r.Len())
 }
 
-func TestTrust_RegistryRemove_Bad_NotFound(t *testing.T) {
+func TestTrust_Registry_Remove_Bad_NotFound(t *testing.T) {
 	r := NewRegistry()
 	wantFalse(t, r.Remove("nonexistent"))
+	wantEqual(t, 0, r.Len())
 }
 
-func TestTrust_RegistryList_Good(t *testing.T) {
+func TestTrust_Registry_List_Good(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
 	mustNoError(t, r.Register(Agent{Name: "Clotho", Tier: TierVerified}))
@@ -134,12 +139,14 @@ func TestTrust_RegistryList_Good(t *testing.T) {
 	wantTrue(t, names["Clotho"])
 }
 
-func TestTrust_RegistryList_Good_Empty(t *testing.T) {
+func TestTrust_Registry_List_Good_Empty(t *testing.T) {
 	r := NewRegistry()
-	wantEmpty(t, r.List())
+	agents := r.List()
+	wantEmpty(t, agents)
+	wantEqual(t, 0, r.Len())
 }
 
-func TestTrust_RegistryList_Good_Snapshot(t *testing.T) {
+func TestTrust_Registry_List_Good_Snapshot(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
 	agents := r.List()
@@ -149,7 +156,7 @@ func TestTrust_RegistryList_Good_Snapshot(t *testing.T) {
 	wantEqual(t, TierFull, r.Get("Athena").Tier)
 }
 
-func TestTrust_RegistryListSeq_Good(t *testing.T) {
+func TestTrust_Registry_ListSeq_Good(t *testing.T) {
 	r := NewRegistry()
 	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
 	mustNoError(t, r.Register(Agent{Name: "Clotho", Tier: TierVerified}))
