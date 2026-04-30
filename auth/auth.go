@@ -28,16 +28,16 @@ package auth
 import (
 	"context"
 	"crypto/rand"
-	"encoding/hex"
 	"sync"
 	"time"
 
-	core "dappco.re/go/core"
-	"dappco.re/go/core/crypt/crypt"
-	"dappco.re/go/core/crypt/crypt/lthn"
-	"dappco.re/go/core/crypt/crypt/pgp"
-	"dappco.re/go/core/io"
-	coreerr "dappco.re/go/core/log"
+	core "dappco.re/go"
+	"dappco.re/go/crypt/crypt"
+	"dappco.re/go/crypt/crypt/lthn"
+	"dappco.re/go/crypt/crypt/pgp"
+	"dappco.re/go/crypt/internal/corecompat"
+	"dappco.re/go/io"
+	coreerr "dappco.re/go/log"
 )
 
 const (
@@ -339,7 +339,9 @@ func (a *Authenticator) ValidateSession(token string) (*Session, error) {
 	}
 
 	if time.Now().After(session.ExpiresAt) {
-		_ = a.store.Delete(token)
+		if err := a.store.Delete(token); err != nil {
+			core.Print(nil, "auth.ValidateSession: failed to delete expired session: %v", err)
+		}
 		return nil, coreerr.E(op, "session expired", nil)
 	}
 
@@ -357,7 +359,9 @@ func (a *Authenticator) RefreshSession(token string) (*Session, error) {
 	}
 
 	if time.Now().After(session.ExpiresAt) {
-		_ = a.store.Delete(token)
+		if err := a.store.Delete(token); err != nil {
+			core.Print(nil, "auth.RefreshSession: failed to delete expired session: %v", err)
+		}
 		return nil, coreerr.E(op, "session expired", nil)
 	}
 
@@ -408,7 +412,9 @@ func (a *Authenticator) DeleteUser(userID string) error {
 	}
 
 	// Revoke any active sessions for this user
-	_ = a.store.DeleteByUser(userID)
+	if err := a.store.DeleteByUser(userID); err != nil {
+		return coreerr.E(op, "failed to revoke active sessions", err)
+	}
 
 	return nil
 }
@@ -440,16 +446,17 @@ func (a *Authenticator) Login(userID, password string) (*Session, error) {
 			return nil, coreerr.E(op, "failed to read password hash", err)
 		}
 
-		if core.HasPrefix(storedHash, "$argon2id$") {
-			valid, err := crypt.VerifyPassword(password, storedHash)
-			if err != nil {
-				return nil, coreerr.E(op, "failed to verify password", err)
-			}
-			if !valid {
-				return nil, coreerr.E(op, "invalid password", nil)
-			}
-			return a.createSession(userID)
+		if !core.HasPrefix(storedHash, "$argon2id$") {
+			return nil, coreerr.E(op, "corrupted password hash", nil)
 		}
+		valid, err := crypt.VerifyPassword(password, storedHash)
+		if err != nil {
+			return nil, coreerr.E(op, "failed to verify password", err)
+		}
+		if !valid {
+			return nil, coreerr.E(op, "invalid password", nil)
+		}
+		return a.createSession(userID)
 	}
 
 	// Fall back to legacy LTHN hash (.lthn file)
@@ -466,7 +473,9 @@ func (a *Authenticator) Login(userID, password string) (*Session, error) {
 	newHash, err := crypt.HashPassword(password)
 	if err == nil {
 		// Best-effort migration — do not fail login if migration write fails
-		_ = a.medium.Write(userPath(userID, ".hash"), newHash)
+		if err := a.medium.Write(userPath(userID, ".hash"), newHash); err != nil {
+			core.Print(nil, "auth.Login: password hash migration failed: %v", err)
+		}
 	}
 
 	return a.createSession(userID)
@@ -554,7 +563,9 @@ func (a *Authenticator) RotateKeyPair(userID, oldPassword, newPassword string) (
 	}
 
 	// Invalidate all sessions for this user
-	_ = a.store.DeleteByUser(userID)
+	if err := a.store.DeleteByUser(userID); err != nil {
+		return nil, coreerr.E(op, "failed to invalidate sessions", err)
+	}
 
 	return &user, nil
 }
@@ -592,7 +603,9 @@ func (a *Authenticator) RevokeKey(userID, password, reason string) error {
 	}
 
 	// Invalidate all sessions
-	_ = a.store.DeleteByUser(userID)
+	if err := a.store.DeleteByUser(userID); err != nil {
+		return coreerr.E(op, "failed to invalidate sessions", err)
+	}
 
 	return nil
 }
@@ -677,16 +690,20 @@ func (a *Authenticator) verifyPassword(userID, password string) error {
 	// Try Argon2id hash first (.hash file)
 	if a.medium.IsFile(userPath(userID, ".hash")) {
 		storedHash, err := a.medium.Read(userPath(userID, ".hash"))
-		if err == nil && core.HasPrefix(storedHash, "$argon2id$") {
-			valid, verr := crypt.VerifyPassword(password, storedHash)
-			if verr != nil {
-				return coreerr.E(op, "failed to verify password", nil)
-			}
-			if !valid {
-				return coreerr.E(op, "invalid password", nil)
-			}
-			return nil
+		if err != nil {
+			return coreerr.E(op, "failed to read password hash", err)
 		}
+		if !core.HasPrefix(storedHash, "$argon2id$") {
+			return coreerr.E(op, "corrupted password hash", nil)
+		}
+		valid, verr := crypt.VerifyPassword(password, storedHash)
+		if verr != nil {
+			return coreerr.E(op, "failed to verify password", verr)
+		}
+		if !valid {
+			return coreerr.E(op, "invalid password", nil)
+		}
+		return nil
 	}
 
 	// Fall back to legacy LTHN hash (.lthn file)
@@ -711,7 +728,7 @@ func (a *Authenticator) createSession(userID string) (*Session, error) {
 	}
 
 	session := &Session{
-		Token:     hex.EncodeToString(tokenBytes),
+		Token:     corecompat.HexEncode(tokenBytes),
 		UserID:    userID,
 		ExpiresAt: time.Now().Add(a.sessionTTL),
 	}

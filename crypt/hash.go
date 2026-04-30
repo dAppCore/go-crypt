@@ -1,12 +1,13 @@
 package crypt
 
 import (
+	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/subtle"
-	"encoding/base64"
 	"strconv"
 
-	core "dappco.re/go/core"
-	coreerr "dappco.re/go/core/log"
+	core "dappco.re/go"
+	"dappco.re/go/crypt/internal/corecompat"
+	coreerr "dappco.re/go/log"
 
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/bcrypt"
@@ -23,8 +24,8 @@ func HashPassword(password string) (string, error) {
 
 	hash := argon2.IDKey([]byte(password), salt, argon2Time, argon2Memory, argon2Parallelism, argon2KeyLen)
 
-	b64Salt := base64.RawStdEncoding.EncodeToString(salt)
-	b64Hash := base64.RawStdEncoding.EncodeToString(hash)
+	b64Salt := rawBase64Encode(salt)
+	b64Hash := rawBase64Encode(hash)
 
 	encoded := core.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s",
 		argon2.Version, argon2Memory, argon2Time, argon2Parallelism,
@@ -42,7 +43,7 @@ func VerifyPassword(password, hash string) (bool, error) {
 		return false, coreerr.E("crypt.VerifyPassword", "invalid hash format", nil)
 	}
 
-	version, err := parsePrefixedInt(parts[2], "v=")
+	version, err := parseArgon2Version(parts[2])
 	if err != nil {
 		return false, coreerr.E("crypt.VerifyPassword", "failed to parse version", err)
 	}
@@ -50,17 +51,17 @@ func VerifyPassword(password, hash string) (bool, error) {
 		return false, coreerr.E("crypt.VerifyPassword", core.Sprintf("unsupported argon2 version %d", version), nil)
 	}
 
-	memory, time, parallelism, err := parseArgonParams(parts[3])
+	memory, time, parallelism, err := parseArgon2Params(parts[3])
 	if err != nil {
 		return false, coreerr.E("crypt.VerifyPassword", "failed to parse parameters", err)
 	}
 
-	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
+	salt, err := rawBase64Decode(parts[4])
 	if err != nil {
 		return false, coreerr.E("crypt.VerifyPassword", "failed to decode salt", err)
 	}
 
-	expectedHash, err := base64.RawStdEncoding.DecodeString(parts[5])
+	expectedHash, err := rawBase64Decode(parts[5])
 	if err != nil {
 		return false, coreerr.E("crypt.VerifyPassword", "failed to decode hash", err)
 	}
@@ -138,4 +139,75 @@ func VerifyBcrypt(password, hash string) (bool, error) {
 		return false, coreerr.E("crypt.VerifyBcrypt", "failed to verify password", err)
 	}
 	return true, nil
+}
+
+func parseArgon2Version(s string) (int, error) {
+	if !core.HasPrefix(s, "v=") {
+		return 0, coreerr.E("crypt.parseArgon2Version", "missing version prefix", nil)
+	}
+	return strconv.Atoi(core.TrimPrefix(s, "v="))
+}
+
+func parseArgon2Params(s string) (uint32, uint32, uint8, error) {
+	parts := core.Split(s, ",")
+	if len(parts) != 3 {
+		return 0, 0, 0, coreerr.E("crypt.parseArgon2Params", "invalid parameter count", nil)
+	}
+
+	memory, err := parseArgon2Uint32(parts[0], "m=")
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	time, err := parseArgon2Uint32(parts[1], "t=")
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	parallelism, err := parseArgon2Uint8(parts[2], "p=")
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	return memory, time, parallelism, nil
+}
+
+func parseArgon2Uint32(s, prefix string) (uint32, error) {
+	if !core.HasPrefix(s, prefix) {
+		return 0, coreerr.E("crypt.parseArgon2Uint32", "missing parameter prefix", nil)
+	}
+	value, err := strconv.ParseUint(core.TrimPrefix(s, prefix), 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(value), nil
+}
+
+func parseArgon2Uint8(s, prefix string) (uint8, error) {
+	if !core.HasPrefix(s, prefix) {
+		return 0, coreerr.E("crypt.parseArgon2Uint8", "missing parameter prefix", nil)
+	}
+	value, err := strconv.ParseUint(core.TrimPrefix(s, prefix), 10, 8)
+	if err != nil {
+		return 0, err
+	}
+	return uint8(value), nil
+}
+
+func rawBase64Encode(src []byte) string {
+	return core.TrimSuffix(core.TrimSuffix(corecompat.Base64Encode(src), "="), "=")
+}
+
+func rawBase64Decode(s string) ([]byte, error) {
+	return corecompat.Base64Decode(padRawBase64(s))
+}
+
+func padRawBase64(s string) string {
+	switch len(s) % 4 {
+	case 0:
+		return s
+	case 2:
+		return s + "=="
+	case 3:
+		return s + "="
+	default:
+		return s
+	}
 }

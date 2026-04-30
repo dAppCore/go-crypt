@@ -3,8 +3,8 @@ package trust
 import (
 	"slices"
 
-	core "dappco.re/go/core"
-	coreerr "dappco.re/go/core/log"
+	core "dappco.re/go"
+	coreerr "dappco.re/go/log"
 )
 
 // Policy defines the access rules for a given trust tier.

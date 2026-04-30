@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	core "dappco.re/go/core"
-	"dappco.re/go/core/store"
+	core "dappco.re/go"
+	"dappco.re/go/store"
 )
 
 const sessionGroup = "sessions"

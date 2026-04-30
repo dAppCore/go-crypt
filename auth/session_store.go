@@ -2,10 +2,10 @@ package auth
 
 import (
 	"maps"
-	"sync"
+	"sync" // Note: AX-6 — internal concurrency primitive; structural for in-memory session store state.
 	"time"
 
-	coreerr "dappco.re/go/core/log"
+	coreerr "dappco.re/go/log"
 )
 
 // ErrSessionNotFound is returned when a session token is not found.

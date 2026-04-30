@@ -1,7 +1,9 @@
 package crypt
 
 import (
+	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/rand"
+	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/sha256"
 	"testing"
 )

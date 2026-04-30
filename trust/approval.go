@@ -2,11 +2,11 @@ package trust
 
 import (
 	"iter"
-	"sync"
+	"sync" // Note: AX-6 — internal concurrency primitive; structural for approval queue state.
 	"time"
 
-	core "dappco.re/go/core"
-	coreerr "dappco.re/go/core/log"
+	core "dappco.re/go"
+	coreerr "dappco.re/go/log"
 )
 
 // ApprovalStatus represents the state of an approval request.

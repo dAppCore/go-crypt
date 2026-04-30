@@ -11,7 +11,7 @@
 // Flags: --verbose, --coverage, --short, --pkg, --run, --race, --json
 package testcmd
 
-import "dappco.re/go/core/cli/pkg/cli"
+import "dappco.re/go/cli/pkg/cli"
 
 func init() {
 	cli.RegisterCommands(AddTestCommands)

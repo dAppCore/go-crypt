@@ -1,9 +1,9 @@
 package crypt
 
 import (
-	core "dappco.re/go/core"
-	"dappco.re/go/core/crypt/crypt"
-	"dappco.re/go/core/cli/pkg/cli"
+	core "dappco.re/go"
+	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/crypt/crypt"
 )
 
 // Checksum command flags
@@ -12,16 +12,19 @@ var (
 	checksumVerify string
 )
 
-func addChecksumCommand(parent *cli.Command) {
-	checksumCmd := cli.NewCommand("checksum", "Compute file checksum", "", func(cmd *cli.Command, args []string) error {
-		return runChecksum(args[0])
+func addChecksumCommand(c *core.Core) {
+	c.Command("crypt/checksum", core.Command{
+		Description: "Compute file checksum",
+		Action: func(opts core.Options) core.Result {
+			path := opts.String("_arg")
+			if path == "" {
+				return core.Fail(cli.Err("checksum requires a path"))
+			}
+			checksumSHA512 = opts.Bool("sha512")
+			checksumVerify = opts.String("verify")
+			return core.ResultOf(nil, runChecksum(path))
+		},
 	})
-	checksumCmd.Args = cli.ExactArgs(1)
-
-	cli.BoolFlag(checksumCmd, &checksumSHA512, "sha512", "", false, "Use SHA-512 instead of SHA-256")
-	cli.StringFlag(checksumCmd, &checksumVerify, "verify", "", "", "Verify file against this hash")
-
-	parent.AddCommand(checksumCmd)
 }
 
 func runChecksum(path string) error {

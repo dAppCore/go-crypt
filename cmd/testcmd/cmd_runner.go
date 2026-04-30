@@ -2,29 +2,17 @@ package testcmd
 
 import (
 	"bufio"
-	"context"
+	"io"
+	"os"
+	"os/exec"
 	"runtime"
-	"sync"
 
-	core "dappco.re/go/core"
-	"dappco.re/go/core/i18n"
-	coreerr "dappco.re/go/core/log"
-	"dappco.re/go/core/process"
-)
-
-var (
-	processInitOnce sync.Once
-	processInitErr  error
+	core "dappco.re/go"
+	"dappco.re/go/i18n"
+	coreerr "dappco.re/go/log"
 )
 
 func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bool) error {
-	processInitOnce.Do(func() {
-		processInitErr = process.Init(core.New())
-	})
-	if processInitErr != nil {
-		return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), processInitErr)
-	}
-
 	// Detect if we're in a Go project
 	if !(&core.Fs{}).New("/").Exists("go.mod") {
 		return coreerr.E("cmd.test", i18n.T("cmd.test.error.no_go_mod"), nil)
@@ -67,23 +55,40 @@ func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bo
 		core.Println()
 	}
 
-	options := process.RunOptions{
-		Command: "go",
-		Args:    args,
-		Dir:     core.Env("DIR_CWD"),
+	cmd := exec.Command("go", args...)
+	if dir := core.Env("DIR_CWD"); dir != "" {
+		cmd.Dir = dir
 	}
 	if target := getMacOSDeploymentTarget(); target != "" {
-		options.Env = []string{target}
+		cmd.Env = append(os.Environ(), target)
 	}
 
-	proc, err := process.StartWithOptions(context.Background(), options)
-	if err != nil {
-		return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), err)
+	stdout, stderr := core.NewBuilder(), core.NewBuilder()
+	if verbose && !jsonOutput {
+		cmd.Stdout = io.MultiWriter(os.Stdout, stdout)
+		cmd.Stderr = io.MultiWriter(os.Stderr, stderr)
+	} else {
+		cmd.Stdout = stdout
+		cmd.Stderr = stderr
 	}
 
-	waitErr := proc.Wait()
-	exitCode := proc.ExitCode
-	combined := filterLinkerWarnings(proc.Output())
+	waitErr := cmd.Run()
+	exitCode := 0
+	if waitErr != nil {
+		if exitErr, ok := waitErr.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), waitErr)
+		}
+	}
+	if exitCode < 0 {
+		exitCode = 1
+	}
+
+	combined := filterLinkerWarnings(core.Concat(stdout.String(), stderr.String()))
+	if waitErr != nil && combined == "" {
+		return coreerr.E("cmd.test", i18n.T("i18n.fail.run", "tests"), waitErr)
+	}
 
 	// Parse results
 	results := parseTestOutput(combined)

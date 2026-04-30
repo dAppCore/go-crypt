@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strconv"
 
-	core "dappco.re/go/core"
-	"dappco.re/go/core/i18n"
+	core "dappco.re/go"
+	"dappco.re/go/i18n"
 )
 
 type packageCoverage struct {
@@ -31,8 +31,8 @@ func parseTestOutput(output string) testResults {
 	results := testResults{}
 
 	// Regex patterns - handle both timed and cached test results
-	// Example: ok  	dappco.re/go/core/crypt/crypt	0.015s	coverage: 91.2% of statements
-	// Example: ok  	dappco.re/go/core/crypt/crypt	(cached)	coverage: 91.2% of statements
+	// Example: ok  	dappco.re/go/crypt/crypt	0.015s	coverage: 91.2% of statements
+	// Example: ok  	dappco.re/go/crypt/crypt	(cached)	coverage: 91.2% of statements
 	okPattern := regexp.MustCompile(`^ok\s+(\S+)\s+(?:[\d.]+s|\(cached\))(?:\s+coverage:\s+([\d.]+)%)?`)
 	failPattern := regexp.MustCompile(`^FAIL\s+(\S+)`)
 	skipPattern := regexp.MustCompile(`^\?\s+(\S+)\s+\[no test files\]`)
@@ -185,13 +185,7 @@ func formatCoverage(cov float64) string {
 func shortenPackageName(name string) string {
 	const modulePrefix = "dappco.re/go/"
 	if core.HasPrefix(name, modulePrefix) {
-		remainder := core.TrimPrefix(name, modulePrefix)
-		parts := core.SplitN(remainder, "/", 2)
-		if len(parts) == 2 {
-			return parts[1]
-		}
-		// Module root (e.g. "cli-php") — return as-is
-		return remainder
+		return core.TrimPrefix(name, modulePrefix)
 	}
 	return core.PathBase(name)
 }

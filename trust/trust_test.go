@@ -5,156 +5,161 @@ import (
 	"testing"
 	"time"
 
-	core "dappco.re/go/core"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	core "dappco.re/go"
 )
 
 // --- Tier ---
 
-func TestTrust_TierString_Good(t *testing.T) {
-	assert.Equal(t, "untrusted", TierUntrusted.String())
-	assert.Equal(t, "verified", TierVerified.String())
-	assert.Equal(t, "full", TierFull.String())
+func TestTrust_Tier_String_Good(t *testing.T) {
+	wantEqual(t, "untrusted", TierUntrusted.String())
+	wantEqual(t, "verified", TierVerified.String())
+	wantEqual(t, "full", TierFull.String())
 }
 
-func TestTrust_TierString_Bad_Unknown(t *testing.T) {
-	assert.Contains(t, Tier(99).String(), "unknown")
+func TestTrust_Tier_String_Bad_Unknown(t *testing.T) {
+	got := Tier(99).String()
+	wantContains(t, got, "unknown")
+	wantContains(t, got, "99")
 }
 
-func TestTrust_TierValid_Good(t *testing.T) {
-	assert.True(t, TierUntrusted.Valid())
-	assert.True(t, TierVerified.Valid())
-	assert.True(t, TierFull.Valid())
+func TestTrust_Tier_Valid_Good(t *testing.T) {
+	wantTrue(t, TierUntrusted.Valid())
+	wantTrue(t, TierVerified.Valid())
+	wantTrue(t, TierFull.Valid())
 }
 
-func TestTrust_TierValid_Bad(t *testing.T) {
-	assert.False(t, Tier(0).Valid())
-	assert.False(t, Tier(4).Valid())
-	assert.False(t, Tier(-1).Valid())
+func TestTrust_Tier_Valid_Bad(t *testing.T) {
+	wantFalse(t, Tier(0).Valid())
+	wantFalse(t, Tier(4).Valid())
+	wantFalse(t, Tier(-1).Valid())
 }
 
 // --- Registry ---
 
-func TestTrust_RegistryRegister_Good(t *testing.T) {
+func TestTrust_Registry_Register_Good(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Name: "Athena", Tier: TierFull})
-	require.NoError(t, err)
-	assert.Equal(t, 1, r.Len())
+	mustNoError(t, err)
+	wantEqual(t, 1, r.Len())
 }
 
-func TestTrust_RegistryRegister_Good_SetsDefaults(t *testing.T) {
+func TestTrust_Registry_Register_Good_SetsDefaults(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Name: "Athena", Tier: TierFull})
-	require.NoError(t, err)
+	mustNoError(t, err)
 
 	a := r.Get("Athena")
-	require.NotNil(t, a)
-	assert.Equal(t, 0, a.RateLimit) // full trust = unlimited
-	assert.False(t, a.CreatedAt.IsZero())
+	mustNotNil(t, a)
+	wantEqual(t, 0, a.RateLimit) // full trust = unlimited
+	wantFalse(t, a.CreatedAt.IsZero())
 }
 
-func TestTrust_RegistryRegister_Good_TierDefaults(t *testing.T) {
+func TestTrust_Registry_Register_Good_TierDefaults(t *testing.T) {
 	r := NewRegistry()
-	require.NoError(t, r.Register(Agent{Name: "A", Tier: TierUntrusted}))
-	require.NoError(t, r.Register(Agent{Name: "B", Tier: TierVerified}))
-	require.NoError(t, r.Register(Agent{Name: "C", Tier: TierFull}))
+	mustNoError(t, r.Register(Agent{Name: "A", Tier: TierUntrusted}))
+	mustNoError(t, r.Register(Agent{Name: "B", Tier: TierVerified}))
+	mustNoError(t, r.Register(Agent{Name: "C", Tier: TierFull}))
 
-	assert.Equal(t, 10, r.Get("A").RateLimit)
-	assert.Equal(t, 60, r.Get("B").RateLimit)
-	assert.Equal(t, 0, r.Get("C").RateLimit)
+	wantEqual(t, 10, r.Get("A").RateLimit)
+	wantEqual(t, 60, r.Get("B").RateLimit)
+	wantEqual(t, 0, r.Get("C").RateLimit)
 }
 
-func TestTrust_RegistryRegister_Good_PreservesExplicitRateLimit(t *testing.T) {
+func TestTrust_Registry_Register_Good_PreservesExplicitRateLimit(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Name: "Custom", Tier: TierVerified, RateLimit: 30})
-	require.NoError(t, err)
-	assert.Equal(t, 30, r.Get("Custom").RateLimit)
+	mustNoError(t, err)
+	wantEqual(t, 30, r.Get("Custom").RateLimit)
 }
 
-func TestTrust_RegistryRegister_Good_Update(t *testing.T) {
+func TestTrust_Registry_Register_Good_Update(t *testing.T) {
 	r := NewRegistry()
-	require.NoError(t, r.Register(Agent{Name: "Athena", Tier: TierVerified}))
-	require.NoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
+	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierVerified}))
+	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
 
-	assert.Equal(t, 1, r.Len())
-	assert.Equal(t, TierFull, r.Get("Athena").Tier)
+	wantEqual(t, 1, r.Len())
+	wantEqual(t, TierFull, r.Get("Athena").Tier)
 }
 
-func TestTrust_RegistryRegister_Bad_EmptyName(t *testing.T) {
+func TestTrust_Registry_Register_Bad_EmptyName(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Tier: TierFull})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "name is required")
+	wantError(t, err)
+	wantContains(t, err.Error(), "name is required")
 }
 
-func TestTrust_RegistryRegister_Bad_InvalidTier(t *testing.T) {
+func TestTrust_Registry_Register_Bad_InvalidTier(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Name: "Bad", Tier: Tier(0)})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid tier")
+	wantError(t, err)
+	wantContains(t, err.Error(), "invalid tier")
 }
 
-func TestTrust_RegistryGet_Good(t *testing.T) {
+func TestTrust_Registry_Get_Good(t *testing.T) {
 	r := NewRegistry()
-	require.NoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
+	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
 	a := r.Get("Athena")
-	require.NotNil(t, a)
-	assert.Equal(t, "Athena", a.Name)
+	mustNotNil(t, a)
+	wantEqual(t, "Athena", a.Name)
 }
 
-func TestTrust_RegistryGet_Bad_NotFound(t *testing.T) {
+func TestTrust_Registry_Get_Bad_NotFound(t *testing.T) {
 	r := NewRegistry()
-	assert.Nil(t, r.Get("nonexistent"))
+	agent := r.Get("nonexistent")
+	wantNil(t, agent)
+	wantEqual(t, 0, r.Len())
 }
 
-func TestTrust_RegistryRemove_Good(t *testing.T) {
+func TestTrust_Registry_Remove_Good(t *testing.T) {
 	r := NewRegistry()
-	require.NoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
-	assert.True(t, r.Remove("Athena"))
-	assert.Equal(t, 0, r.Len())
+	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
+	wantTrue(t, r.Remove("Athena"))
+	wantEqual(t, 0, r.Len())
 }
 
-func TestTrust_RegistryRemove_Bad_NotFound(t *testing.T) {
+func TestTrust_Registry_Remove_Bad_NotFound(t *testing.T) {
 	r := NewRegistry()
-	assert.False(t, r.Remove("nonexistent"))
+	wantFalse(t, r.Remove("nonexistent"))
+	wantEqual(t, 0, r.Len())
 }
 
-func TestTrust_RegistryList_Good(t *testing.T) {
+func TestTrust_Registry_List_Good(t *testing.T) {
 	r := NewRegistry()
-	require.NoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
-	require.NoError(t, r.Register(Agent{Name: "Clotho", Tier: TierVerified}))
+	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
+	mustNoError(t, r.Register(Agent{Name: "Clotho", Tier: TierVerified}))
 
 	agents := r.List()
-	assert.Len(t, agents, 2)
+	wantLen(t, agents, 2)
 
 	names := make(map[string]bool)
 	for _, a := range agents {
 		names[a.Name] = true
 	}
-	assert.True(t, names["Athena"])
-	assert.True(t, names["Clotho"])
+	wantTrue(t, names["Athena"])
+	wantTrue(t, names["Clotho"])
 }
 
-func TestTrust_RegistryList_Good_Empty(t *testing.T) {
+func TestTrust_Registry_List_Good_Empty(t *testing.T) {
 	r := NewRegistry()
-	assert.Empty(t, r.List())
+	agents := r.List()
+	wantEmpty(t, agents)
+	wantEqual(t, 0, r.Len())
 }
 
-func TestTrust_RegistryList_Good_Snapshot(t *testing.T) {
+func TestTrust_Registry_List_Good_Snapshot(t *testing.T) {
 	r := NewRegistry()
-	require.NoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
+	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
 	agents := r.List()
 
 	// Modifying the returned slice should not affect the registry.
 	agents[0].Tier = TierUntrusted
-	assert.Equal(t, TierFull, r.Get("Athena").Tier)
+	wantEqual(t, TierFull, r.Get("Athena").Tier)
 }
 
-func TestTrust_RegistryListSeq_Good(t *testing.T) {
+func TestTrust_Registry_ListSeq_Good(t *testing.T) {
 	r := NewRegistry()
-	require.NoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
-	require.NoError(t, r.Register(Agent{Name: "Clotho", Tier: TierVerified}))
+	mustNoError(t, r.Register(Agent{Name: "Athena", Tier: TierFull}))
+	mustNoError(t, r.Register(Agent{Name: "Clotho", Tier: TierVerified}))
 
 	count := 0
 	names := make(map[string]bool)
@@ -162,9 +167,9 @@ func TestTrust_RegistryListSeq_Good(t *testing.T) {
 		names[a.Name] = true
 		count++
 	}
-	assert.Equal(t, 2, count)
-	assert.True(t, names["Athena"])
-	assert.True(t, names["Clotho"])
+	wantEqual(t, 2, count)
+	wantTrue(t, names["Athena"])
+	wantTrue(t, names["Clotho"])
 }
 
 // --- Agent ---
@@ -175,10 +180,10 @@ func TestTrust_AgentTokenExpiry_Good(t *testing.T) {
 		Tier:           TierVerified,
 		TokenExpiresAt: time.Now().Add(-1 * time.Hour),
 	}
-	assert.True(t, time.Now().After(agent.TokenExpiresAt))
+	wantTrue(t, time.Now().After(agent.TokenExpiresAt))
 
 	agent.TokenExpiresAt = time.Now().Add(1 * time.Hour)
-	assert.True(t, time.Now().Before(agent.TokenExpiresAt))
+	wantTrue(t, time.Now().Before(agent.TokenExpiresAt))
 }
 
 // --- Phase 0 Additions ---
@@ -198,7 +203,7 @@ func TestTrust_ConcurrentRegistryOperations_Good(t *testing.T) {
 			defer wg.Done()
 			name := core.Sprintf("agent-%d", idx)
 			err := r.Register(Agent{Name: name, Tier: TierVerified})
-			assert.NoError(t, err)
+			wantNoError(t, err)
 		}(i)
 	}
 
@@ -228,16 +233,16 @@ func TestTrust_ConcurrentRegistryOperations_Good(t *testing.T) {
 func TestTrust_RegisterTierZero_Bad(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Name: "InvalidTierAgent", Tier: Tier(0)})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid tier")
+	wantError(t, err)
+	wantContains(t, err.Error(), "invalid tier")
 }
 
 // TestTrust_RegisterNegativeTier_Bad verifies that negative tiers are rejected.
 func TestTrust_RegisterNegativeTier_Bad(t *testing.T) {
 	r := NewRegistry()
 	err := r.Register(Agent{Name: "NegativeTier", Tier: Tier(-1)})
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid tier")
+	wantError(t, err)
+	wantContains(t, err.Error(), "invalid tier")
 }
 
 // TestTrust_TokenExpiryBoundary_Good verifies token expiry checking.
@@ -248,11 +253,11 @@ func TestTrust_TokenExpiryBoundary_Good(t *testing.T) {
 		Tier:           TierVerified,
 		TokenExpiresAt: time.Now().Add(1 * time.Millisecond),
 	}
-	assert.True(t, time.Now().Before(futureAgent.TokenExpiresAt))
+	wantTrue(t, time.Now().Before(futureAgent.TokenExpiresAt))
 
 	// Wait for it to expire
 	time.Sleep(5 * time.Millisecond)
-	assert.True(t, time.Now().After(futureAgent.TokenExpiresAt),
+	wantTrue(t, time.Now().After(futureAgent.TokenExpiresAt),
 		"token should now be expired")
 }
 
@@ -265,12 +270,12 @@ func TestTrust_TokenExpiryZeroValue_Ugly(t *testing.T) {
 	}
 	r := NewRegistry()
 	err := r.Register(agent)
-	require.NoError(t, err)
+	mustNoError(t, err)
 
 	// Zero-value time is in the past
 	retrieved := r.Get("ZeroExpiry")
-	require.NotNil(t, retrieved)
-	assert.True(t, time.Now().After(retrieved.TokenExpiresAt),
+	mustNotNil(t, retrieved)
+	wantTrue(t, time.Now().After(retrieved.TokenExpiresAt),
 		"zero-value token expiry should be in the past")
 }
 
@@ -280,7 +285,7 @@ func TestTrust_ConcurrentListDuringMutations_Good(t *testing.T) {
 
 	// Pre-populate
 	for i := range 5 {
-		require.NoError(t, r.Register(Agent{
+		mustNoError(t, r.Register(Agent{
 			Name: core.Sprintf("base-%d", i),
 			Tier: TierFull,
 		}))

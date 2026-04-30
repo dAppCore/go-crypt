@@ -8,8 +8,7 @@ import (
 	"encoding/pem"
 	"testing"
 
-	core "dappco.re/go/core"
-	"github.com/stretchr/testify/assert"
+	core "dappco.re/go"
 )
 
 // mockReader is a reader that returns an error.
@@ -19,55 +18,55 @@ func (r *mockReader) Read(p []byte) (n int, err error) {
 	return 0, core.NewError("read error")
 }
 
-func TestRSA_RSA_Good(t *testing.T) {
+func TestRSA_Service_GenerateKeyPair_Good(t *testing.T) {
 	s := NewService()
 
 	// Generate a new key pair
 	pubKey, privKey, err := s.GenerateKeyPair(2048)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, pubKey)
-	assert.NotEmpty(t, privKey)
+	wantNoError(t, err)
+	wantNotEmpty(t, pubKey)
+	wantNotEmpty(t, privKey)
 
 	// Encrypt and decrypt a message
 	message := []byte("Hello, World!")
 	ciphertext, err := s.Encrypt(pubKey, message, nil)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 	plaintext, err := s.Decrypt(privKey, ciphertext, nil)
-	assert.NoError(t, err)
-	assert.Equal(t, message, plaintext)
+	wantNoError(t, err)
+	wantEqual(t, message, plaintext)
 }
 
-func TestRSA_RSA_Bad(t *testing.T) {
+func TestRSA_Service_GenerateKeyPair_Bad(t *testing.T) {
 	s := NewService()
 
 	// Decrypt with wrong key
 	pubKey, _, err := s.GenerateKeyPair(2048)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 	_, otherPrivKey, err := s.GenerateKeyPair(2048)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 	message := []byte("Hello, World!")
 	ciphertext, err := s.Encrypt(pubKey, message, nil)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 	_, err = s.Decrypt(otherPrivKey, ciphertext, nil)
-	assert.Error(t, err)
+	wantError(t, err)
 
 	// Key size too small
 	_, _, err = s.GenerateKeyPair(512)
-	assert.Error(t, err)
+	wantError(t, err)
 }
 
-func TestRSA_RSA_Ugly(t *testing.T) {
+func TestRSA_Service_GenerateKeyPair_Ugly(t *testing.T) {
 	s := NewService()
 
 	// Malformed keys and messages
 	_, err := s.Encrypt([]byte("not-a-key"), []byte("message"), nil)
-	assert.Error(t, err)
+	wantError(t, err)
 	_, err = s.Decrypt([]byte("not-a-key"), []byte("message"), nil)
-	assert.Error(t, err)
+	wantError(t, err)
 	_, err = s.Encrypt([]byte("-----BEGIN PUBLIC KEY-----\nMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAJ/6j/y7/r/9/z/8/f/+/v7+/v7+/v7+\nv/7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v4=\n-----END PUBLIC KEY-----"), []byte("message"), nil)
-	assert.Error(t, err)
+	wantError(t, err)
 	_, err = s.Decrypt([]byte("-----BEGIN RSA PRIVATE KEY-----\nMIIBOQIBAAJBAL/6j/y7/r/9/z/8/f/+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+\nv/7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v4CAwEAAQJB\nAL/6j/y7/r/9/z/8/f/+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+\nv/7+/v7+/v7+/v7+/v7+/v7+/v7+/v4CgYEA/f8/vLv+v/3/P/z9//7+/v7+/v7+\nvv7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v4C\ngYEA/f8/vLv+v/3/P/z9//7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+\nvv7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v4CgYEA/f8/vLv+v/3/P/z9//7+/v7+\nvv7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+\nv/4CgYEA/f8/vLv+v/3/P/z9//7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+\nvv7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v4CgYEA/f8/vLv+v/3/P/z9//7+/v7+\nvv7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+\nv/4=\n-----END RSA PRIVATE KEY-----"), []byte("message"), nil)
-	assert.Error(t, err)
+	wantError(t, err)
 
 	// Key generation with broken reader — Go 1.26+ rsa.GenerateKey may
 	// recover from reader errors internally, so we only verify it doesn't panic.
@@ -79,23 +78,23 @@ func TestRSA_RSA_Ugly(t *testing.T) {
 	// Encrypt with non-RSA key
 	rand.Reader = oldReader // Restore reader for this test
 	ecdsaPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 	ecdsaPubKeyBytes, err := x509.MarshalPKIXPublicKey(&ecdsaPrivKey.PublicKey)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 	ecdsaPubKeyPEM := pem.EncodeToMemory(&pem.Block{
 		Type:  "PUBLIC KEY",
 		Bytes: ecdsaPubKeyBytes,
 	})
 	_, err = s.Encrypt(ecdsaPubKeyPEM, []byte("message"), nil)
-	assert.Error(t, err)
+	wantError(t, err)
 	rand.Reader = &mockReader{} // Set it back for the next test
 
 	// Encrypt message too long
 	rand.Reader = oldReader // Restore reader for this test
 	pubKey, _, err := s.GenerateKeyPair(2048)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 	message := make([]byte, 2048)
 	_, err = s.Encrypt(pubKey, message, nil)
-	assert.Error(t, err)
+	wantError(t, err)
 	rand.Reader = &mockReader{} // Set it back
 }

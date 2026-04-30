@@ -1,29 +1,28 @@
 package crypt
 
 import (
+	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/rand"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
-func TestSymmetric_ChaCha20_Good(t *testing.T) {
+func TestSymmetric_ChaCha20Encrypt_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 
 	plaintext := []byte("ChaCha20-Poly1305 test data")
 
 	encrypted, err := ChaCha20Encrypt(plaintext, key)
-	assert.NoError(t, err)
-	assert.NotEqual(t, plaintext, encrypted)
+	wantNoError(t, err)
+	wantNotEqual(t, plaintext, encrypted)
 
 	decrypted, err := ChaCha20Decrypt(encrypted, key)
-	assert.NoError(t, err)
-	assert.Equal(t, plaintext, decrypted)
+	wantNoError(t, err)
+	wantEqual(t, plaintext, decrypted)
 }
 
-func TestSymmetric_ChaCha20_Bad(t *testing.T) {
+func TestSymmetric_ChaCha20Encrypt_Bad(t *testing.T) {
 	key := make([]byte, 32)
 	wrongKey := make([]byte, 32)
 	_, _ = rand.Read(key)
@@ -32,32 +31,32 @@ func TestSymmetric_ChaCha20_Bad(t *testing.T) {
 	plaintext := []byte("secret message")
 
 	encrypted, err := ChaCha20Encrypt(plaintext, key)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 
 	_, err = ChaCha20Decrypt(encrypted, wrongKey)
-	assert.Error(t, err)
+	wantError(t, err)
 }
 
-func TestSymmetric_AESGCM_Good(t *testing.T) {
+func TestSymmetric_AESGCMEncrypt_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 
 	plaintext := []byte("AES-256-GCM test data")
 
 	encrypted, err := AESGCMEncrypt(plaintext, key)
-	assert.NoError(t, err)
-	assert.NotEqual(t, plaintext, encrypted)
+	wantNoError(t, err)
+	wantNotEqual(t, plaintext, encrypted)
 
 	decrypted, err := AESGCMDecrypt(encrypted, key)
-	assert.NoError(t, err)
-	assert.Equal(t, plaintext, decrypted)
+	wantNoError(t, err)
+	wantEqual(t, plaintext, decrypted)
 }
 
 // --- Phase 0 Additions ---
 
-// TestSymmetric_AESGCM_Bad_WrongKey verifies wrong key returns error, not corrupt data.
-func TestSymmetric_AESGCM_Bad_WrongKey(t *testing.T) {
+// TestSymmetric_AESGCMEncrypt_Bad_WrongKey verifies wrong key returns error, not corrupt data.
+func TestSymmetric_AESGCMEncrypt_Bad_WrongKey(t *testing.T) {
 	key := make([]byte, 32)
 	wrongKey := make([]byte, 32)
 	_, _ = rand.Read(key)
@@ -65,41 +64,41 @@ func TestSymmetric_AESGCM_Bad_WrongKey(t *testing.T) {
 
 	plaintext := []byte("secret data for AES")
 	encrypted, err := AESGCMEncrypt(plaintext, key)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 
 	decrypted, err := AESGCMDecrypt(encrypted, wrongKey)
-	assert.Error(t, err, "wrong key must return error")
-	assert.Nil(t, decrypted, "wrong key must not return partial data")
+	wantError(t, err, "wrong key must return error")
+	wantNil(t, decrypted, "wrong key must not return partial data")
 }
 
 // TestSymmetric_ChaCha20EmptyPlaintext_Good verifies empty plaintext round-trip at low level.
 func TestSymmetric_ChaCha20EmptyPlaintext_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 
 	encrypted, err := ChaCha20Encrypt([]byte{}, key)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, encrypted, "ciphertext should include nonce + auth tag")
+	wantNoError(t, err)
+	wantNotEmpty(t, encrypted, "ciphertext should include nonce + auth tag")
 
 	decrypted, err := ChaCha20Decrypt(encrypted, key)
-	assert.NoError(t, err)
-	assert.Empty(t, decrypted)
+	wantNoError(t, err)
+	wantEmpty(t, decrypted)
 }
 
 // TestSymmetric_AESGCMEmptyPlaintext_Good verifies empty plaintext round-trip at low level.
 func TestSymmetric_AESGCMEmptyPlaintext_Good(t *testing.T) {
 	key := make([]byte, 32)
 	_, err := rand.Read(key)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 
 	encrypted, err := AESGCMEncrypt([]byte{}, key)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, encrypted)
+	wantNoError(t, err)
+	wantNotEmpty(t, encrypted)
 
 	decrypted, err := AESGCMDecrypt(encrypted, key)
-	assert.NoError(t, err)
-	assert.Empty(t, decrypted)
+	wantNoError(t, err)
+	wantEmpty(t, decrypted)
 }
 
 // TestSymmetric_ChaCha20LargePayload_Good verifies 1MB encrypt/decrypt round-trip.
@@ -113,11 +112,11 @@ func TestSymmetric_ChaCha20LargePayload_Good(t *testing.T) {
 	}
 
 	encrypted, err := ChaCha20Encrypt(plaintext, key)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 
 	decrypted, err := ChaCha20Decrypt(encrypted, key)
-	assert.NoError(t, err)
-	assert.Equal(t, plaintext, decrypted)
+	wantNoError(t, err)
+	wantEqual(t, plaintext, decrypted)
 }
 
 // TestSymmetric_AESGCMLargePayload_Good verifies 1MB encrypt/decrypt round-trip.
@@ -131,9 +130,9 @@ func TestSymmetric_AESGCMLargePayload_Good(t *testing.T) {
 	}
 
 	encrypted, err := AESGCMEncrypt(plaintext, key)
-	assert.NoError(t, err)
+	wantNoError(t, err)
 
 	decrypted, err := AESGCMDecrypt(encrypted, key)
-	assert.NoError(t, err)
-	assert.Equal(t, plaintext, decrypted)
+	wantNoError(t, err)
+	wantEqual(t, plaintext, decrypted)
 }

@@ -1,13 +1,16 @@
 package crypt
 
 import (
+	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/aes"
+	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/cipher"
+	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/rand"
 
-	coreerr "dappco.re/go/core/log"
+	coreerr "dappco.re/go/log"
 
-	"golang.org/x/crypto/chacha20poly1305"
+	enchantrixchacha "forge.lthn.ai/Snider/Enchantrix/pkg/crypt/std/chachapoly"
 )
 
 // ChaCha20Encrypt encrypts plaintext using ChaCha20-Poly1305.
@@ -15,41 +18,14 @@ import (
 // to the ciphertext.
 // Usage: call ChaCha20Encrypt(...) during the package's normal workflow.
 func ChaCha20Encrypt(plaintext, key []byte) ([]byte, error) {
-	aead, err := chacha20poly1305.NewX(key)
-	if err != nil {
-		return nil, coreerr.E("crypt.ChaCha20Encrypt", "failed to create cipher", err)
-	}
-
-	nonce := make([]byte, aead.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return nil, coreerr.E("crypt.ChaCha20Encrypt", "failed to generate nonce", err)
-	}
-
-	ciphertext := aead.Seal(nonce, nonce, plaintext, nil)
-	return ciphertext, nil
+	return enchantrixchacha.Encrypt(plaintext, key)
 }
 
 // ChaCha20Decrypt decrypts ciphertext encrypted with ChaCha20Encrypt.
 // The key must be 32 bytes. Expects the nonce prepended to the ciphertext.
 // Usage: call ChaCha20Decrypt(...) during the package's normal workflow.
 func ChaCha20Decrypt(ciphertext, key []byte) ([]byte, error) {
-	aead, err := chacha20poly1305.NewX(key)
-	if err != nil {
-		return nil, coreerr.E("crypt.ChaCha20Decrypt", "failed to create cipher", err)
-	}
-
-	nonceSize := aead.NonceSize()
-	if len(ciphertext) < nonceSize {
-		return nil, coreerr.E("crypt.ChaCha20Decrypt", "ciphertext too short", nil)
-	}
-
-	nonce, encrypted := ciphertext[:nonceSize], ciphertext[nonceSize:]
-	plaintext, err := aead.Open(nil, nonce, encrypted, nil)
-	if err != nil {
-		return nil, coreerr.E("crypt.ChaCha20Decrypt", "failed to decrypt", err)
-	}
-
-	return plaintext, nil
+	return enchantrixchacha.Decrypt(ciphertext, key)
 }
 
 // AESGCMEncrypt encrypts plaintext using AES-256-GCM.

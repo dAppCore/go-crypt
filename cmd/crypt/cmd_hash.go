@@ -1,9 +1,9 @@
 package crypt
 
 import (
-	core "dappco.re/go/core"
-	"dappco.re/go/core/crypt/crypt"
-	"dappco.re/go/core/cli/pkg/cli"
+	core "dappco.re/go"
+	"dappco.re/go/cli/pkg/cli"
+	"dappco.re/go/crypt/crypt"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -14,16 +14,19 @@ var (
 	hashVerify string
 )
 
-func addHashCommand(parent *cli.Command) {
-	hashCmd := cli.NewCommand("hash", "Hash a password with Argon2id or bcrypt", "", func(cmd *cli.Command, args []string) error {
-		return runHash(args[0])
+func addHashCommand(c *core.Core) {
+	c.Command("crypt/hash", core.Command{
+		Description: "Hash a password with Argon2id or bcrypt",
+		Action: func(opts core.Options) core.Result {
+			input := opts.String("_arg")
+			if input == "" {
+				return core.Fail(cli.Err("hash requires input"))
+			}
+			hashBcrypt = opts.Bool("bcrypt")
+			hashVerify = opts.String("verify")
+			return core.ResultOf(nil, runHash(input))
+		},
 	})
-	hashCmd.Args = cli.ExactArgs(1)
-
-	cli.BoolFlag(hashCmd, &hashBcrypt, "bcrypt", "b", false, "Use bcrypt instead of Argon2id")
-	cli.StringFlag(hashCmd, &hashVerify, "verify", "", "", "Verify input against this hash")
-
-	parent.AddCommand(hashCmd)
 }
 
 func runHash(input string) error {
