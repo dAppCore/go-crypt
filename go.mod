@@ -3,11 +3,11 @@ module dappco.re/go/crypt
 go 1.26.0
 
 require (
-	dappco.re/go/cli v0.8.0-alpha.1
-	dappco.re/go/i18n v0.8.0-alpha.1
-	dappco.re/go/io v0.8.0-alpha.1
-	dappco.re/go/log v0.8.0-alpha.1
-	dappco.re/go/store v0.8.0-alpha.1
+	dappco.re/go/cli v0.9.0
+	dappco.re/go/i18n v0.9.0
+	dappco.re/go/io v0.9.0
+	dappco.re/go/log v0.9.0
+	dappco.re/go/store v0.9.0
 	forge.lthn.ai/Snider/Enchantrix v0.0.5
 	github.com/ProtonMail/go-crypto v1.4.0
 	golang.org/x/crypto v0.50.0
@@ -66,7 +66,7 @@ require (
 
 require (
 	dappco.re/go v0.9.0
-	dappco.re/go/inference v0.8.0-alpha.1 // indirect
+	dappco.re/go/inference v0.9.0 // indirect
 	github.com/charmbracelet/x/ansi v0.11.6 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
