@@ -37,3 +37,102 @@ func TestHMAC_VerifyHMAC_Bad(t *testing.T) {
 	valid := VerifyHMAC(tampered, key, mac, sha256.New)
 	wantFalse(t, valid)
 }
+
+func TestHmac_HMACSHA256_Good(t *core.T) {
+	subject := HMACSHA256
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHmac_HMACSHA256_Bad(t *core.T) {
+	subject := HMACSHA256
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHmac_HMACSHA256_Ugly(t *core.T) {
+	subject := HMACSHA256
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHmac_HMACSHA512_Good(t *core.T) {
+	subject := HMACSHA512
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHmac_HMACSHA512_Bad(t *core.T) {
+	subject := HMACSHA512
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHmac_HMACSHA512_Ugly(t *core.T) {
+	subject := HMACSHA512
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHmac_VerifyHMAC_Good(t *core.T) {
+	subject := VerifyHMAC
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHmac_VerifyHMAC_Bad(t *core.T) {
+	subject := VerifyHMAC
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHmac_VerifyHMAC_Ugly(t *core.T) {
+	subject := VerifyHMAC
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

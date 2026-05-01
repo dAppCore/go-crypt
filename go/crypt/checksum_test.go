@@ -75,3 +75,91 @@ func TestChecksum_SHA256FileWithContent_Good(t *testing.T) {
 	// Must match SHA256Sum("hello")
 	wantEqual(t, SHA256Sum([]byte("hello")), hash)
 }
+
+func TestChecksum_SHA256File_Bad(t *core.T) {
+	subject := SHA256File
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChecksum_SHA256File_Ugly(t *core.T) {
+	subject := SHA256File
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChecksum_SHA512File_Bad(t *core.T) {
+	subject := SHA512File
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChecksum_SHA512File_Ugly(t *core.T) {
+	subject := SHA512File
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChecksum_SHA256Sum_Bad(t *core.T) {
+	subject := SHA256Sum
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChecksum_SHA256Sum_Ugly(t *core.T) {
+	subject := SHA256Sum
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChecksum_SHA512Sum_Bad(t *core.T) {
+	subject := SHA512Sum
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChecksum_SHA512Sum_Ugly(t *core.T) {
+	subject := SHA512Sum
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

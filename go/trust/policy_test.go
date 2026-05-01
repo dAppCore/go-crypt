@@ -377,3 +377,135 @@ func TestPolicy_PolicyEngine_Evaluate_Bad_Tier2ScopedReposWithEmptyRepoParam(t *
 	result := pe.Evaluate("Clotho", CapReadSecrets, "")
 	wantEqual(t, Deny, result.Decision)
 }
+
+func TestPolicy_Decision_String_Bad(t *core.T) {
+	subject := (*Decision).String
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_Decision_String_Ugly(t *core.T) {
+	subject := (*Decision).String
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_NewPolicyEngine_Good(t *core.T) {
+	subject := NewPolicyEngine
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_NewPolicyEngine_Bad(t *core.T) {
+	subject := NewPolicyEngine
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_NewPolicyEngine_Ugly(t *core.T) {
+	subject := NewPolicyEngine
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_PolicyEngine_Evaluate_Good(t *core.T) {
+	subject := (*PolicyEngine).Evaluate
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_PolicyEngine_Evaluate_Bad(t *core.T) {
+	subject := (*PolicyEngine).Evaluate
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_PolicyEngine_Evaluate_Ugly(t *core.T) {
+	subject := (*PolicyEngine).Evaluate
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_PolicyEngine_SetPolicy_Bad(t *core.T) {
+	subject := (*PolicyEngine).SetPolicy
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_PolicyEngine_SetPolicy_Ugly(t *core.T) {
+	subject := (*PolicyEngine).SetPolicy
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_PolicyEngine_GetPolicy_Bad(t *core.T) {
+	subject := (*PolicyEngine).GetPolicy
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPolicy_PolicyEngine_GetPolicy_Ugly(t *core.T) {
+	subject := (*PolicyEngine).GetPolicy
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

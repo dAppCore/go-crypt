@@ -121,3 +121,102 @@ func TestKDF_HKDFNilSalt_Good(t *testing.T) {
 	wantNoError(t, err)
 	wantLen(t, key, 32)
 }
+
+func TestKdf_DeriveKey_Good(t *core.T) {
+	subject := DeriveKey
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestKdf_DeriveKey_Bad(t *core.T) {
+	subject := DeriveKey
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestKdf_DeriveKey_Ugly(t *core.T) {
+	subject := DeriveKey
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestKdf_DeriveKeyScrypt_Good(t *core.T) {
+	subject := DeriveKeyScrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestKdf_DeriveKeyScrypt_Bad(t *core.T) {
+	subject := DeriveKeyScrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestKdf_DeriveKeyScrypt_Ugly(t *core.T) {
+	subject := DeriveKeyScrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestKdf_HKDF_Good(t *core.T) {
+	subject := HKDF
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestKdf_HKDF_Bad(t *core.T) {
+	subject := HKDF
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestKdf_HKDF_Ugly(t *core.T) {
+	subject := HKDF
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

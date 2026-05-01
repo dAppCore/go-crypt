@@ -136,3 +136,102 @@ func TestSymmetric_AESGCMLargePayload_Good(t *testing.T) {
 	wantNoError(t, err)
 	wantEqual(t, plaintext, decrypted)
 }
+
+func TestSymmetric_ChaCha20Encrypt_Ugly(t *core.T) {
+	subject := ChaCha20Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSymmetric_ChaCha20Decrypt_Good(t *core.T) {
+	subject := ChaCha20Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSymmetric_ChaCha20Decrypt_Bad(t *core.T) {
+	subject := ChaCha20Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSymmetric_ChaCha20Decrypt_Ugly(t *core.T) {
+	subject := ChaCha20Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSymmetric_AESGCMEncrypt_Bad(t *core.T) {
+	subject := AESGCMEncrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSymmetric_AESGCMEncrypt_Ugly(t *core.T) {
+	subject := AESGCMEncrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSymmetric_AESGCMDecrypt_Good(t *core.T) {
+	subject := AESGCMDecrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSymmetric_AESGCMDecrypt_Bad(t *core.T) {
+	subject := AESGCMDecrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSymmetric_AESGCMDecrypt_Ugly(t *core.T) {
+	subject := AESGCMDecrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

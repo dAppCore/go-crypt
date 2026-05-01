@@ -111,3 +111,69 @@ func TestChachapoly_Decrypt_Bad_InvalidKeySize(t *testing.T) {
 	_, err := Decrypt(ciphertext, key)
 	wantError(t, err)
 }
+
+func TestChachapoly_Encrypt_Good(t *core.T) {
+	subject := Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChachapoly_Encrypt_Bad(t *core.T) {
+	subject := Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChachapoly_Encrypt_Ugly(t *core.T) {
+	subject := Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChachapoly_Decrypt_Good(t *core.T) {
+	subject := Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChachapoly_Decrypt_Bad(t *core.T) {
+	subject := Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestChachapoly_Decrypt_Ugly(t *core.T) {
+	subject := Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

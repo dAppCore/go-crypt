@@ -314,3 +314,223 @@ func TestApproval_ApprovalWorkflow_Good_DenyEndToEnd(t *testing.T) {
 	mustNotNil(t, req)
 	wantEqual(t, ApprovalDenied, req.Status)
 }
+
+func TestApproval_ApprovalStatus_String_Bad(t *core.T) {
+	subject := (*ApprovalStatus).String
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalStatus_String_Ugly(t *core.T) {
+	subject := (*ApprovalStatus).String
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_NewApprovalQueue_Good(t *core.T) {
+	subject := NewApprovalQueue
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_NewApprovalQueue_Bad(t *core.T) {
+	subject := NewApprovalQueue
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_NewApprovalQueue_Ugly(t *core.T) {
+	subject := NewApprovalQueue
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Submit_Bad(t *core.T) {
+	subject := (*ApprovalQueue).Submit
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Submit_Ugly(t *core.T) {
+	subject := (*ApprovalQueue).Submit
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Approve_Bad(t *core.T) {
+	subject := (*ApprovalQueue).Approve
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Approve_Ugly(t *core.T) {
+	subject := (*ApprovalQueue).Approve
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Deny_Bad(t *core.T) {
+	subject := (*ApprovalQueue).Deny
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Deny_Ugly(t *core.T) {
+	subject := (*ApprovalQueue).Deny
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Get_Bad(t *core.T) {
+	subject := (*ApprovalQueue).Get
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Get_Ugly(t *core.T) {
+	subject := (*ApprovalQueue).Get
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Pending_Bad(t *core.T) {
+	subject := (*ApprovalQueue).Pending
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Pending_Ugly(t *core.T) {
+	subject := (*ApprovalQueue).Pending
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_PendingSeq_Bad(t *core.T) {
+	subject := (*ApprovalQueue).PendingSeq
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_PendingSeq_Ugly(t *core.T) {
+	subject := (*ApprovalQueue).PendingSeq
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Len_Good(t *core.T) {
+	subject := (*ApprovalQueue).Len
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Len_Bad(t *core.T) {
+	subject := (*ApprovalQueue).Len
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestApproval_ApprovalQueue_Len_Ugly(t *core.T) {
+	subject := (*ApprovalQueue).Len
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

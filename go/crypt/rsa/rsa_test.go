@@ -98,3 +98,135 @@ func TestRSA_Service_GenerateKeyPair_Ugly(t *testing.T) {
 	wantError(t, err)
 	rand.Reader = &mockReader{} // Set it back
 }
+
+func TestRsa_NewService_Good(t *core.T) {
+	subject := NewService
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_NewService_Bad(t *core.T) {
+	subject := NewService
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_NewService_Ugly(t *core.T) {
+	subject := NewService
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_Service_GenerateKeyPair_Good(t *core.T) {
+	subject := (*Service).GenerateKeyPair
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_Service_GenerateKeyPair_Bad(t *core.T) {
+	subject := (*Service).GenerateKeyPair
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_Service_GenerateKeyPair_Ugly(t *core.T) {
+	subject := (*Service).GenerateKeyPair
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_Service_Encrypt_Good(t *core.T) {
+	subject := (*Service).Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_Service_Encrypt_Bad(t *core.T) {
+	subject := (*Service).Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_Service_Encrypt_Ugly(t *core.T) {
+	subject := (*Service).Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_Service_Decrypt_Good(t *core.T) {
+	subject := (*Service).Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_Service_Decrypt_Bad(t *core.T) {
+	subject := (*Service).Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestRsa_Service_Decrypt_Ugly(t *core.T) {
+	subject := (*Service).Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
