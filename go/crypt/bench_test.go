@@ -6,6 +6,8 @@ import (
 	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/sha256"
 	"testing"
+
+	core "dappco.re/go"
 )
 
 // BenchmarkArgon2Derive measures Argon2id key derivation (32-byte key).

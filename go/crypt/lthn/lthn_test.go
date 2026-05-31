@@ -3,6 +3,8 @@ package lthn
 import (
 	"sync"
 	"testing"
+
+	core "dappco.re/go"
 )
 
 func TestLTHN_Hash_Good(t *testing.T) {

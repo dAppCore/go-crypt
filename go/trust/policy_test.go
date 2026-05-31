@@ -3,6 +3,8 @@ package trust
 import (
 	"sync"
 	"testing"
+
+	core "dappco.re/go"
 )
 
 func newTestEngine(t *testing.T) *PolicyEngine {

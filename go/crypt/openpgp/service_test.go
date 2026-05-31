@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	core "dappco.re/go"
 	framework "dappco.re/go"
 )
 

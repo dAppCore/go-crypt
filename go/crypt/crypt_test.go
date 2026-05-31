@@ -3,6 +3,8 @@ package crypt
 import (
 	"bytes"
 	"testing"
+
+	core "dappco.re/go"
 )
 
 func TestCrypt_Encrypt_Good(t *testing.T) {

@@ -3,6 +3,8 @@ package crypt
 import (
 	"golang.org/x/crypto/bcrypt"
 	"testing"
+
+	core "dappco.re/go"
 )
 
 func TestHash_HashPassword_Good(t *testing.T) {

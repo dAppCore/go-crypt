@@ -2,6 +2,8 @@ package crypt
 
 import (
 	"testing"
+
+	core "dappco.re/go"
 )
 
 func TestKDF_DeriveKey_Good(t *testing.T) {

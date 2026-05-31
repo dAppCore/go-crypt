@@ -4,6 +4,8 @@ import (
 	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/rand"
 	"testing"
+
+	core "dappco.re/go"
 )
 
 func TestSymmetric_ChaCha20Encrypt_Good(t *testing.T) {
