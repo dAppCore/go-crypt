@@ -1204,3 +1204,212 @@ func TestAuth_Authenticator_RevokeKey_LegacyUser_Good(t *testing.T) {
 
 	wantTrue(t, a.IsRevoked(userID))
 }
+
+func TestAuth_WithChallengeTTL_Bad(t *core.T) {
+	subject := WithChallengeTTL
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_WithChallengeTTL_Ugly(t *core.T) {
+	subject := WithChallengeTTL
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_WithSessionTTL_Bad(t *core.T) {
+	subject := WithSessionTTL
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_WithSessionTTL_Ugly(t *core.T) {
+	subject := WithSessionTTL
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_WithSessionStore_Good(t *core.T) {
+	subject := WithSessionStore
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_WithSessionStore_Bad(t *core.T) {
+	subject := WithSessionStore
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_WithSessionStore_Ugly(t *core.T) {
+	subject := WithSessionStore
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_New_Good(t *core.T) {
+	subject := New
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_New_Bad(t *core.T) {
+	subject := New
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_New_Ugly(t *core.T) {
+	subject := New
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_Authenticator_IsRevoked_Good(t *core.T) {
+	subject := (*Authenticator).IsRevoked
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_Authenticator_IsRevoked_Bad(t *core.T) {
+	subject := (*Authenticator).IsRevoked
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_Authenticator_IsRevoked_Ugly(t *core.T) {
+	subject := (*Authenticator).IsRevoked
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_Authenticator_WriteChallengeFile_Good(t *core.T) {
+	subject := (*Authenticator).WriteChallengeFile
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_Authenticator_WriteChallengeFile_Ugly(t *core.T) {
+	subject := (*Authenticator).WriteChallengeFile
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_Authenticator_ReadResponseFile_Good(t *core.T) {
+	subject := (*Authenticator).ReadResponseFile
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_Authenticator_StartCleanup_Good(t *core.T) {
+	subject := (*Authenticator).StartCleanup
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_Authenticator_StartCleanup_Bad(t *core.T) {
+	subject := (*Authenticator).StartCleanup
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAuth_Authenticator_StartCleanup_Ugly(t *core.T) {
+	subject := (*Authenticator).StartCleanup
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

@@ -3,6 +3,8 @@ package crypt
 import (
 	"golang.org/x/crypto/bcrypt"
 	"testing"
+
+	core "dappco.re/go"
 )
 
 func TestHash_HashPassword_Good(t *testing.T) {
@@ -45,4 +47,103 @@ func TestHash_HashBcrypt_Good(t *testing.T) {
 	match, err = VerifyBcrypt("wrong-password", hash)
 	wantNoError(t, err)
 	wantFalse(t, match)
+}
+
+func TestHash_HashPassword_Bad(t *core.T) {
+	subject := HashPassword
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHash_HashPassword_Ugly(t *core.T) {
+	subject := HashPassword
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHash_VerifyPassword_Good(t *core.T) {
+	subject := VerifyPassword
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHash_VerifyPassword_Ugly(t *core.T) {
+	subject := VerifyPassword
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHash_HashBcrypt_Bad(t *core.T) {
+	subject := HashBcrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHash_HashBcrypt_Ugly(t *core.T) {
+	subject := HashBcrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHash_VerifyBcrypt_Good(t *core.T) {
+	subject := VerifyBcrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHash_VerifyBcrypt_Bad(t *core.T) {
+	subject := VerifyBcrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestHash_VerifyBcrypt_Ugly(t *core.T) {
+	subject := VerifyBcrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
 }

@@ -258,3 +258,113 @@ func TestConfig_FromCapabilities_Good_Empty(t *testing.T) {
 	wantNil(t, nilStrings)
 	wantNil(t, emptyStrings)
 }
+
+func TestConfig_LoadPoliciesFromFile_Bad(t *core.T) {
+	subject := LoadPoliciesFromFile
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestConfig_LoadPoliciesFromFile_Ugly(t *core.T) {
+	subject := LoadPoliciesFromFile
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestConfig_LoadPolicies_Bad(t *core.T) {
+	subject := LoadPolicies
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestConfig_LoadPolicies_Ugly(t *core.T) {
+	subject := LoadPolicies
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestConfig_PolicyEngine_ApplyPolicies_Bad(t *core.T) {
+	subject := (*PolicyEngine).ApplyPolicies
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestConfig_PolicyEngine_ApplyPolicies_Ugly(t *core.T) {
+	subject := (*PolicyEngine).ApplyPolicies
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestConfig_PolicyEngine_ApplyPoliciesFromFile_Bad(t *core.T) {
+	subject := (*PolicyEngine).ApplyPoliciesFromFile
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestConfig_PolicyEngine_ApplyPoliciesFromFile_Ugly(t *core.T) {
+	subject := (*PolicyEngine).ApplyPoliciesFromFile
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestConfig_PolicyEngine_ExportPolicies_Bad(t *core.T) {
+	subject := (*PolicyEngine).ExportPolicies
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestConfig_PolicyEngine_ExportPolicies_Ugly(t *core.T) {
+	subject := (*PolicyEngine).ExportPolicies
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

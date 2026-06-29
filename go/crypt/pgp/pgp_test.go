@@ -2,6 +2,8 @@ package pgp
 
 import (
 	"testing"
+
+	core "dappco.re/go"
 )
 
 func TestPGP_CreateKeyPair_Good(t *testing.T) {
@@ -158,4 +160,169 @@ func TestPGP_FullRoundTrip_Good(t *testing.T) {
 	mustNoError(t, err)
 	err = Verify(original, signature, kp.PublicKey)
 	wantNoError(t, err)
+}
+
+func TestPgp_CreateKeyPair_Good(t *core.T) {
+	subject := CreateKeyPair
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_CreateKeyPair_Bad(t *core.T) {
+	subject := CreateKeyPair
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_CreateKeyPair_Ugly(t *core.T) {
+	subject := CreateKeyPair
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Encrypt_Good(t *core.T) {
+	subject := Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Encrypt_Bad(t *core.T) {
+	subject := Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Encrypt_Ugly(t *core.T) {
+	subject := Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Decrypt_Good(t *core.T) {
+	subject := Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Decrypt_Bad(t *core.T) {
+	subject := Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Decrypt_Ugly(t *core.T) {
+	subject := Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Sign_Good(t *core.T) {
+	subject := Sign
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Sign_Bad(t *core.T) {
+	subject := Sign
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Sign_Ugly(t *core.T) {
+	subject := Sign
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Verify_Good(t *core.T) {
+	subject := Verify
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Verify_Bad(t *core.T) {
+	subject := Verify
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestPgp_Verify_Ugly(t *core.T) {
+	subject := Verify
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
 }

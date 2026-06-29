@@ -19,11 +19,11 @@ func addEncryptCommand(c *core.Core) {
 		Action: func(opts core.Options) core.Result {
 			path := opts.String("_arg")
 			if path == "" {
-				return core.Fail(cli.Err("encrypt requires a path"))
+				return cli.Err("encrypt requires a path")
 			}
 			encryptPassphrase = opts.String("passphrase")
 			encryptAES = opts.Bool("aes")
-			return core.ResultOf(nil, runEncrypt(path))
+			return runEncrypt(path)
 		},
 	})
 	c.Command("crypt/decrypt", core.Command{
@@ -31,27 +31,28 @@ func addEncryptCommand(c *core.Core) {
 		Action: func(opts core.Options) core.Result {
 			path := opts.String("_arg")
 			if path == "" {
-				return core.Fail(cli.Err("decrypt requires a path"))
+				return cli.Err("decrypt requires a path")
 			}
 			encryptPassphrase = opts.String("passphrase")
 			encryptAES = opts.Bool("aes")
-			return core.ResultOf(nil, runDecrypt(path))
+			return runDecrypt(path)
 		},
 	})
 }
 
-func getPassphrase() (string, error) {
+func getPassphrase() core.Result {
 	if encryptPassphrase != "" {
-		return encryptPassphrase, nil
+		return core.Ok(encryptPassphrase)
 	}
 	return cli.Prompt("Passphrase", "")
 }
 
-func runEncrypt(path string) error {
-	passphrase, err := getPassphrase()
-	if err != nil {
-		return cli.Wrap(err, "failed to read passphrase")
+func runEncrypt(path string) core.Result {
+	pr := getPassphrase()
+	if !pr.OK {
+		return pr
 	}
+	passphrase, _ := pr.Value.(string)
 	if passphrase == "" {
 		return cli.Err("passphrase cannot be empty")
 	}
@@ -78,14 +79,15 @@ func runEncrypt(path string) error {
 	}
 
 	cli.Success(core.Sprintf("Encrypted %s -> %s", path, outPath))
-	return nil
+	return core.Ok(nil)
 }
 
-func runDecrypt(path string) error {
-	passphrase, err := getPassphrase()
-	if err != nil {
-		return cli.Wrap(err, "failed to read passphrase")
+func runDecrypt(path string) core.Result {
+	pr := getPassphrase()
+	if !pr.OK {
+		return pr
 	}
+	passphrase, _ := pr.Value.(string)
 	if passphrase == "" {
 		return cli.Err("passphrase cannot be empty")
 	}
@@ -116,5 +118,5 @@ func runDecrypt(path string) error {
 	}
 
 	cli.Success(core.Sprintf("Decrypted %s -> %s", path, outPath))
-	return nil
+	return core.Ok(nil)
 }

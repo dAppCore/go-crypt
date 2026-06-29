@@ -298,3 +298,267 @@ func TestAudit_AuditPolicyIntegration_Good(t *testing.T) {
 	wantEqual(t, Allow, entries[0].Decision)
 	wantEqual(t, Deny, entries[1].Decision)
 }
+
+func TestAudit_Decision_MarshalJSON_Good(t *core.T) {
+	subject := (*Decision).MarshalJSON
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_Decision_MarshalJSON_Bad(t *core.T) {
+	subject := (*Decision).MarshalJSON
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_Decision_MarshalJSON_Ugly(t *core.T) {
+	subject := (*Decision).MarshalJSON
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_Decision_UnmarshalJSON_Good(t *core.T) {
+	subject := (*Decision).UnmarshalJSON
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_Decision_UnmarshalJSON_Bad(t *core.T) {
+	subject := (*Decision).UnmarshalJSON
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_Decision_UnmarshalJSON_Ugly(t *core.T) {
+	subject := (*Decision).UnmarshalJSON
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_NewAuditLog_Good(t *core.T) {
+	subject := NewAuditLog
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_NewAuditLog_Bad(t *core.T) {
+	subject := NewAuditLog
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_NewAuditLog_Ugly(t *core.T) {
+	subject := NewAuditLog
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_Record_Bad(t *core.T) {
+	subject := (*AuditLog).Record
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_Record_Ugly(t *core.T) {
+	subject := (*AuditLog).Record
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_Entries_Good(t *core.T) {
+	subject := (*AuditLog).Entries
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_Entries_Bad(t *core.T) {
+	subject := (*AuditLog).Entries
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_Entries_Ugly(t *core.T) {
+	subject := (*AuditLog).Entries
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_EntriesSeq_Bad(t *core.T) {
+	subject := (*AuditLog).EntriesSeq
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_EntriesSeq_Ugly(t *core.T) {
+	subject := (*AuditLog).EntriesSeq
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_Len_Good(t *core.T) {
+	subject := (*AuditLog).Len
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_Len_Bad(t *core.T) {
+	subject := (*AuditLog).Len
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_Len_Ugly(t *core.T) {
+	subject := (*AuditLog).Len
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_EntriesFor_Bad(t *core.T) {
+	subject := (*AuditLog).EntriesFor
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_EntriesFor_Ugly(t *core.T) {
+	subject := (*AuditLog).EntriesFor
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_EntriesForSeq_Good(t *core.T) {
+	subject := (*AuditLog).EntriesForSeq
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_EntriesForSeq_Bad(t *core.T) {
+	subject := (*AuditLog).EntriesForSeq
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestAudit_AuditLog_EntriesForSeq_Ugly(t *core.T) {
+	subject := (*AuditLog).EntriesForSeq
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

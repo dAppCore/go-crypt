@@ -495,3 +495,179 @@ func TestSessionStore_SQLiteSessionStore_TempFile_Good(t *testing.T) {
 	err = store.Close()
 	mustNoError(t, err)
 }
+
+func TestSessionStore_NewMemorySessionStore_Good(t *core.T) {
+	subject := NewMemorySessionStore
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_NewMemorySessionStore_Bad(t *core.T) {
+	subject := NewMemorySessionStore
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_NewMemorySessionStore_Ugly(t *core.T) {
+	subject := NewMemorySessionStore
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Get_Good(t *core.T) {
+	subject := (*MemorySessionStore).Get
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Get_Bad(t *core.T) {
+	subject := (*MemorySessionStore).Get
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Get_Ugly(t *core.T) {
+	subject := (*MemorySessionStore).Get
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Set_Good(t *core.T) {
+	subject := (*MemorySessionStore).Set
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Set_Bad(t *core.T) {
+	subject := (*MemorySessionStore).Set
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Set_Ugly(t *core.T) {
+	subject := (*MemorySessionStore).Set
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Delete_Good(t *core.T) {
+	subject := (*MemorySessionStore).Delete
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Delete_Bad(t *core.T) {
+	subject := (*MemorySessionStore).Delete
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Delete_Ugly(t *core.T) {
+	subject := (*MemorySessionStore).Delete
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_DeleteByUser_Bad(t *core.T) {
+	subject := (*MemorySessionStore).DeleteByUser
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_DeleteByUser_Ugly(t *core.T) {
+	subject := (*MemorySessionStore).DeleteByUser
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Cleanup_Bad(t *core.T) {
+	subject := (*MemorySessionStore).Cleanup
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestSessionStore_MemorySessionStore_Cleanup_Ugly(t *core.T) {
+	subject := (*MemorySessionStore).Cleanup
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

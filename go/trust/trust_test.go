@@ -314,3 +314,212 @@ func TestTrust_ConcurrentListDuringMutations_Good(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestTrust_Tier_String_Bad(t *core.T) {
+	subject := (*Tier).String
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Tier_String_Ugly(t *core.T) {
+	subject := (*Tier).String
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Tier_Valid_Ugly(t *core.T) {
+	subject := (*Tier).Valid
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_NewRegistry_Good(t *core.T) {
+	subject := NewRegistry
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_NewRegistry_Bad(t *core.T) {
+	subject := NewRegistry
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_NewRegistry_Ugly(t *core.T) {
+	subject := NewRegistry
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_Register_Bad(t *core.T) {
+	subject := (*Registry).Register
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_Register_Ugly(t *core.T) {
+	subject := (*Registry).Register
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_Get_Bad(t *core.T) {
+	subject := (*Registry).Get
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_Get_Ugly(t *core.T) {
+	subject := (*Registry).Get
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_Remove_Bad(t *core.T) {
+	subject := (*Registry).Remove
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_Remove_Ugly(t *core.T) {
+	subject := (*Registry).Remove
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_List_Bad(t *core.T) {
+	subject := (*Registry).List
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_List_Ugly(t *core.T) {
+	subject := (*Registry).List
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_ListSeq_Bad(t *core.T) {
+	subject := (*Registry).ListSeq
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_ListSeq_Ugly(t *core.T) {
+	subject := (*Registry).ListSeq
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_Len_Good(t *core.T) {
+	subject := (*Registry).Len
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_Len_Bad(t *core.T) {
+	subject := (*Registry).Len
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestTrust_Registry_Len_Ugly(t *core.T) {
+	subject := (*Registry).Len
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}

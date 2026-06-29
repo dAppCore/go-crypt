@@ -65,7 +65,7 @@ require (
 )
 
 require (
-	dappco.re/go v0.9.0
+	dappco.re/go v0.10.4
 	dappco.re/go/inference v0.9.0 // indirect
 	github.com/charmbracelet/x/ansi v0.11.6 // indirect
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect

@@ -22,8 +22,9 @@ type SQLiteSessionStore struct {
 // Use ":memory:" for testing or a file path for persistent storage.
 // Usage: call NewSQLiteSessionStore(...) to create a ready-to-use value.
 func NewSQLiteSessionStore(dbPath string) (*SQLiteSessionStore, error) {
-	s, err := store.New(dbPath)
-	if err != nil {
+	s, r := store.New(dbPath)
+	if !r.OK {
+		err, _ := r.Value.(error)
 		return nil, err
 	}
 	return &SQLiteSessionStore{store: s}, nil
@@ -35,8 +36,9 @@ func (s *SQLiteSessionStore) Get(token string) (*Session, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	val, err := s.store.Get(sessionGroup, token)
-	if err != nil {
+	val, r := s.store.Get(sessionGroup, token)
+	if !r.OK {
+		err, _ := r.Value.(error)
 		if core.Is(err, store.NotFoundError) {
 			return nil, ErrSessionNotFound
 		}
@@ -63,7 +65,11 @@ func (s *SQLiteSessionStore) Set(session *Session) error {
 		err, _ := result.Value.(error)
 		return err
 	}
-	return s.store.Set(sessionGroup, session.Token, string(result.Value.([]byte)))
+	if r := s.store.Set(sessionGroup, session.Token, string(result.Value.([]byte))); !r.OK {
+		err, _ := r.Value.(error)
+		return err
+	}
+	return nil
 }
 
 // Delete removes a session by token from SQLite.
@@ -73,14 +79,18 @@ func (s *SQLiteSessionStore) Delete(token string) error {
 	defer s.mu.Unlock()
 
 	// Check existence first to return ErrSessionNotFound
-	_, err := s.store.Get(sessionGroup, token)
-	if err != nil {
+	if _, r := s.store.Get(sessionGroup, token); !r.OK {
+		err, _ := r.Value.(error)
 		if core.Is(err, store.NotFoundError) {
 			return ErrSessionNotFound
 		}
 		return err
 	}
-	return s.store.Delete(sessionGroup, token)
+	if r := s.store.Delete(sessionGroup, token); !r.OK {
+		err, _ := r.Value.(error)
+		return err
+	}
+	return nil
 }
 
 // DeleteByUser removes all sessions belonging to the given user.
@@ -89,8 +99,9 @@ func (s *SQLiteSessionStore) DeleteByUser(userID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	all, err := s.store.GetAll(sessionGroup)
-	if err != nil {
+	all, r := s.store.GetAll(sessionGroup)
+	if !r.OK {
+		err, _ := r.Value.(error)
 		return err
 	}
 
@@ -101,7 +112,8 @@ func (s *SQLiteSessionStore) DeleteByUser(userID string) error {
 			continue // Skip malformed entries
 		}
 		if session.UserID == userID {
-			if err := s.store.Delete(sessionGroup, token); err != nil {
+			if dr := s.store.Delete(sessionGroup, token); !dr.OK {
+				err, _ := dr.Value.(error)
 				return err
 			}
 		}
@@ -115,8 +127,9 @@ func (s *SQLiteSessionStore) Cleanup() (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	all, err := s.store.GetAll(sessionGroup)
-	if err != nil {
+	all, r := s.store.GetAll(sessionGroup)
+	if !r.OK {
+		err, _ := r.Value.(error)
 		return 0, err
 	}
 
@@ -129,7 +142,8 @@ func (s *SQLiteSessionStore) Cleanup() (int, error) {
 			continue // Skip malformed entries
 		}
 		if now.After(session.ExpiresAt) {
-			if err := s.store.Delete(sessionGroup, token); err != nil {
+			if dr := s.store.Delete(sessionGroup, token); !dr.OK {
+				err, _ := dr.Value.(error)
 				return count, err
 			}
 			count++
@@ -144,5 +158,9 @@ func (s *SQLiteSessionStore) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return s.store.Close()
+	if r := s.store.Close(); !r.OK {
+		err, _ := r.Value.(error)
+		return err
+	}
+	return nil
 }

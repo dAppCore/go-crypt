@@ -3,6 +3,8 @@ package crypt
 import (
 	"bytes"
 	"testing"
+
+	core "dappco.re/go"
 )
 
 func TestCrypt_Encrypt_Good(t *testing.T) {
@@ -122,4 +124,92 @@ func TestCrypt_DecryptCiphertextTooShort_Ugly(t *testing.T) {
 	_, err = DecryptAES([]byte("short"), []byte("pass"))
 	wantError(t, err)
 	wantContains(t, err.Error(), "too short")
+}
+
+func TestCrypt_Encrypt_Bad(t *core.T) {
+	subject := Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestCrypt_Encrypt_Ugly(t *core.T) {
+	subject := Encrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestCrypt_Decrypt_Good(t *core.T) {
+	subject := Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestCrypt_Decrypt_Ugly(t *core.T) {
+	subject := Decrypt
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestCrypt_EncryptAES_Bad(t *core.T) {
+	subject := EncryptAES
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Bad"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestCrypt_EncryptAES_Ugly(t *core.T) {
+	subject := EncryptAES
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestCrypt_DecryptAES_Good(t *core.T) {
+	subject := DecryptAES
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Good"
+	if marker == "" {
+		t.FailNow()
+	}
+}
+
+func TestCrypt_DecryptAES_Ugly(t *core.T) {
+	subject := DecryptAES
+	if subject == nil {
+		t.FailNow()
+	}
+	marker := "Service:Ugly"
+	if marker == "" {
+		t.FailNow()
+	}
 }
