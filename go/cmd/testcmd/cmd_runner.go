@@ -14,7 +14,7 @@ import (
 
 func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bool) error {
 	// Detect if we're in a Go project
-	if !(&core.Fs{}).New("/").Exists("go.mod") {
+	if !(&core.Fs{}).New("/").Exists("go.mod").OK {
 		return coreerr.E("cmd.test", i18n.T("cmd.test.error.no_go_mod"), nil)
 	}
 

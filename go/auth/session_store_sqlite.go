@@ -22,11 +22,12 @@ type SQLiteSessionStore struct {
 // Use ":memory:" for testing or a file path for persistent storage.
 // Usage: call NewSQLiteSessionStore(...) to create a ready-to-use value.
 func NewSQLiteSessionStore(dbPath string) (*SQLiteSessionStore, error) {
-	s, r := store.New(dbPath)
+	r := store.New(dbPath)
 	if !r.OK {
 		err, _ := r.Value.(error)
 		return nil, err
 	}
+	s, _ := r.Value.(*store.Store)
 	return &SQLiteSessionStore{store: s}, nil
 }
 
