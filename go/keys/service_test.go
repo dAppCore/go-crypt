@@ -34,10 +34,11 @@ func bytesOf(b byte) []byte {
 // tier0Fixture constructs a keys.Service under a temp HOME with
 // the tier-0 KEK provider wired (deterministic 0x42-fill key).
 // Use when the test exercises tier-0 ops or SingleInstanceKey.
-func tier0Fixture(t *core.T) *keys.Service {
+// Extra options ride through so a case can inject its own seams.
+func tier0Fixture(t *core.T, opts ...keys.Option) *keys.Service {
 	t.Helper()
 	t.Setenv("HOME", t.TempDir())
-	r := keys.New()
+	r := keys.New(opts...)
 	core.AssertTrue(t, r.OK, "keys.New must succeed under temp HOME")
 	svc := r.Value.(*keys.Service)
 	svc.SetKEKProviderTier0(func() ([]byte, bool) { return fixedTier0KEK, true })
@@ -46,9 +47,9 @@ func tier0Fixture(t *core.T) *keys.Service {
 
 // tier1Fixture extends tier0Fixture by also wiring the tier-1 KEK
 // provider — the common shape for tier-1 ops and round-trip tests.
-func tier1Fixture(t *core.T) *keys.Service {
+func tier1Fixture(t *core.T, opts ...keys.Option) *keys.Service {
 	t.Helper()
-	svc := tier0Fixture(t)
+	svc := tier0Fixture(t, opts...)
 	svc.SetKEKProvider(func() ([]byte, bool) { return fixedTier1KEK, true })
 	return svc
 }
@@ -56,10 +57,10 @@ func tier1Fixture(t *core.T) *keys.Service {
 // homeFixture is a bare Service over a temp HOME — no KEK
 // providers wired. Use only for tests that probe the
 // no-provider-wired failure path.
-func homeFixture(t *core.T) *keys.Service {
+func homeFixture(t *core.T, opts ...keys.Option) *keys.Service {
 	t.Helper()
 	t.Setenv("HOME", t.TempDir())
-	r := keys.New()
+	r := keys.New(opts...)
 	core.AssertTrue(t, r.OK, "keys.New must succeed under temp HOME")
 	return r.Value.(*keys.Service)
 }
@@ -97,7 +98,7 @@ func TestService_New_Ugly(t *core.T) {
 
 func TestService_Register_Good(t *core.T) {
 	t.Setenv("HOME", t.TempDir())
-	c := core.New(core.WithName("keys", keys.Register))
+	c := core.New(core.WithName("keys", keys.Registrar()))
 	got := c.Service("keys")
 	core.AssertTrue(t, got.OK, "keys service discoverable after WithName")
 }
@@ -1447,20 +1448,19 @@ func (r *keysRecordingRecorder) snapshot() []keys.AuditEvent {
 	return out
 }
 
-// installKeysRecorder wires a keysRecordingRecorder as the package
-// default recorder and restores the prior default at test end.
+// auditedTier1Fixture builds the tier-1 fixture with a recording audit
+// recorder injected, and hands back both. Injection is per-Service, so
+// there is no global to install or restore.
 //
 // Usage example:
 //
-//	rec := installKeysRecorder(t)
+//	svc, rec := auditedTier1Fixture(t)
 //	... drive service ...
 //	events := rec.snapshot()
-func installKeysRecorder(t *core.T) *keysRecordingRecorder {
+func auditedTier1Fixture(t *core.T) (*keys.Service, *keysRecordingRecorder) {
 	t.Helper()
 	rec := &keysRecordingRecorder{}
-	keys.SetDefaultAuditRecorder(rec)
-	t.Cleanup(func() { keys.SetDefaultAuditRecorder(nil) })
-	return rec
+	return tier1Fixture(t, keys.WithAuditRecorder(rec)), rec
 }
 
 // findKeysEvent returns the most-recent event whose Event field
@@ -1479,8 +1479,7 @@ func findKeysEvent(events []keys.AuditEvent, name string) *keys.AuditEvent {
 // shape (ref / kind / tier / source); overwrite fires the Replaced
 // variant. Mantis #1763 / Cerberus #77 F-1.
 func TestKeys_PutTier1_EmitsAudit_Good(t *core.T) {
-	rec := installKeysRecorder(t)
-	svc := tier1Fixture(t)
+	svc, rec := auditedTier1Fixture(t)
 
 	// First write — Stored.
 	r := svc.PutTier1("openai-default", []byte("sk-do-not-leak-1763"))
@@ -1512,8 +1511,7 @@ func TestKeys_PutTier1_EmitsAudit_Good(t *core.T) {
 // canonical Meta shape; the idempotent no-op path (file absent) emits
 // nothing. Mantis #1763 / Cerberus #77 F-1.
 func TestKeys_DeleteTier1_EmitsAudit_Good(t *core.T) {
-	rec := installKeysRecorder(t)
-	svc := tier1Fixture(t)
+	svc, rec := auditedTier1Fixture(t)
 
 	// Seed a ref to delete.
 	core.AssertTrue(t, svc.PutTier1("openai-default", []byte("sk-seed")).OK)
@@ -1545,8 +1543,7 @@ func TestKeys_DeleteTier1_EmitsAudit_Good(t *core.T) {
 // Meta string value (Cerberus #1465 closure-only-scope discipline).
 // Mantis #1763 / Cerberus #77 F-1.
 func TestKeys_AuditMeta_NoKeyBytes_Bad(t *core.T) {
-	rec := installKeysRecorder(t)
-	svc := tier1Fixture(t)
+	svc, rec := auditedTier1Fixture(t)
 
 	const sentinel = "sk-canary-do-not-persist-1763"
 
@@ -1576,8 +1573,7 @@ func TestKeys_AuditMeta_NoKeyBytes_Bad(t *core.T) {
 // WDeleteTier1 mirrors the same source discipline. Mantis #1763 /
 // Cerberus #77 F-1.
 func TestKeys_WPutTier1_EmitsAudit_Good(t *core.T) {
-	rec := installKeysRecorder(t)
-	svc := tier1Fixture(t)
+	svc, rec := auditedTier1Fixture(t)
 
 	core.AssertTrue(t, svc.WPutTier1("openai-default", "sk-wails-shape").OK)
 	stored := findKeysEvent(rec.snapshot(), keys.AuditEventTier1Stored)

@@ -91,10 +91,11 @@ const (
 	AuditEventTier1Deleted = "keys.tier1.deleted"
 )
 
-// noopAuditRecorder is the recorder used when a host has not wired one.
-// Record drops the row; ErrorCode returns "" because with no sink the
-// code is never observed, so deriving one would be work in service of
-// nothing. A host that wants the trail wires a real recorder.
+// noopAuditRecorder is the recorder a Service falls back to when a host
+// has not injected one. Record drops the row; ErrorCode returns ""
+// because with no sink the code is never observed, so deriving one
+// would be work in service of nothing. A host that wants the trail
+// injects a real recorder via WithAuditRecorder.
 type noopAuditRecorder struct{}
 
 // Record drops the row. Returns Ok so the caller's ignored-Result
@@ -103,35 +104,3 @@ func (noopAuditRecorder) Record(_ AuditEvent) core.Result { return core.Ok(nil) 
 
 // ErrorCode returns "" — see the type comment for why.
 func (noopAuditRecorder) ErrorCode(_ core.Result) string { return "" }
-
-// defaultAuditRecorder holds the process-level recorder. Guarded by
-// defaultAuditMu because Record is on the credential hot path.
-var (
-	defaultAuditMu       core.RWMutex
-	defaultAuditRecorder AuditRecorder
-)
-
-// SetDefaultAuditRecorder wires the process-level audit recorder. Pass
-// nil to reset to the drop-everything default.
-//
-// Usage example:
-//
-//	keys.SetDefaultAuditRecorder(myAuditAdapter{})
-//	t.Cleanup(func() { keys.SetDefaultAuditRecorder(nil) })
-func SetDefaultAuditRecorder(r AuditRecorder) {
-	defaultAuditMu.Lock()
-	defaultAuditRecorder = r
-	defaultAuditMu.Unlock()
-}
-
-// auditRecorder returns the wired recorder, or the noop when none is
-// set. Never nil — an emit-site must not have to nil-check.
-func auditRecorder() AuditRecorder {
-	defaultAuditMu.RLock()
-	r := defaultAuditRecorder
-	defaultAuditMu.RUnlock()
-	if r == nil {
-		return noopAuditRecorder{}
-	}
-	return r
-}

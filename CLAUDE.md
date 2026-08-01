@@ -9,7 +9,7 @@ done, commit and push.
 ## What This Package Does
 
 Cryptographic primitives, authentication, and trust policy engine for the
-Lethean agent platform. Three independent top-level packages:
+Lethean agent platform. Four independent top-level packages:
 
 - **`crypt/`** — Symmetric encryption (ChaCha20-Poly1305, AES-256-GCM), Argon2id
   KDF, password hashing, HMAC, checksums. Sub-packages: `chachapoly/`, `lthn/`,
@@ -19,6 +19,10 @@ Lethean agent platform. Three independent top-level packages:
   management via `SessionStore` interface, key rotation and revocation.
 - **`trust/`** — 3-tier agent access control (`Registry`, `PolicyEngine`,
   `ApprovalQueue`, `AuditLog`), capability evaluation with repo scope matching.
+- **`keys/`** — sealed-key service: tiered AEAD blobs on disk, KEK-wrapped
+  per-tier masters, Put/Get/Has/Delete/List per tier. Promoted out of
+  lthn/desktop; takes its directory and its audit recorder by injection so it
+  never reaches for an application global.
 
 Each package can be imported independently. Only `crypt/openpgp/` integrates
 with the Core framework's IPC system (`core.Crypt` interface).

@@ -1,6 +1,6 @@
 // SPDX-Licence-Identifier: EUPL-1.2
 
-// Package keys is the encrypted-at-rest store for the desktop's
+// Package keys is the encrypted-at-rest store for an application's
 // secrets — partitioned into two cryptographic tiers per
 // RFC.stage-e-keys-partition v3 (Mantis #1625):
 //
@@ -25,17 +25,30 @@
 // matching `\.t[0-9]\.aead$` to prevent callers from constructing
 // refs that would collide with the on-disk suffix scheme.
 //
-// Per design_no_hidden_user_bloat — keys/ sits visible under the
-// user's $HOME/Lethean/ tree, NOT in ~/.config or ~/Library. The
-// master files are dot-prefixed so they're hidden from default
-// Finder views but still discoverable via ls -A.
+// Per design_no_hidden_user_bloat — the default keys directory sits
+// visible under the user's $HOME/Lethean/ tree, NOT in ~/.config or
+// ~/Library. The master files are dot-prefixed so they're hidden from
+// default Finder views but still discoverable via ls -A. That is only
+// the default: where an application keeps its files is the
+// application's business, so a host injects its own path policy via
+// WithDirResolver / WithDir.
+//
+// Two seams a host wires at construction (both optional, both
+// default-safe):
+//
+//   - WithDirResolver / WithDir — which directory the Service owns.
+//   - WithAuditRecorder — where credential-mutation rows go. Without
+//     it the rows drop; a store of bearer credentials with no trail is
+//     a decision a host should make deliberately, not inherit.
 //
 // Usage from another package — tier-1 (post-unlock provider creds):
 //
-//	svc, r := keys.New()
+//	r := keys.New(keys.WithDirResolver(paths.KeysDir),
+//	    keys.WithAuditRecorder(myAuditAdapter{}))
 //	if !r.OK { return r }
+//	svc := r.Value.(*keys.Service)
 //	if r := svc.PutTier1("openai-default", []byte("sk-...")); !r.OK { return r }
-//	r := svc.GetTier1("openai-default")
+//	r = svc.GetTier1("openai-default")
 //	if r.OK { plaintext := r.Value.([]byte); _ = plaintext }
 //
 // Usage from another package — tier-0 (pre-unlock single-instance key):
@@ -43,16 +56,16 @@
 //	r := svc.SingleInstanceKey()
 //	if r.OK { key := r.Value.([32]byte); _ = key }
 //
-// Wails binding registers as the "Keys" service so the TS side can
-// reach it via @desktop/keys/service — only tier-1 W-methods are
-// exposed (frontend has no legitimate tier-0 surface):
+// A Wails host binds this as the "Keys" service so the TS side can
+// reach it — only tier-1 W-methods are exposed (a frontend has no
+// legitimate tier-0 surface):
 //
 //	import { WPutTier1, WListTier1, WDeleteTier1 } from "@desktop/keys/service";
 //	await WPutTier1("openai-default", "sk-...");
 //
 // IMPORTANT: GetTier1 is NOT exposed to the Wails surface —
 // plaintext secrets must not cross the WebView boundary. Reading
-// the key is a Go-side action only (e.g. when the runner spawns
+// the key is a Go-side action only (e.g. when a runner spawns
 // an agent). Frontend code only writes and lists.
 
 package keys
@@ -131,6 +144,20 @@ type KEKProvider func() ([]byte, bool)
 // Service owns the encrypted keys directory. Stateless beyond the
 // per-tier master-key caches; the disk is the source of truth.
 type Service struct {
+	// dirResolver answers "which directory do I own", called at every
+	// point the Service touches disk. Nil means the package default
+	// ($HOME/Lethean/data/keys). Injected via WithDirResolver /
+	// WithDir — where an application keeps its files is the
+	// application's business, so the Service takes the answer rather
+	// than reaching for a global. Set once at construction; never
+	// mutated afterwards, so it needs no lock.
+	dirResolver func() core.Result
+	// audit is the host's audit substrate for credential-mutation
+	// rows. Nil drops the rows (noopAuditRecorder). Injected via
+	// WithAuditRecorder. Set once at construction; never mutated
+	// afterwards, so it needs no lock.
+	audit AuditRecorder
+
 	// mu guards the per-tier master caches AND the migration
 	// sequence. Held by ensureMaster and the migration steps so
 	// concurrent readers/writers cannot observe a partial state.
@@ -291,11 +318,11 @@ const (
 // returns plaintext to the audit substrate; the record here records
 // the mutation decision, not the credential.
 //
-// errCode is the auditErrorCode(r) value on failure (Outcome=error)
+// errCode is the auditErrorCode value on failure (Outcome=error)
 // and the empty string on success (Outcome=ok); the helper picks the
 // right Outcome from the empty-vs-non-empty shape so callers stay
 // declarative at the emit-site.
-func emitKeysAudit(event, ref, kind, source, errCode string) {
+func (s *Service) emitKeysAudit(event, ref, kind, source, errCode string) {
 	outcome := AuditOutcomeOK
 	meta := map[string]any{
 		"ref":    ref,
@@ -307,7 +334,7 @@ func emitKeysAudit(event, ref, kind, source, errCode string) {
 		outcome = AuditOutcomeError
 		meta["error_code"] = errCode
 	}
-	_ = auditRecorder().Record(AuditEvent{
+	_ = s.auditRecorder().Record(AuditEvent{
 		Event:   event,
 		TS:      core.Now().Unix(),
 		Scope:   AuditScopeKeys,
@@ -317,11 +344,11 @@ func emitKeysAudit(event, ref, kind, source, errCode string) {
 }
 
 // auditErrorCode maps a failed core.Result onto the host's bounded
-// error codespace by delegating to the wired recorder. Kept as a
-// package-level helper so the emit-sites read exactly as they did when
-// the codespace lived in an imported audit package.
-func auditErrorCode(r core.Result) string {
-	return auditRecorder().ErrorCode(r)
+// error codespace by delegating to the injected recorder. Kept as a
+// one-line helper so the emit-sites read exactly as they did when the
+// codespace lived in an imported audit package.
+func (s *Service) auditErrorCode(r core.Result) string {
+	return s.auditRecorder().ErrorCode(r)
 }
 
 const (
@@ -366,25 +393,35 @@ const (
 	kekWrappedMasterLen = 24 + masterKeySize + 16
 )
 
-// New constructs a Service and ensures $HOME/Lethean/data/keys/
-// exists. Per-tier masters are loaded lazily on the first
-// per-tier op.
+// New constructs a Service and ensures its keys directory exists.
+// Per-tier masters are loaded lazily on the first per-tier op.
+//
+// With no options the directory is $HOME/Lethean/data/keys and audit
+// rows drop; a host injects its own path policy and audit substrate
+// through WithDirResolver / WithDir and WithAuditRecorder.
 //
 // Cerberus Mantis #1441 — asserts dir mode is 0o700 + any
 // existing master files are 0o600 at construction time.
 //
 // Usage example:
 //
-//	r := keys.New()
+//	r := keys.New(keys.WithDirResolver(paths.KeysDir),
+//	    keys.WithAuditRecorder(myAuditAdapter{}))
 //	if r.OK { svc := r.Value.(*keys.Service); _ = svc }
-func New() core.Result {
-	dirR := defaultKeysDir()
+func New(opts ...Option) core.Result {
+	svc := &Service{}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(svc)
+		}
+	}
+	dirR := svc.keysDir()
 	if !dirR.OK {
 		return dirR
 	}
 	dir := dirR.Value.(string)
 	assertKeysDirMode(dir)
-	return core.Ok(&Service{})
+	return core.Ok(svc)
 }
 
 // assertKeysDirMode is the Mantis #1441 startup check. Stats the
@@ -435,10 +472,28 @@ func assertKeysDirMode(dir string) {
 // Usage example:
 //
 //	if r := keys.Register(c); !r.OK { return r }
-func Register(c *core.Core) core.Result {
+func Register(c *core.Core, opts ...Option) core.Result {
 	core.Warn("keys: tier-partition substrate active (Mantis #1625) — " +
 		"tier-0 from .seed; tier-1 from unlocked account PGP key")
-	return New()
+	return New(opts...)
+}
+
+// Registrar returns a core.WithName-compatible registration function
+// carrying a host's options. Register itself is variadic and so cannot
+// be handed to core.WithName as a value; this closes over the options
+// once at the composition root so every registration site reads as one
+// declaration.
+//
+// Usage example (in a host's composition root):
+//
+//	core.New(core.WithName("keys", keys.Registrar(
+//	    keys.WithDirResolver(paths.KeysDir),
+//	    keys.WithAuditRecorder(myAuditAdapter{}),
+//	)))
+func Registrar(opts ...Option) func(*core.Core) core.Result {
+	return func(c *core.Core) core.Result {
+		return Register(c, opts...)
+	}
 }
 
 // SetKEKProviderTier0 wires the tier-0 KEK source (RFC §4.2). The
@@ -455,11 +510,10 @@ func Register(c *core.Core) core.Result {
 // Mantis #1625 — additive over SetKEKProvider (tier-1 wire) so
 // the two providers can be wired independently at boot.
 //
-// Usage example (in cmd/lthn/app.go before desktop.Run):
+// Usage example (in the host's composition root, before the GUI
+// starts) — walletsDir comes from the host's own path policy:
 //
-//	walletsR := paths.WalletsDir()
-//	if !walletsR.OK { return walletsR }
-//	seedPath := core.PathJoin(walletsR.Value.(string), ".seed")
+//	seedPath := core.PathJoin(walletsDir, ".seed")
 //	keysSvc.SetKEKProviderTier0(func() ([]byte, bool) {
 //	    seedR := core.ReadFile(seedPath)
 //	    if !seedR.OK { return nil, false }
@@ -630,7 +684,7 @@ func (s *Service) ensureMaster(t tier) core.Result {
 		return core.Ok(s.tier1Master)
 	}
 
-	dirR := defaultKeysDir()
+	dirR := s.keysDir()
 	if !dirR.OK {
 		return dirR
 	}
@@ -857,7 +911,7 @@ func (s *Service) migrateTier1Locked() {
 	// migrationComplete=false so the next SetKEKProvider retries.
 	// Tier-1 reads will fail-closed via ensureTier1Locked until
 	// migration succeeds.
-	dirR := defaultKeysDir()
+	dirR := s.keysDir()
 	if !dirR.OK {
 		core.Warn("keys: tier-1 migration skipped — keys dir resolve failed", "err", dirR.Error())
 		return
@@ -1193,7 +1247,7 @@ func (s *Service) writeMasterLocked(masterPath string, master, kek []byte) core.
 // traversal / dot-prefixed refs, AND for refs matching
 // `\.t[0-9]\.aead$` (ADD-K3) so a caller can't sneak a tier
 // suffix into the ref and shadow on-disk tier ownership.
-func keyPath(ref string, t tier) core.Result {
+func (s *Service) keyPath(ref string, t tier) core.Result {
 	if ref == "" {
 		return core.Fail(core.NewError("keys: ref must not be empty"))
 	}
@@ -1206,7 +1260,7 @@ func keyPath(ref string, t tier) core.Result {
 	if hasTierSuffix(ref) {
 		return core.Fail(core.NewError("keys.invalid_ref_suffix: ref must not end in .tN.aead (reserved for on-disk tier scheme)"))
 	}
-	dirR := defaultKeysDir()
+	dirR := s.keysDir()
 	if !dirR.OK {
 		return dirR
 	}
@@ -1237,7 +1291,7 @@ func hasTierSuffix(ref string) bool {
 // per-tier blob. Caller provides the resolved master from
 // ensureMaster.
 func (s *Service) putLocked(t tier, ref string, plaintext, master []byte) core.Result {
-	pR := keyPath(ref, t)
+	pR := s.keyPath(ref, t)
 	if !pR.OK {
 		return pR
 	}
@@ -1258,7 +1312,7 @@ func (s *Service) putLocked(t tier, ref string, plaintext, master []byte) core.R
 
 // getLocked reads + decrypts the per-tier blob using master.
 func (s *Service) getLocked(t tier, ref string, master []byte) core.Result {
-	pR := keyPath(ref, t)
+	pR := s.keyPath(ref, t)
 	if !pR.OK {
 		return pR
 	}
@@ -1302,15 +1356,15 @@ func (s *Service) PutTier0(ref string, plaintext []byte) core.Result {
 func (s *Service) putTier0WithSource(ref string, plaintext []byte, source string) core.Result {
 	masterR := s.ensureMaster(tier0)
 	if !masterR.OK {
-		emitKeysAudit(AuditEventTier0Stored, ref, auditTier0Kind, source, auditErrorCode(masterR))
+		s.emitKeysAudit(AuditEventTier0Stored, ref, auditTier0Kind, source, s.auditErrorCode(masterR))
 		return masterR
 	}
 	r := s.putLocked(tier0, ref, plaintext, masterR.Value.([]byte))
 	errCode := ""
 	if !r.OK {
-		errCode = auditErrorCode(r)
+		errCode = s.auditErrorCode(r)
 	}
-	emitKeysAudit(AuditEventTier0Stored, ref, auditTier0Kind, source, errCode)
+	s.emitKeysAudit(AuditEventTier0Stored, ref, auditTier0Kind, source, errCode)
 	return r
 }
 
@@ -1338,7 +1392,7 @@ func (s *Service) GetTier0(ref string) core.Result {
 //	r := svc.HasTier0("single-instance")
 //	if r.OK { exists := r.Value.(bool); _ = exists }
 func (s *Service) HasTier0(ref string) core.Result {
-	pR := keyPath(ref, tier0)
+	pR := s.keyPath(ref, tier0)
 	if !pR.OK {
 		return pR
 	}
@@ -1363,9 +1417,9 @@ func (s *Service) DeleteTier0(ref string) core.Result {
 // emits nothing because no mutation happened. Mantis #1763 /
 // Cerberus #77 F-1.
 func (s *Service) deleteTier0WithSource(ref, source string) core.Result {
-	pR := keyPath(ref, tier0)
+	pR := s.keyPath(ref, tier0)
 	if !pR.OK {
-		emitKeysAudit(AuditEventTier0Deleted, ref, auditTier0Kind, source, auditErrorCode(pR))
+		s.emitKeysAudit(AuditEventTier0Deleted, ref, auditTier0Kind, source, s.auditErrorCode(pR))
 		return pR
 	}
 	path := pR.Value.(string)
@@ -1375,10 +1429,10 @@ func (s *Service) deleteTier0WithSource(ref, source string) core.Result {
 	}
 	if r := core.Remove(path); !r.OK {
 		failR := core.Fail(core.E("keys.DeleteTier0", "remove ciphertext", r.Value.(error)))
-		emitKeysAudit(AuditEventTier0Deleted, ref, auditTier0Kind, source, auditErrorCode(failR))
+		s.emitKeysAudit(AuditEventTier0Deleted, ref, auditTier0Kind, source, s.auditErrorCode(failR))
 		return failR
 	}
-	emitKeysAudit(AuditEventTier0Deleted, ref, auditTier0Kind, source, "")
+	s.emitKeysAudit(AuditEventTier0Deleted, ref, auditTier0Kind, source, "")
 	return core.Ok(nil)
 }
 
@@ -1448,7 +1502,7 @@ func (s *Service) putTier1WithSource(ref string, plaintext []byte, source string
 				event = AuditEventTier1Replaced
 			}
 		}
-		emitKeysAudit(event, ref, auditTier1Kind, source, auditErrorCode(masterR))
+		s.emitKeysAudit(event, ref, auditTier1Kind, source, s.auditErrorCode(masterR))
 		return masterR
 	}
 	// Pre-write existence snapshot — distinguishes the "replaced
@@ -1466,13 +1520,13 @@ func (s *Service) putTier1WithSource(ref string, plaintext []byte, source string
 		event = AuditEventTier1Replaced
 	}
 	if !putR.OK {
-		emitKeysAudit(event, ref, auditTier1Kind, source, auditErrorCode(putR))
+		s.emitKeysAudit(event, ref, auditTier1Kind, source, s.auditErrorCode(putR))
 		return putR
 	}
 	if wasPresent {
 		s.broadcastTier1Change(Tier1KeyReplaced, ref)
 	}
-	emitKeysAudit(event, ref, auditTier1Kind, source, "")
+	s.emitKeysAudit(event, ref, auditTier1Kind, source, "")
 	return putR
 }
 
@@ -1501,7 +1555,7 @@ func (s *Service) GetTier1(ref string) core.Result {
 //	r := svc.HasTier1("openai-default")
 //	if r.OK { exists := r.Value.(bool); _ = exists }
 func (s *Service) HasTier1(ref string) core.Result {
-	pR := keyPath(ref, tier1)
+	pR := s.keyPath(ref, tier1)
 	if !pR.OK {
 		return pR
 	}
@@ -1535,9 +1589,9 @@ func (s *Service) DeleteTier1(ref string) core.Result {
 // path (file already absent) emits nothing because no mutation
 // happened. Mantis #1763 / Cerberus #77 F-1.
 func (s *Service) deleteTier1WithSource(ref, source string) core.Result {
-	pR := keyPath(ref, tier1)
+	pR := s.keyPath(ref, tier1)
 	if !pR.OK {
-		emitKeysAudit(AuditEventTier1Deleted, ref, auditTier1Kind, source, auditErrorCode(pR))
+		s.emitKeysAudit(AuditEventTier1Deleted, ref, auditTier1Kind, source, s.auditErrorCode(pR))
 		return pR
 	}
 	path := pR.Value.(string)
@@ -1547,11 +1601,11 @@ func (s *Service) deleteTier1WithSource(ref, source string) core.Result {
 	}
 	if r := core.Remove(path); !r.OK {
 		failR := core.Fail(core.E("keys.DeleteTier1", "remove ciphertext", r.Value.(error)))
-		emitKeysAudit(AuditEventTier1Deleted, ref, auditTier1Kind, source, auditErrorCode(failR))
+		s.emitKeysAudit(AuditEventTier1Deleted, ref, auditTier1Kind, source, s.auditErrorCode(failR))
 		return failR
 	}
 	s.broadcastTier1Change(Tier1KeyDeleted, ref)
-	emitKeysAudit(AuditEventTier1Deleted, ref, auditTier1Kind, source, "")
+	s.emitKeysAudit(AuditEventTier1Deleted, ref, auditTier1Kind, source, "")
 	return core.Ok(nil)
 }
 
@@ -1586,7 +1640,7 @@ func (s *Service) GetOrCreateTier1(ref string, generate func() ([]byte, error)) 
 
 // listTier is the shared body for ListTier0 / ListTier1.
 func (s *Service) listTier(t tier) core.Result {
-	dirR := defaultKeysDir()
+	dirR := s.keysDir()
 	if !dirR.OK {
 		return dirR
 	}
