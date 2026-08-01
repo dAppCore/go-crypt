@@ -351,19 +351,17 @@ func TestPolicy_ConcurrentEvaluate_Good(t *testing.T) {
 
 	const n = 10
 	var wg sync.WaitGroup
-	wg.Add(n)
 
 	for i := range n {
-		go func(idx int) {
-			defer wg.Done()
+		wg.Go(func() {
 			agents := []string{"Athena", "Clotho", "BugSETI-001"}
 			caps := []Capability{CapPushRepo, CapCreatePR, CapCommentIssue}
 
-			agent := agents[idx%len(agents)]
-			cap := caps[idx%len(caps)]
+			agent := agents[i%len(agents)]
+			cap := caps[i%len(caps)]
 			result := pe.Evaluate(agent, cap, "host-uk/core")
 			wantNotEmpty(t, result.Reason)
-		}(i)
+		})
 	}
 
 	wg.Wait()

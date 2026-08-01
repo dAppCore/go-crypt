@@ -257,18 +257,16 @@ func TestAudit_AuditConcurrent_Good(t *testing.T) {
 
 	const n = 10
 	var wg sync.WaitGroup
-	wg.Add(n)
 
 	for i := range n {
-		go func(idx int) {
-			defer wg.Done()
+		wg.Go(func() {
 			log.Record(EvalResult{
-				Agent:    core.Sprintf("agent-%d", idx),
+				Agent:    core.Sprintf("agent-%d", i),
 				Cap:      CapPushRepo,
 				Decision: Allow,
 				Reason:   "ok",
 			}, "")
-		}(i)
+		})
 	}
 
 	wg.Wait()

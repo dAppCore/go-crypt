@@ -1,14 +1,16 @@
 package lthn
 
-import . "dappco.re/go"
+import (
+	"maps"
+
+	. "dappco.re/go"
+)
 
 func preserveKeyMap(t *T) {
 	t.Helper()
 	original := GetKeyMap()
 	clone := make(map[rune]rune, len(original))
-	for k, v := range original {
-		clone[k] = v
-	}
+	maps.Copy(clone, original)
 	t.Cleanup(func() { SetKeyMap(clone) })
 }
 

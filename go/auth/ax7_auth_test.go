@@ -533,7 +533,7 @@ func TestAX7Auth_Authenticator_StartCleanup_Bad(t *core.T) {
 	store := NewMemorySessionStore()
 	core.RequireNoError(t, store.Set(ax7Session("expired", "user", time.Now().Add(-time.Hour))))
 	a := New(io.NewMockMedium(), WithSessionStore(store))
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 	a.StartCleanup(ctx, time.Hour)
 	time.Sleep(5 * time.Millisecond)
@@ -544,8 +544,7 @@ func TestAX7Auth_Authenticator_StartCleanup_Bad(t *core.T) {
 func TestAX7Auth_Authenticator_StartCleanup_Ugly(t *core.T) {
 	store := &ax7CleanupErrorStore{}
 	a := New(io.NewMockMedium(), WithSessionStore(store))
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	a.StartCleanup(ctx, time.Millisecond)
 	time.Sleep(5 * time.Millisecond)
 	core.AssertTrue(t, store.Calls() > 0)

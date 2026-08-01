@@ -116,7 +116,7 @@ type Service struct {
 	Queue *ApprovalQueue
 	// Audit captures trust evaluation results for review and replay.
 	// Usage example: `entries := svc.Audit.Entries()`
-	Audit *AuditLog
+	Audit         *AuditLog
 	registrations core.Once
 }
 

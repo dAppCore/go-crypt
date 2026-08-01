@@ -194,35 +194,31 @@ func TestTrust_ConcurrentRegistryOperations_Good(t *testing.T) {
 	r := NewRegistry()
 
 	const n = 10
-	var wg sync.WaitGroup
-	wg.Add(n * 3) // register + get + remove goroutines
+	var wg sync.WaitGroup // register + get + remove goroutines
 
 	// Register goroutines
 	for i := range n {
-		go func(idx int) {
-			defer wg.Done()
-			name := core.Sprintf("agent-%d", idx)
+		wg.Go(func() {
+			name := core.Sprintf("agent-%d", i)
 			err := r.Register(Agent{Name: name, Tier: TierVerified})
 			wantNoError(t, err)
-		}(i)
+		})
 	}
 
 	// Get goroutines (may return nil if not yet registered)
 	for i := range n {
-		go func(idx int) {
-			defer wg.Done()
-			name := core.Sprintf("agent-%d", idx)
+		wg.Go(func() {
+			name := core.Sprintf("agent-%d", i)
 			_ = r.Get(name) // Just exercise the read path
-		}(i)
+		})
 	}
 
 	// Remove goroutines (may return false if not yet registered or already removed)
 	for i := range n {
-		go func(idx int) {
-			defer wg.Done()
-			name := core.Sprintf("agent-%d", idx)
+		wg.Go(func() {
+			name := core.Sprintf("agent-%d", i)
 			_ = r.Remove(name)
-		}(i)
+		})
 	}
 
 	wg.Wait()
@@ -292,24 +288,21 @@ func TestTrust_ConcurrentListDuringMutations_Good(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(20)
 
 	// 10 goroutines listing
 	for range 10 {
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			agents := r.List()
 			_ = len(agents) // Use the result
-		}()
+		})
 	}
 
 	// 10 goroutines mutating
 	for i := range 10 {
-		go func(idx int) {
-			defer wg.Done()
-			name := core.Sprintf("concurrent-%d", idx)
+		wg.Go(func() {
+			name := core.Sprintf("concurrent-%d", i)
 			_ = r.Register(Agent{Name: name, Tier: TierUntrusted})
-		}(i)
+		})
 	}
 
 	wg.Wait()

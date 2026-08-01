@@ -228,44 +228,40 @@ func TestApproval_ApprovalConcurrent_Good(t *testing.T) {
 
 	const n = 10
 	var wg sync.WaitGroup
-	wg.Add(n)
 
 	ids := make([]string, n)
 	var mu sync.Mutex
 
 	// Submit concurrently
 	for i := range n {
-		go func(idx int) {
-			defer wg.Done()
+		wg.Go(func() {
 			id, err := q.Submit(
-				core.Sprintf("agent-%d", idx),
+				core.Sprintf("agent-%d", i),
 				CapMergePR,
 				"host-uk/core",
 			)
 			wantNoError(t, err)
 			mu.Lock()
-			ids[idx] = id
+			ids[i] = id
 			mu.Unlock()
-		}(i)
+		})
 	}
 	wg.Wait()
 
 	wantEqual(t, n, q.Len())
 
 	// Approve/deny concurrently
-	wg.Add(n)
 	for i := range n {
-		go func(idx int) {
-			defer wg.Done()
+		wg.Go(func() {
 			mu.Lock()
-			id := ids[idx]
+			id := ids[i]
 			mu.Unlock()
-			if idx%2 == 0 {
+			if i%2 == 0 {
 				_ = q.Approve(id, "admin", "ok")
 			} else {
 				_ = q.Deny(id, "admin", "no")
 			}
-		}(i)
+		})
 	}
 	wg.Wait()
 

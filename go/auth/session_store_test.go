@@ -137,16 +137,14 @@ func TestSessionStore_MemorySessionStore_Concurrent_Good(t *testing.T) {
 
 	const n = 20
 	var wg sync.WaitGroup
-	wg.Add(n)
 
 	for i := range n {
-		go func(idx int) {
-			defer wg.Done()
-			token := core.Sprintf("concurrent-token-%d", idx)
+		wg.Go(func() {
+			token := core.Sprintf("concurrent-token-%d", i)
 
 			err := store.Set(&Session{
 				Token:     token,
-				UserID:    core.Sprintf("user-%d", idx%5),
+				UserID:    core.Sprintf("user-%d", i%5),
 				ExpiresAt: time.Now().Add(1 * time.Hour),
 			})
 			wantNoError(t, err)
@@ -154,7 +152,7 @@ func TestSessionStore_MemorySessionStore_Concurrent_Good(t *testing.T) {
 			got, err := store.Get(token)
 			wantNoError(t, err)
 			wantEqual(t, token, got.Token)
-		}(i)
+		})
 	}
 
 	wg.Wait()
@@ -330,16 +328,14 @@ func TestSessionStore_SQLiteSessionStore_Concurrent_Good(t *testing.T) {
 
 	const n = 20
 	var wg sync.WaitGroup
-	wg.Add(n)
 
 	for i := range n {
-		go func(idx int) {
-			defer wg.Done()
-			token := core.Sprintf("sqlite-concurrent-%d", idx)
+		wg.Go(func() {
+			token := core.Sprintf("sqlite-concurrent-%d", i)
 
 			err := store.Set(&Session{
 				Token:     token,
-				UserID:    core.Sprintf("user-%d", idx%5),
+				UserID:    core.Sprintf("user-%d", i%5),
 				ExpiresAt: time.Now().Add(1 * time.Hour),
 			})
 			wantNoError(t, err)
@@ -349,7 +345,7 @@ func TestSessionStore_SQLiteSessionStore_Concurrent_Good(t *testing.T) {
 			if got != nil {
 				wantEqual(t, token, got.Token)
 			}
-		}(i)
+		})
 	}
 
 	wg.Wait()
@@ -438,7 +434,7 @@ func TestSessionStore_Authenticator_StartCleanup_CancelStops_Good(t *testing.T) 
 	m := io.NewMockMedium()
 	a := New(m)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	a.StartCleanup(ctx, 10*time.Millisecond)
 
 	// Cancel should stop the goroutine without panic

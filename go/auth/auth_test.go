@@ -593,17 +593,15 @@ func TestAuth_ConcurrentSessionCreation_Good(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(n)
 	sessions := make([]*Session, n)
 	errs := make([]error, n)
 
 	for i := range n {
-		go func(idx int) {
-			defer wg.Done()
-			s, err := a.Login(userIDs[idx], "pass")
-			sessions[idx] = s
-			errs[idx] = err
-		}(i)
+		wg.Go(func() {
+			s, err := a.Login(userIDs[i], "pass")
+			sessions[i] = s
+			errs[i] = err
+		})
 	}
 
 	wg.Wait()
