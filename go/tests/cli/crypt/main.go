@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"dappco.re/go/crypt/crypt"
+	"github.com/dappcore/go-crypt/go/crypt"
 )
 
 func main() {

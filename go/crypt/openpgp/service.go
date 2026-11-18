@@ -5,8 +5,8 @@ import (
 	"crypto"
 	goio "io"
 
-	framework "dappco.re/go"
-	coreerr "dappco.re/go/log"
+	framework "github.com/dappcore/go"
+	coreerr "github.com/dappcore/go-log/go"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/armor"

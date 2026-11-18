@@ -1,6 +1,6 @@
 package crypt
 
-import . "dappco.re/go"
+import . "github.com/dappcore/go"
 
 func TestAX7CryptCmd_AddCryptCommands_Good(t *T) {
 	c := New()

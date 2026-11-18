@@ -7,9 +7,9 @@ import (
 	"os/exec"
 	"runtime"
 
-	core "dappco.re/go"
-	"dappco.re/go/i18n"
-	coreerr "dappco.re/go/log"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-i18n/go"
+	coreerr "github.com/dappcore/go-log/go"
 )
 
 func runTest(verbose, coverage, short bool, pkg, run string, race, jsonOutput bool) error {

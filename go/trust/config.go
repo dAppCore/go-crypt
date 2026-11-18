@@ -3,8 +3,8 @@ package trust
 import (
 	"io"
 
-	core "dappco.re/go"
-	coreerr "dappco.re/go/log"
+	core "github.com/dappcore/go"
+	coreerr "github.com/dappcore/go-log/go"
 )
 
 // PolicyConfig is the JSON-serialisable representation of a trust policy.

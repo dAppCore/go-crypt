@@ -5,7 +5,7 @@ import (
 	"sync" // Note: AX-6 — internal concurrency primitive; structural for in-memory session store state.
 	"time"
 
-	coreerr "dappco.re/go/log"
+	coreerr "github.com/dappcore/go-log/go"
 )
 
 // ErrSessionNotFound is returned when a session token is not found.

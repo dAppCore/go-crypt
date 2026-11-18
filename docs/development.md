@@ -9,8 +9,8 @@ description: How to build, test, and contribute to go-crypt.
 
 - **Go 1.26** or later (the module declares `go 1.26.0`).
 - A Go workspace (`go.work`) that resolves the local dependencies:
-  `dappco.re/go/core`, `dappco.re/go/core/store`,
-  `dappco.re/go/core/io`, `dappco.re/go/core/log`, and
+  `github.com/dappcore/go`, `github.com/dappcore/go-store/go`,
+  `github.com/dappcore/go-io/go`, `github.com/dappcore/go-log/go`, and
   `forge.lthn.ai/core/cli`. If you are working outside the full monorepo,
   create a `go.work` at the parent directory pointing to your local
   checkouts.
@@ -218,10 +218,10 @@ replace directives in `go.mod` directly -- use the workspace file instead.
 
 | Module | Local Path | Purpose |
 |--------|-----------|---------|
-| `dappco.re/go/core` | `../go` | Framework: `core.Crypt` interface, `io.Medium` |
-| `dappco.re/go/core/store` | `../go-store` | SQLite KV store for session persistence |
-| `dappco.re/go/core/io` | `../go-io` | `io.Medium` storage abstraction |
-| `dappco.re/go/core/log` | `../go-log` | `core.E()` contextual error wrapping |
+| `github.com/dappcore/go` | `../go` | Framework: `core.Crypt` interface, `io.Medium` |
+| `github.com/dappcore/go-store/go` | `../go-store` | SQLite KV store for session persistence |
+| `github.com/dappcore/go-io/go` | `../go-io` | `io.Medium` storage abstraction |
+| `github.com/dappcore/go-log/go` | `../go-log` | `core.E()` contextual error wrapping |
 | `forge.lthn.ai/core/cli` | `../cli` | CLI framework for `cmd/crypt` commands |
 
 ## Known Limitations

@@ -5,9 +5,9 @@ import (
 	"crypto/subtle"
 	"strconv"
 
-	core "dappco.re/go"
-	"dappco.re/go/crypt/internal/corecompat"
-	coreerr "dappco.re/go/log"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-crypt/go/internal/corecompat"
+	coreerr "github.com/dappcore/go-log/go"
 
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/bcrypt"

@@ -1,7 +1,7 @@
 package corecompat
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestEncode_HexEncode_Good(t *core.T) {

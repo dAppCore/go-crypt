@@ -3,7 +3,7 @@ package pgp
 import (
 	"testing"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestPGP_CreateKeyPair_Good(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	core "dappco.re/go"
-	"dappco.re/go/crypt/auth"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-crypt/go/auth"
 )
 
 // registeredUserID extracts the KeyID (the login user_id) from an

@@ -32,10 +32,10 @@ import (
 	"context"
 	"time"
 
-	core "dappco.re/go"
-	"dappco.re/go/crypt/auth"
-	"dappco.re/go/crypt/crypt"
-	coreio "dappco.re/go/io"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-crypt/go/auth"
+	"github.com/dappcore/go-crypt/go/crypt"
+	coreio "github.com/dappcore/go-io/go"
 )
 
 // CryptConfig is the unified config for the crypt repo's service.

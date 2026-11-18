@@ -8,7 +8,7 @@ import (
 	"encoding/pem"
 	"testing"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 // mockReader is a reader that returns an error.

@@ -3,7 +3,7 @@ package trust
 import (
 	"testing"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 const validPolicyJSON = `{

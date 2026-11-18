@@ -6,8 +6,8 @@ import (
 	"sync" // Note: AX-6 — internal concurrency primitive; structural for append-only audit log state.
 	"time"
 
-	core "dappco.re/go"
-	coreerr "dappco.re/go/log"
+	core "github.com/dappcore/go"
+	coreerr "github.com/dappcore/go-log/go"
 )
 
 // AuditEntry records a single policy evaluation for compliance.

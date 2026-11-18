@@ -1,7 +1,7 @@
 package crypt
 
 import (
-	coreerr "dappco.re/go/log"
+	coreerr "github.com/dappcore/go-log/go"
 )
 
 // Encrypt encrypts data with a passphrase using ChaCha20-Poly1305.

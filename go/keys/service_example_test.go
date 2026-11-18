@@ -7,8 +7,8 @@
 package keys_test
 
 import (
-	core "dappco.re/go"
-	"dappco.re/go/crypt/keys"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-crypt/go/keys"
 )
 
 func ExampleNew() {

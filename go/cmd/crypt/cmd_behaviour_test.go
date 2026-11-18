@@ -3,9 +3,9 @@ package crypt
 import (
 	"testing"
 
-	core "dappco.re/go"
-	"dappco.re/go/crypt/crypt"
-	coreio "dappco.re/go/io"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-crypt/go/crypt"
+	coreio "github.com/dappcore/go-io/go"
 )
 
 // runCommand fetches a registered command by path and runs it with the

@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	core "dappco.re/go"
-	"dappco.re/go/crypt/crypt/lthn"
-	"dappco.re/go/crypt/crypt/pgp"
-	"dappco.re/go/io"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-crypt/go/crypt/lthn"
+	"github.com/dappcore/go-crypt/go/crypt/pgp"
+	"github.com/dappcore/go-io/go"
 )
 
 type ax7HardwareKey struct{}

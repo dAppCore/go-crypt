@@ -3,9 +3,9 @@ package crypt
 import (
 	"crypto/rand"
 
-	core "dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/crypt/internal/corecompat"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
+	"github.com/dappcore/go-crypt/go/internal/corecompat"
 )
 
 // Keygen command flags

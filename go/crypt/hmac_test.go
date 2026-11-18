@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestHMAC_HMACSHA256_Good(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"io"
 
-	coreerr "dappco.re/go/log"
+	coreerr "github.com/dappcore/go-log/go"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/armor"

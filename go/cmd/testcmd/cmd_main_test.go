@@ -1,7 +1,7 @@
 package testcmd
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestCmdMain_AddTestCommands_Good(t *core.T) {

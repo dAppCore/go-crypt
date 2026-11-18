@@ -31,13 +31,13 @@ import (
 	"sync"
 	"time"
 
-	core "dappco.re/go"
-	"dappco.re/go/crypt/crypt"
-	"dappco.re/go/crypt/crypt/lthn"
-	"dappco.re/go/crypt/crypt/pgp"
-	"dappco.re/go/crypt/internal/corecompat"
-	"dappco.re/go/io"
-	coreerr "dappco.re/go/log"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-crypt/go/crypt"
+	"github.com/dappcore/go-crypt/go/crypt/lthn"
+	"github.com/dappcore/go-crypt/go/crypt/pgp"
+	"github.com/dappcore/go-crypt/go/internal/corecompat"
+	"github.com/dappcore/go-io/go"
+	coreerr "github.com/dappcore/go-log/go"
 )
 
 const (

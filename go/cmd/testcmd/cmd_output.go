@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strconv"
 
-	core "dappco.re/go"
-	"dappco.re/go/i18n"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-i18n/go"
 )
 
 type packageCoverage struct {
@@ -31,8 +31,8 @@ func parseTestOutput(output string) testResults {
 	results := testResults{}
 
 	// Regex patterns - handle both timed and cached test results
-	// Example: ok  	dappco.re/go/crypt/crypt	0.015s	coverage: 91.2% of statements
-	// Example: ok  	dappco.re/go/crypt/crypt	(cached)	coverage: 91.2% of statements
+	// Example: ok  	github.com/dappcore/go-crypt/go/crypt	0.015s	coverage: 91.2% of statements
+	// Example: ok  	github.com/dappcore/go-crypt/go/crypt	(cached)	coverage: 91.2% of statements
 	okPattern := regexp.MustCompile(`^ok\s+(\S+)\s+(?:[\d.]+s|\(cached\))(?:\s+coverage:\s+([\d.]+)%)?`)
 	failPattern := regexp.MustCompile(`^FAIL\s+(\S+)`)
 	skipPattern := regexp.MustCompile(`^\?\s+(\S+)\s+\[no test files\]`)
