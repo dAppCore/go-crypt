@@ -1,6 +1,6 @@
 package testcmd
 
-import . "dappco.re/go"
+import . "github.com/dappcore/go"
 
 func TestAX7TestCmd_AddTestCommands_Good(t *T) {
 	c := New()

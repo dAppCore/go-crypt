@@ -9,7 +9,7 @@ import (
 	"crypto/sha256"
 	"io"
 
-	coreerr "dappco.re/go/log"
+	coreerr "github.com/dappcore/go-log/go"
 
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/hkdf"

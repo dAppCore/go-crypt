@@ -1,7 +1,7 @@
 package auth
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestSessionStoreSqlite_NewSQLiteSessionStore_Good(t *core.T) {

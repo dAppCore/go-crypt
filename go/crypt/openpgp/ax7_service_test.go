@@ -3,7 +3,7 @@ package openpgp
 import (
 	"bytes"
 
-	framework "dappco.re/go"
+	framework "github.com/dappcore/go"
 )
 
 func ax7Service(t *framework.T) *Service {

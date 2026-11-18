@@ -4,9 +4,9 @@
 package testcmd
 
 import (
-	core "dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/i18n"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
+	"github.com/dappcore/go-i18n/go"
 )
 
 // Style aliases from shared

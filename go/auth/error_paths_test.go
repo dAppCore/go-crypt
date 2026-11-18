@@ -3,7 +3,7 @@ package auth
 import (
 	"testing"
 
-	"dappco.re/go/crypt/crypt/lthn"
+	"github.com/dappcore/go-crypt/go/crypt/lthn"
 )
 
 // TestErrorPaths_Login_CorruptedHash rejects a .hash file whose contents

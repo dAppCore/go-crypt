@@ -1,6 +1,6 @@
 package corecompat
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 func TestAX7Corecompat_HexEncode_Good(t *core.T) {
 	got := HexEncode([]byte{0x0f, 0xa0})

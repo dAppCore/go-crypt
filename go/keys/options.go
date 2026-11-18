@@ -2,7 +2,7 @@
 
 package keys
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 // Option configures a Service at construction. The zero-option Service
 // is usable — it resolves its directory under $HOME/Lethean/data/keys

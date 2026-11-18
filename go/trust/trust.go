@@ -15,8 +15,8 @@ import (
 	"sync" // Note: AX-6 — internal concurrency primitive; structural for trust registry state.
 	"time"
 
-	core "dappco.re/go"
-	coreerr "dappco.re/go/log"
+	core "github.com/dappcore/go"
+	coreerr "github.com/dappcore/go-log/go"
 )
 
 // Tier represents an agent's trust level in the system.

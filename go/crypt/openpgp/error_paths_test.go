@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	framework "dappco.re/go"
+	framework "github.com/dappcore/go"
 )
 
 const badKey = "-----BEGIN PGP PRIVATE KEY BLOCK-----\nnonsense\n-----END PGP PRIVATE KEY BLOCK-----\n"

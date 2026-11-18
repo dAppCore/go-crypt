@@ -1,10 +1,10 @@
 package crypt
 
 import (
-	core "dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/crypt/crypt"
-	coreio "dappco.re/go/io"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
+	"github.com/dappcore/go-crypt/go/crypt"
+	coreio "github.com/dappcore/go-io/go"
 )
 
 // Encrypt command flags

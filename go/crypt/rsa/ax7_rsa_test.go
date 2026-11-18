@@ -1,6 +1,6 @@
 package rsa
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 func ax7KeyPair(t *core.T) ([]byte, []byte) {
 	t.Helper()

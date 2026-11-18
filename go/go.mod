@@ -1,15 +1,15 @@
-module dappco.re/go/crypt
+module github.com/dappcore/go-crypt/go
 
 go 1.26.0
 
 require (
-	dappco.re/go/cli v0.13.0
-	dappco.re/go/i18n v0.12.1
-	dappco.re/go/io v0.15.3
-	dappco.re/go/log v0.13.1
-	dappco.re/go/store v0.14.1
 	forge.lthn.ai/Snider/Enchantrix v0.0.5
 	github.com/ProtonMail/go-crypto v1.4.1
+	github.com/dappcore/cli/go v0.14.0
+	github.com/dappcore/go-i18n/go v0.13.0
+	github.com/dappcore/go-io/go v0.16.0
+	github.com/dappcore/go-log/go v0.14.0
+	github.com/dappcore/go-store/go v0.15.0
 	golang.org/x/crypto v0.54.0
 )
 
@@ -46,9 +46,9 @@ require (
 )
 
 require (
-	dappco.re/go v0.12.0
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cloudflare/circl v1.6.4 // indirect
+	github.com/dappcore/go v0.14.0
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.27 // indirect
 	golang.org/x/sys v0.47.0 // indirect

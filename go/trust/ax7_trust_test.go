@@ -1,6 +1,6 @@
 package trust
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 const ax7PolicyJSON = `{"policies":[{"tier":3,"allowed":["repo.push","pr.merge"]},{"tier":2,"allowed":["pr.create"],"requires_approval":["pr.merge"],"denied":["cmd.privileged"]}]}`
 

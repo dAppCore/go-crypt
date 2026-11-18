@@ -1,9 +1,9 @@
 package crypt
 
 import (
-	core "dappco.re/go"
-	"dappco.re/go/cli/pkg/cli"
-	"dappco.re/go/crypt/crypt"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/cli/go/pkg/cli"
+	"github.com/dappcore/go-crypt/go/crypt"
 )
 
 // Checksum command flags

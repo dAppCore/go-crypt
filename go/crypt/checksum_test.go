@@ -3,7 +3,7 @@ package crypt
 import (
 	"testing"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestChecksum_SHA256Sum_Good(t *testing.T) {

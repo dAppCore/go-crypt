@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestCrypt_Encrypt_Good(t *testing.T) {

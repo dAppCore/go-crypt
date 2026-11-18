@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-You are a dedicated domain expert for `dappco.re/go/core/crypt`. Virgil (in
+You are a dedicated domain expert for `github.com/dappcore/go-crypt/go`. Virgil (in
 core/go) orchestrates your work. Pick up tasks in phase order, mark `[x]` when
 done, commit and push.
 
@@ -49,10 +49,10 @@ workspace file instead.
 
 | Module | Local Path | Purpose |
 |--------|-----------|---------|
-| `dappco.re/go/core` | `../go` | Framework: `core.Crypt` interface, `io.Medium` |
-| `dappco.re/go/core/log` | `../go-log` | `coreerr.E()` contextual error wrapping |
-| `dappco.re/go/core/io` | `../go-io` | `io.Medium` storage abstraction |
-| `dappco.re/go/core/store` | `../go-store` | SQLite KV store (session persistence) |
+| `github.com/dappcore/go` | `../go` | Framework: `core.Crypt` interface, `io.Medium` |
+| `github.com/dappcore/go-log/go` | `../go-log` | `coreerr.E()` contextual error wrapping |
+| `github.com/dappcore/go-io/go` | `../go-io` | `io.Medium` storage abstraction |
+| `github.com/dappcore/go-store/go` | `../go-store` | SQLite KV store (session persistence) |
 | `forge.lthn.ai/core/cli` | `../cli` | CLI framework for `cmd/crypt` commands |
 
 No C toolchain or CGo required — all crypto uses pure Go implementations.
@@ -64,7 +64,7 @@ No C toolchain or CGo required — all crypto uses pure Go implementations.
 - **Concurrency tests**: 10 goroutines via WaitGroup; must pass `-race`
 - **Imports**: stdlib → dappco.re/forge.lthn.ai → third-party, separated by blank lines
 - **Errors**: use `coreerr.E("package.Function", "lowercase message", err)` (imported
-  as `coreerr "dappco.re/go/core/log"`); never include secrets in error strings
+  as `coreerr "github.com/dappcore/go-log/go"`); never include secrets in error strings
 - **Randomness**: `crypto/rand` only; never `math/rand`
 - **Conventional commits**: `feat(auth):`, `fix(crypt):`, `refactor(trust):`
   Scopes match package names: `auth`, `crypt`, `trust`, `pgp`, `lthn`, `rsa`,
@@ -74,6 +74,6 @@ No C toolchain or CGo required — all crypto uses pure Go implementations.
 
 ## Forge
 
-- **Repo**: `dappco.re/go/core/crypt`
+- **Repo**: `github.com/dappcore/go-crypt/go`
 - **Push via SSH**: `git push forge main`
   (remote: `ssh://git@forge.lthn.ai:2223/core/go-crypt.git`)

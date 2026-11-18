@@ -4,7 +4,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"testing"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestHash_HashPassword_Good(t *testing.T) {

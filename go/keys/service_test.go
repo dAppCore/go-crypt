@@ -12,9 +12,9 @@ package keys_test
 import (
 	"sync"
 
-	core "dappco.re/go"
-	"dappco.re/go/crypt/keys"
-	"dappco.re/go/io/sigil"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-crypt/go/keys"
+	"github.com/dappcore/go-io/go/sigil"
 )
 
 // fixedKEK is a deterministic 32-byte KEK used by the per-tier

@@ -10,9 +10,9 @@ package keys_test
 import (
 	"sync"
 
-	"dappco.re/go/crypt/keys"
+	"github.com/dappcore/go-crypt/go/keys"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 // countingResolver records how many times the Service asked for its

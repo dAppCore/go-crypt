@@ -2,7 +2,7 @@
 
 package keys
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 // defaultKeysDir returns $HOME/Lethean/data/keys/, creating the tree if
 // missing, and reports it in Result.Value (string).

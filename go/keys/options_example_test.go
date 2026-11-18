@@ -6,9 +6,9 @@
 package keys_test
 
 import (
-	"dappco.re/go/crypt/keys"
+	"github.com/dappcore/go-crypt/go/keys"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 // exampleRecorder is the shape a host writes to adapt its own audit

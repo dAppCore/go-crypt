@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"testing"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestSymmetric_ChaCha20Encrypt_Good(t *testing.T) {

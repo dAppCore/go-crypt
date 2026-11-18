@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestLTHN_Hash_Good(t *testing.T) {

@@ -1,7 +1,7 @@
 package crypt
 
 import (
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func TestCmd_AddCryptCommands_Good(t *core.T) {

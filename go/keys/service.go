@@ -71,8 +71,8 @@
 package keys
 
 import (
-	core "dappco.re/go"
-	"dappco.re/go/io/sigil"
+	core "github.com/dappcore/go"
+	"github.com/dappcore/go-io/go/sigil"
 )
 
 const (

@@ -144,10 +144,10 @@ core crypt checksum myfile.txt --verify "abc123..."
 
 | Module | Role |
 |--------|------|
-| `dappco.re/go/core` | Framework: `core.E` error helper, `core.Crypt` interface, `io.Medium` storage abstraction |
-| `dappco.re/go/core/store` | SQLite KV store for persistent session storage |
-| `dappco.re/go/core/io` | `io.Medium` interface used by the auth package |
-| `dappco.re/go/core/log` | Contextual error wrapping via `core.E()` |
+| `github.com/dappcore/go` | Framework: `core.E` error helper, `core.Crypt` interface, `io.Medium` storage abstraction |
+| `github.com/dappcore/go-store/go` | SQLite KV store for persistent session storage |
+| `github.com/dappcore/go-io/go` | `io.Medium` interface used by the auth package |
+| `github.com/dappcore/go-log/go` | Contextual error wrapping via `core.E()` |
 | `forge.lthn.ai/core/cli` | CLI framework for the `cmd/crypt` commands |
 | `github.com/ProtonMail/go-crypto` | OpenPGP implementation (actively maintained, post-quantum research) |
 | `golang.org/x/crypto` | Argon2id, ChaCha20-Poly1305, scrypt, HKDF, bcrypt |

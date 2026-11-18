@@ -3,7 +3,7 @@ package testcmd
 import (
 	"testing"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 // TestBehaviour_ParseTestOutput_Cached parses both cached and timed ok

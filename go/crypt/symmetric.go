@@ -8,7 +8,7 @@ import (
 	// Note: intrinsic crypto primitive -- no core.* equivalent (go-crypt implements core crypto; cannot self-depend).
 	"crypto/rand"
 
-	coreerr "dappco.re/go/log"
+	coreerr "github.com/dappcore/go-log/go"
 
 	enchantrixchacha "forge.lthn.ai/Snider/Enchantrix/pkg/crypt/std/chachapoly"
 )

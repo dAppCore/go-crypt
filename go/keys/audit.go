@@ -2,7 +2,7 @@
 
 package keys
 
-import core "dappco.re/go"
+import core "github.com/dappcore/go"
 
 // AuditEvent is the credential-mutation row this package hands to the
 // host application's audit substrate. It is deliberately a subset of a

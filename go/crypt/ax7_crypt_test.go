@@ -3,7 +3,7 @@ package crypt
 import (
 	"crypto/sha256"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 )
 
 func ax7Key() []byte {

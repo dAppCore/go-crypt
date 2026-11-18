@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	core "dappco.re/go"
+	core "github.com/dappcore/go"
 
-	"dappco.re/go/crypt/crypt/lthn"
-	"dappco.re/go/io"
+	"github.com/dappcore/go-crypt/go/crypt/lthn"
+	"github.com/dappcore/go-io/go"
 )
 
 // --- MemorySessionStore ---

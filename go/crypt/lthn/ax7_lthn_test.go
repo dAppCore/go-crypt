@@ -3,7 +3,7 @@ package lthn
 import (
 	"maps"
 
-	. "dappco.re/go"
+	. "github.com/dappcore/go"
 )
 
 func preserveKeyMap(t *T) {
